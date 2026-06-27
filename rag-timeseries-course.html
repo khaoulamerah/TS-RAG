@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG for Time Series — Complete University Course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #0a0d14;
+    --bg-1: #111520;
+    --bg-2: #161b2c;
+    --bg-3: #1d2438;
+    --bg-card: #141929;
+    --border: #1f2d4a;
+    --border-glow: #2a3f6a;
+
+    --accent-primary: #4f8ef7;
+    --accent-blue: #3b7de8;
+    --accent-cyan: #22d3ee;
+    --accent-green: #34d399;
+    --accent-amber: #fbbf24;
+    --accent-red: #f87171;
+    --accent-purple: #a78bfa;
+    --accent-pink: #f472b6;
+
+    --text-primary: #e8edf7;
+    --text-secondary: #8b9dc3;
+    --text-muted: #4a5a7a;
+    --text-code: #a9c5f5;
+
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+    --serif: 'Playfair Display', Georgia, serif;
+
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-0);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-1); }
+  ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 3px; }
+
+  /* ── SIDEBAR NAV ── */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 240px;
+    height: 100vh;
+    background: var(--bg-1);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    padding: 0 0 2rem;
+  }
+
+  .sidebar-logo {
+    padding: 1.5rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.75rem;
+  }
+
+  .sidebar-logo .logo-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+  }
+
+  .sidebar-logo .logo-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .nav-section {
+    padding: 0.25rem 0;
+  }
+
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 0.75rem 1.25rem 0.25rem;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 0.4rem 1.25rem;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    line-height: 1.4;
+  }
+
+  .nav-item:hover, .nav-item.active {
+    color: var(--accent-primary);
+    background: rgba(79, 142, 247, 0.06);
+    border-left-color: var(--accent-primary);
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    margin-left: 240px;
+    min-height: 100vh;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 5rem 4rem 4rem;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -80px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 30%;
+    width: 400px; height: 300px;
+    background: radial-gradient(circle, rgba(34,211,238,0.05) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 4vw, 3.8rem);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--text-primary);
+    max-width: 700px;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 .accent {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 580px;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 0.3rem 0.75rem;
+    border-radius: 100px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-blue  { background: rgba(79,142,247,0.12); color: var(--accent-primary); border: 1px solid rgba(79,142,247,0.25); }
+  .badge-cyan  { background: rgba(34,211,238,0.10); color: var(--accent-cyan);    border: 1px solid rgba(34,211,238,0.2); }
+  .badge-green { background: rgba(52,211,153,0.10); color: var(--accent-green);   border: 1px solid rgba(52,211,153,0.2); }
+  .badge-amber { background: rgba(251,191,36,0.10); color: var(--accent-amber);   border: 1px solid rgba(251,191,36,0.2); }
+  .badge-purple{ background: rgba(167,139,250,0.10); color: var(--accent-purple); border: 1px solid rgba(167,139,250,0.2); }
+
+  /* ── CONTENT AREA ── */
+  .content {
+    padding: 0 4rem 6rem;
+    max-width: 960px;
+  }
+
+  /* ── PART HEADER ── */
+  .part-header {
+    padding: 4rem 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+
+  .part-number {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .part-header h2 {
+    font-family: var(--serif);
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .part-header .part-desc {
+    margin-top: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 15px;
+    max-width: 600px;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    margin: 3rem 0 1.25rem;
+  }
+
+  .section-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .section-header h3::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 1.1em;
+    background: var(--accent-primary);
+    border-radius: 2px;
+  }
+
+  .section-header h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    margin: 2rem 0 0.75rem;
+  }
+
+  /* ── PROSE ── */
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.8;
+  }
+
+  strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin: 1.25rem 0;
+    overflow: hidden;
+  }
+
+  .code-block-header {
+    padding: 0.6rem 1rem;
+    background: var(--bg-3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .code-block-lang {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .code-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .code-dots span {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  .dot-r { background: #f87171; }
+  .dot-y { background: #fbbf24; }
+  .dot-g { background: #34d399; }
+
+  .code-block pre {
+    padding: 1.25rem 1.25rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-code);
+  }
+
+  .code-block pre .cm  { color: var(--text-muted); font-style: italic; }
+  .code-block pre .kw  { color: var(--accent-purple); }
+  .code-block pre .fn  { color: var(--accent-cyan); }
+  .code-block pre .st  { color: var(--accent-green); }
+  .code-block pre .nu  { color: var(--accent-amber); }
+  .code-block pre .hl  { color: var(--accent-primary); }
+
+  /* Inline code */
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg-3);
+    color: var(--accent-cyan);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── DIAGRAMS ── */
+  .diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.5rem;
+    margin: 1.5rem 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-code);
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .diagram-label {
+    position: absolute;
+    top: 0.6rem; right: 0.75rem;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .d-accent { color: var(--accent-primary); }
+  .d-cyan   { color: var(--accent-cyan); }
+  .d-green  { color: var(--accent-green); }
+  .d-amber  { color: var(--accent-amber); }
+  .d-purple { color: var(--accent-purple); }
+  .d-muted  { color: var(--text-muted); }
+
+  /* ── PIPELINE VISUAL ── */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 1.75rem 0;
+  }
+
+  .pipeline-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .pipeline-connector {
+    display: flex;
+    justify-content: center;
+    padding: 0.2rem 0;
+  }
+
+  .pipeline-connector::after {
+    content: '▼';
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .pipeline-phase {
+    min-width: 90px;
+    padding: 0.6rem 1rem;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    writing-mode: horizontal-tb;
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+    white-space: nowrap;
+  }
+
+  .pipeline-node {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    flex: 1;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .pipeline-node:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px rgba(79,142,247,0.15), 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .pipeline-node .node-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .pipeline-node .node-title .node-icon {
+    font-size: 14px;
+  }
+
+  .pipeline-node .node-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .pipeline-node .node-io {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .io-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+  }
+  .io-in  { background: rgba(79,142,247,0.1);  color: var(--accent-primary); border: 1px solid rgba(79,142,247,0.2); }
+  .io-out { background: rgba(34,211,238,0.1);  color: var(--accent-cyan);    border: 1px solid rgba(34,211,238,0.2); }
+
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.4rem 0;
+    margin-left: 90px + 1rem;
+  }
+
+  /* ── TABLES ── */
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead {
+    background: var(--bg-3);
+  }
+
+  th {
+    padding: 0.75rem 1rem;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.7rem 1rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(31,45,74,0.5);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: rgba(255,255,255,0.018); }
+
+  td strong { color: var(--text-primary); }
+  td .tag   { display: inline-block; }
+
+  /* ── CALLOUT / INSIGHT BOXES ── */
+  .callout {
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    margin: 1.25rem 0;
+    border-left: 3px solid;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+  }
+
+  .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; margin-bottom: 0.2rem; font-size: 13px; }
+  .callout-body p { font-size: 13px; margin: 0; }
+
+  .callout-blue   { background: rgba(79,142,247,0.07);  border-color: var(--accent-blue); }
+  .callout-cyan   { background: rgba(34,211,238,0.07);  border-color: var(--accent-cyan); }
+  .callout-green  { background: rgba(52,211,153,0.07);  border-color: var(--accent-green); }
+  .callout-amber  { background: rgba(251,191,36,0.08);  border-color: var(--accent-amber); }
+  .callout-red    { background: rgba(248,113,113,0.07); border-color: var(--accent-red); }
+  .callout-purple { background: rgba(167,139,250,0.07); border-color: var(--accent-purple); }
+
+  /* ── ANALOGY BOX ── */
+  .analogy {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    margin: 1.25rem 0;
+  }
+
+  .analogy-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--accent-amber);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  .analogy p { margin: 0; font-size: 13.5px; }
+
+  /* ── COMPARISON GRID ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .compare-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+  }
+
+  .compare-card .card-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+  }
+
+  .compare-card ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .compare-card ul li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 0.25rem 0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .compare-card ul li::before {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .card-pro  .card-label { color: var(--accent-green); }
+  .card-pro  ul li::before { content: '✓'; color: var(--accent-green); }
+  .card-con  .card-label { color: var(--accent-red); }
+  .card-con  ul li::before { content: '✗'; color: var(--accent-red); }
+  .card-blue .card-label { color: var(--accent-primary); }
+  .card-blue ul li::before { content: '→'; color: var(--accent-primary); }
+  .card-cyan .card-label { color: var(--accent-cyan); }
+  .card-cyan ul li::before { content: '→'; color: var(--accent-cyan); }
+
+  /* ── FORMULA BOX ── */
+  .formula {
+    background: var(--bg-3);
+    border: 1px solid var(--border-glow);
+    border-radius: var(--radius);
+    padding: 0.85rem 1.25rem;
+    margin: 1rem 0;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    color: var(--accent-amber);
+    text-align: center;
+  }
+
+  /* ── WEEK CARD ── */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .week-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .week-card:hover { border-color: var(--accent-primary); }
+
+  .week-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+
+  .week-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .week-items {
+    list-style: none;
+    padding: 0;
+  }
+
+  .week-items li {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 0.2rem 0;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .week-items li::before { content: '▸'; color: var(--text-muted); flex-shrink: 0; }
+
+  /* ── ARCH CARD ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .arch-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .arch-card .arch-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent-purple);
+    text-transform: uppercase;
+  }
+
+  .arch-card .arch-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+
+  .arch-card .arch-flow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 2.2;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .arch-card .arch-flow .step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .arch-card .arch-flow .step-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── MODEL TABLE ── */
+  .model-pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+  }
+  .yes-pill  { background: rgba(52,211,153,0.12); color: var(--accent-green);  border: 1px solid rgba(52,211,153,0.25); }
+  .no-pill   { background: rgba(248,113,113,0.1); color: var(--accent-red);    border: 1px solid rgba(248,113,113,0.2); }
+  .via-pill  { background: rgba(167,139,250,0.1); color: var(--accent-purple); border: 1px solid rgba(167,139,250,0.2); }
+
+  /* ── DATASET CARDS ── */
+  .dataset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .dataset-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+
+  .dataset-card:hover {
+    border-color: var(--accent-cyan);
+    transform: translateY(-1px);
+  }
+
+  .dataset-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .dataset-source {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .dataset-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+
+  .dataset-meta {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* ── DIFFICULTY BADGE ── */
+  .diff-easy   { background: rgba(52,211,153,0.1);  color: var(--accent-green);  border: 1px solid rgba(52,211,153,0.2); }
+  .diff-medium { background: rgba(251,191,36,0.1);  color: var(--accent-amber);  border: 1px solid rgba(251,191,36,0.2); }
+  .diff-hard   { background: rgba(248,113,113,0.1); color: var(--accent-red);    border: 1px solid rgba(248,113,113,0.2); }
+
+  /* ── FOLDER TREE ── */
+  .folder-tree {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 2;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .tree-dir   { color: var(--accent-primary); }
+  .tree-file  { color: var(--text-secondary); }
+  .tree-note  { color: var(--text-muted); font-style: italic; }
+
+  /* ── MISTAKE SECTION ── */
+  .mistake-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 0.5rem 0;
+  }
+
+  .mistake-bad, .mistake-good {
+    padding: 0.75rem 1rem;
+    font-size: 13px;
+  }
+
+  .mistake-bad {
+    background: rgba(248,113,113,0.05);
+    border-right: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .mistake-bad strong { color: var(--accent-red); font-size: 11px; display: block; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; }
+
+  .mistake-good {
+    background: rgba(52,211,153,0.05);
+    color: var(--text-secondary);
+  }
+
+  .mistake-good strong { color: var(--accent-green); font-size: 11px; display: block; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; }
+
+  /* ── METRIC CARDS ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+  }
+
+  .metric-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-cyan);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+
+  .metric-formula {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-amber);
+    margin-bottom: 0.35rem;
+  }
+
+  .metric-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ── SEPARATOR ── */
+  .sep {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--bg-1);
+    border-top: 1px solid var(--border);
+    padding: 2rem 4rem;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    text-align: center;
+    margin-left: 0;
+  }
+
+  /* ── SCROLLSPY ACTIVE ── */
+  section { scroll-margin-top: 2rem; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .hero, .content { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .mistake-row { grid-template-columns: 1fr; }
+    .mistake-bad { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-tag">University Course</div>
+    <div class="logo-title">RAG for<br>Time Series</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-label">Core Concepts</div>
+    <a class="nav-item" href="#part1">Part 1 — RAG Foundations</a>
+    <a class="nav-item" href="#part2">Part 2 — Vector Databases</a>
+    <a class="nav-item" href="#part3">Part 3 — Embeddings</a>
+    <a class="nav-item" href="#part4">Part 4 — Time Series</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-label">Advanced Topics</div>
+    <a class="nav-item" href="#part5">Part 5 — RAG for TS</a>
+    <a class="nav-item" href="#part6">Part 6 — Research Landscape</a>
+    <a class="nav-item" href="#part7">Part 7 — Datasets & Project</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-label">Engineering Guide</div>
+    <a class="nav-item" href="#part8">Part 8 — Architecture</a>
+    <a class="nav-item" href="#part9">Part 9 — Roadmap</a>
+    <a class="nav-item" href="#part10">Part 10 — Best Practices</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-eyebrow">Complete University Course + Engineering Guide</div>
+  <h1>RAG for<br><span class="accent">Time Series</span></h1>
+  <p class="hero-subtitle">From first principles to production systems. A graduate-level deep dive into Retrieval-Augmented Generation, Vector Databases, Embeddings, and Time Series Machine Learning.</p>
+  <div class="hero-badges">
+    <span class="badge badge-blue">RAG</span>
+    <span class="badge badge-cyan">Vector Databases</span>
+    <span class="badge badge-green">Time Series</span>
+    <span class="badge badge-amber">PatchTST · TS2Vec</span>
+    <span class="badge badge-purple">LLMs</span>
+    <span class="badge badge-blue">HNSW · FAISS</span>
+    <span class="badge badge-cyan">Qdrant · Chroma</span>
+  </div>
+</header>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════ PART 1 ═══════════════════════════════════════ -->
+<section id="part1">
+<div class="part-header">
+  <div class="part-number">Part 01</div>
+  <h2>Retrieval-Augmented Generation: Deep Foundations</h2>
+  <p class="part-desc">Why RAG was invented, the problems it solves, and a complete walkthrough of the pipeline from document loading to final answer.</p>
+</div>
+
+<div class="section-header"><h3>Why RAG Was Invented</h3></div>
+
+<div class="callout callout-blue">
+  <span class="callout-icon">💡</span>
+  <div class="callout-body">
+    <strong>Core Tension</strong>
+    <p>LLMs are trained once, but the world changes continuously. They are frozen libraries — brilliant, but unable to know what happened after their graduation day.</p>
+  </div>
+</div>
+
+<p>To understand why RAG exists, you must first understand the fundamental tension at the heart of modern LLMs. They consume vast knowledge during training, then are sealed. Every enterprise using an LLM faces three converging problems:</p>
+
+<div class="section-header"><h4>Problem 1 — Hallucinations</h4></div>
+
+<p><strong>Technical explanation:</strong> LLMs are trained with cross-entropy loss on next-token prediction. The model learns a probability distribution <code>P(token | context)</code>. It has no explicit "I don't know" state — it always produces a distribution over the vocabulary. When the conditioning context doesn't contain enough signal, the model falls back on correlational patterns that produce plausible but false completions.</p>
+
+<div class="analogy">
+  <div class="analogy-label">🧠 Analogy</div>
+  <p>A student who never studied doesn't leave the exam blank — they write something that sounds like an answer, using the subject's structure and vocabulary, but fabricating the details.</p>
+</div>
+
+<div class="code-block">
+  <div class="code-block-header">
+    <span class="code-block-lang">Example — Hallucination</span>
+    <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+  </div>
+  <pre>User:  <span class="st">"What was the revenue of Acme Corp in Q3 2024?"</span>
+LLM:   <span class="cm">"Acme Corp reported revenue of $2.3B in Q3 2024,</span>
+<span class="cm">        representing 12% YoY growth..."</span>
+       <span class="cm">→ Completely fabricated if Acme Corp isn't in training data</span></pre>
+</div>
+
+<div class="section-header"><h4>Problem 2 — Knowledge Cutoff</h4></div>
+<p>Every LLM has a training cutoff. After that date, the model knows nothing about new research, updated regulations, recent market events, or policy changes. This is catastrophic for enterprises where answers must reflect <em>today's</em> reality.</p>
+
+<div class="section-header"><h4>Problem 3 — Context Window Limitations</h4></div>
+<p>Even with 1M-token context windows, a corporate knowledge base might have 10 million documents. Stuffing everything in is not retrieval — it's brute force. It's slow, expensive, and the model's attention diffuses across irrelevant content.</p>
+
+<div class="section-header"><h3>Fine-Tuning vs. RAG</h3></div>
+
+<p><strong>Fine-tuning teaches the model HOW to reason in your domain. RAG gives the model WHAT to reason about.</strong> These are complementary, not alternatives.</p>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Dimension</th><th>Fine-Tuning</th><th>RAG</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Mechanism</strong></td><td>Modifies model weights</td><td>Retrieves context at query time</td></tr>
+    <tr><td><strong>Data currency</strong></td><td>Stale — requires retraining</td><td>Live — add documents instantly</td></tr>
+    <tr><td><strong>Hallucinations</strong></td><td>Persists</td><td>Reduced (grounded in retrieved text)</td></tr>
+    <tr><td><strong>Provenance</strong></td><td>None — black box</td><td>Full — cites source chunks</td></tr>
+    <tr><td><strong>Cost to update</strong></td><td>High (GPU compute)</td><td>Low (reindex only)</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Domain style, reasoning patterns</td><td>Factual accuracy, current data</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="section-header"><h3>The Complete RAG Pipeline</h3></div>
+
+<div class="diagram">
+  <div class="diagram-label">Architecture</div>
+<span class="d-muted">┌─────────────────────────────────────────────────────────────────┐
+│                     COMPLETE RAG PIPELINE                       │
+├────────────────────────────┬────────────────────────────────────┤
+│   OFFLINE (Indexing) Phase │    ONLINE (Querying) Phase         │
+├────────────────────────────┴────────────────────────────────────┤</span>
+│
+│  <span class="d-cyan">Raw Documents</span>                       <span class="d-green">User Query</span>
+│       │                                    │
+│       ▼                                    ▼
+│  <span class="d-cyan">Document Loader</span>                  <span class="d-green">Query Embedding</span>
+│       │                                    │
+│       ▼                                    ▼
+│  <span class="d-cyan">Cleaning & Preprocessing</span>        <span class="d-green">Vector Database</span>
+│       │                                 <span class="d-green">Similarity Search</span>
+│       ▼                                    │
+│  <span class="d-cyan">Chunking</span>                           ▼
+│       │                           <span class="d-green">Retrieved Chunks</span>
+│       ▼                                    │
+│  <span class="d-cyan">Embedding Generation</span>               ▼
+│       │                           <span class="d-green">Prompt Construction</span>
+│       ▼                                    │
+│  <span class="d-cyan">Vector Database Storage</span>            ▼
+│                                       <span class="d-green">LLM</span>
+│                                           │
+│                                           ▼
+│                                   <span class="d-accent">Final Answer + Citations</span>
+</div>
+
+<!-- PIPELINE NODES -->
+<div class="pipeline">
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 1</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">📄</span> Document Loading</div>
+      <div class="node-desc">Ingests raw data from heterogeneous sources (PDF, HTML, DOCX, SQL, APIs) into a uniform Document object representation.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: PDFs, HTML, DOCX, DBs</span>
+        <span class="io-tag io-out">OUT: List[Document(content, metadata)]</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector"></div>
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 2</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">🧹</span> Cleaning & Preprocessing</div>
+      <div class="node-desc">Removes noise: HTML tags, headers/footers, watermarks, boilerplate. Improves embedding quality by maximizing signal-to-noise ratio.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: Raw Documents</span>
+        <span class="io-tag io-out">OUT: Cleaned Documents</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector"></div>
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 3 ★</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">✂️</span> Chunking</div>
+      <div class="node-desc">Splits documents into smaller pieces. <strong>This is the most impactful design decision in RAG.</strong> Strategies: fixed size, recursive character, semantic breakpoint detection.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: Clean Documents</span>
+        <span class="io-tag io-out">OUT: Chunks (256–1024 tokens each)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector"></div>
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 4</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">🔢</span> Embedding Generation</div>
+      <div class="node-desc">Converts each chunk into a dense numerical vector via a transformer encoder. Similar meaning → geometrically nearby vectors.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: Text chunks</span>
+        <span class="io-tag io-out">OUT: Vectors ∈ ℝ⁷⁶⁸</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector"></div>
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 5</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">🗄️</span> Vector Database Storage</div>
+      <div class="node-desc">Stores (vector, text, metadata) triples in a specialized database with ANN indexing for millisecond-fast similarity search at scale.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: (vector, text, metadata) triples</span>
+        <span class="io-tag io-out">OUT: Indexed collection</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector"></div>
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 6</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">🔍</span> Similarity Search</div>
+      <div class="node-desc">Embeds the user query with the <strong>same model</strong>, then finds the top-k most similar vectors in the database. Returns ranked chunks.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: User query text</span>
+        <span class="io-tag io-out">OUT: Top-k chunks + similarity scores</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector"></div>
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 7</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">📝</span> Prompt Construction</div>
+      <div class="node-desc">Combines retrieved chunks + user query into a structured prompt. Instructs the LLM to answer using ONLY the provided context — the grounding mechanism.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: Top-k chunks + query</span>
+        <span class="io-tag io-out">OUT: System + context + user prompt</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector"></div>
+
+  <div class="pipeline-row">
+    <div class="pipeline-phase">Stage 8</div>
+    <div class="pipeline-node">
+      <div class="node-title"><span class="node-icon">🤖</span> LLM Generation</div>
+      <div class="node-desc">The LLM synthesizes retrieved context into a coherent, well-written answer. Acts as the reasoning and language layer, not the memory layer.</div>
+      <div class="node-io">
+        <span class="io-tag io-in">IN: Constructed prompt</span>
+        <span class="io-tag io-out">OUT: Final answer + source citations</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /pipeline -->
+
+<div class="section-header"><h4>Chunking Strategies Comparison</h4></div>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Strategy</th><th>How it works</th><th>Best for</th><th>Weakness</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Fixed Size</strong></td>
+      <td>Split every N tokens with M-token overlap</td>
+      <td>Quick prototyping, uniform data</td>
+      <td>Splits mid-sentence, ignores semantics</td>
+    </tr>
+    <tr>
+      <td><strong>Recursive Character</strong></td>
+      <td>Try <code>\n\n</code> → <code>\n</code> → <code>.</code> → space</td>
+      <td>General purpose prose</td>
+      <td>Still size-based, not meaning-based</td>
+    </tr>
+    <tr>
+      <td><strong>Semantic</strong></td>
+      <td>Embed sentences, split where cosine similarity drops</td>
+      <td>Coherent meaning boundaries</td>
+      <td>Slower, needs embedding model upfront</td>
+    </tr>
+    <tr>
+      <td><strong>Structure-Aware</strong></td>
+      <td>Respect HTML/Markdown headers, sections</td>
+      <td>Structured documents</td>
+      <td>Document-format specific</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 2 ═══════════════════════════════════════ -->
+<section id="part2">
+<div class="part-header">
+  <div class="part-number">Part 02</div>
+  <h2>Vector Databases</h2>
+  <p class="part-desc">From the mathematics of embedding spaces to production-grade ANN algorithms and database selection.</p>
+</div>
+
+<div class="section-header"><h3>Why SQL Cannot Do Semantic Search</h3></div>
+
+<p>SQL is designed for exact match and range queries on structured data. Semantic search requires finding documents whose <em>meaning</em> is similar — there is no SQL operator for this. Brute-force comparison at 10M documents with d=768 requires ~7.68 billion multiplications per query.</p>
+
+<div class="section-header"><h3>Similarity Metrics</h3></div>
+
+<div class="diagram">
+  <div class="diagram-label">Math</div>
+            <span class="d-cyan">v₂</span>
+           <span class="d-cyan">/</span>
+          <span class="d-cyan">/ θ</span>
+         <span class="d-cyan">/──────── v₁</span>
+
+<span class="d-accent">COSINE SIMILARITY</span>  =  (v₁ · v₂) / (|v₁| × |v₂|)
+<span class="d-muted">Range: -1.0 (opposite) → 0.0 (orthogonal) → +1.0 (identical direction)</span>
+
+<span class="d-accent">DOT PRODUCT</span>       =  Σᵢ v₁ᵢ × v₂ᵢ   <span class="d-muted">(= cosine when vectors are unit-normalized)</span>
+
+<span class="d-accent">EUCLIDEAN DIST</span>    =  √(Σᵢ (v₁ᵢ − v₂ᵢ)²)  <span class="d-muted">(sensitive to vector magnitude)</span>
+</div>
+
+<div class="callout callout-amber">
+  <span class="callout-icon">⚠️</span>
+  <div class="callout-body">
+    <strong>Why Cosine over Euclidean?</strong>
+    <p>A long document may have a larger-magnitude vector than a short one, even if they discuss the same topic. Cosine similarity normalizes this away — it only cares about direction, not magnitude.</p>
+  </div>
+</div>
+
+<div class="section-header"><h3>Approximate Nearest Neighbor Algorithms</h3></div>
+
+<div class="section-header"><h4>IVF — Inverted File Index</h4></div>
+
+<div class="analogy">
+  <div class="analogy-label">🧠 Analogy</div>
+  <p>A city directory. Instead of searching every house, you first identify the neighborhood (cluster centroid), then search within that neighborhood only.</p>
+</div>
+
+<div class="diagram">
+  <div class="diagram-label">Algorithm</div>
+<span class="d-cyan">TRAINING PHASE:</span>
+  1. Run k-means → find <span class="d-accent">k centroids</span>
+  2. Assign each vector to its nearest centroid
+  3. Build inverted list: centroid → [vectors in cluster]
+
+<span class="d-green">QUERY PHASE:</span>
+  1. Find <span class="d-accent">nprobe</span> nearest centroids to query
+  2. Search only those clusters
+  3. Return top-k
+
+<span class="d-muted">TIME SAVINGS: Search N/k vectors instead of N
+TRADEOFF: May miss true nearest neighbor in unsearched cluster</span>
+</div>
+
+<div class="section-header"><h4>HNSW — Hierarchical Navigable Small World ★</h4></div>
+
+<div class="analogy">
+  <div class="analogy-label">🧠 Analogy</div>
+  <p>A highway system. To drive from one city to another, you take the interstate (Layer 2), not local roads (Layer 0). HNSW builds "express lanes" through vector space.</p>
+</div>
+
+<div class="diagram">
+  <div class="diagram-label">Structure</div>
+<span class="d-accent">Layer 2 (sparse):</span>  <span class="d-purple">●</span>─────────────────<span class="d-purple">●</span>──────<span class="d-purple">●</span>
+                  <span class="d-muted">(few long-range connections)</span>
+
+<span class="d-cyan">Layer 1 (medium):</span>  <span class="d-cyan">●</span>──<span class="d-cyan">●</span>────<span class="d-cyan">●</span>──────<span class="d-cyan">●</span>──<span class="d-cyan">●</span>────<span class="d-cyan">●</span>──<span class="d-cyan">●</span>
+
+<span class="d-green">Layer 0 (dense):</span>   <span class="d-green">●●●●●●●●●●●●●●●●●●●●●●●●●●●</span>
+                  <span class="d-muted">(every vector, local connections)</span>
+
+<span class="d-accent">SEARCH:</span>
+  1. Enter at Layer 2 → greedy move toward query
+  2. Drop to Layer 1  → continue greedy search
+  3. Drop to Layer 0  → exact neighbors in subgraph
+
+<span class="d-muted">Complexity: O(log n) · High recall (>95%) · Dynamic inserts</span>
+</div>
+
+<div class="section-header"><h3>Vector Database Comparison</h3></div>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Database</th><th>Deployment</th><th>Scale</th><th>Index</th><th>Best For</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Chroma</strong></td><td>Local / Cloud</td><td>Small–Med</td><td>HNSW</td><td>Prototyping, learning</td></tr>
+    <tr><td><strong>FAISS</strong></td><td>Library (in-process)</td><td>Very Large</td><td>IVF, HNSW, PQ</td><td>Research, custom systems</td></tr>
+    <tr><td><strong>Qdrant</strong></td><td>Self-hosted / Cloud</td><td>Large</td><td>HNSW + payload filters</td><td><strong>Production RAG ★</strong></td></tr>
+    <tr><td><strong>Milvus</strong></td><td>Self-hosted / Cloud</td><td>Massive</td><td>IVF, HNSW, DiskANN</td><td>Enterprise scale</td></tr>
+    <tr><td><strong>Pinecone</strong></td><td>Cloud only (managed)</td><td>Very Large</td><td>Proprietary</td><td>Fastest time-to-market</td></tr>
+    <tr><td><strong>Weaviate</strong></td><td>Self-hosted / Cloud</td><td>Large</td><td>HNSW</td><td>Multi-modal, GraphQL</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="section-header"><h3>Hybrid Search</h3></div>
+
+<div class="diagram">
+  <div class="diagram-label">Architecture</div>
+<span class="d-green">Query</span> ──┬──→ [<span class="d-accent">Semantic Search</span> — vector similarity] ──→ semantic_scores
+         │
+         └──→ [<span class="d-cyan">BM25 Keyword Search</span> — exact terms]   ──→ keyword_scores
+                                                                   │
+                              <span class="d-amber">Final Score = α × semantic + (1-α) × keyword</span>
+                                                                   │
+                                                              Top-k Results
+
+<span class="d-muted">WHY: Semantic catches meaning, BM25 catches exact terminology.
+"FDA 510(k) clearance" → keyword important.
+"What do regulations say about device safety?" → semantic better.</span>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 3 ═══════════════════════════════════════ -->
+<section id="part3">
+<div class="part-header">
+  <div class="part-number">Part 03</div>
+  <h2>Embeddings: From First Principles</h2>
+  <p class="part-desc">How text becomes geometry, why similar meanings produce nearby vectors, and which embedding models to choose.</p>
+</div>
+
+<div class="section-header"><h3>How Embeddings Are Generated</h3></div>
+
+<div class="diagram">
+  <div class="diagram-label">Pipeline</div>
+<span class="d-green">INPUT TEXT:</span>  <span class="st">"Revenue declined sharply in Q3"</span>
+
+       │
+       ▼
+<span class="d-cyan">TOKENIZATION:</span>
+  ["Revenue", "declined", "sharply", "in", "Q3"]
+  → token IDs: [12045, 6823, 9011, 287, 148]
+
+       │
+       ▼
+<span class="d-cyan">TOKEN EMBEDDINGS + POSITIONAL ENCODING:</span>
+  Each token ID → learned vector ∈ ℝ⁷⁶⁸
+  + sine/cosine positional signal
+
+       │
+       ▼
+<span class="d-cyan">TRANSFORMER ENCODER (L layers):</span>
+  Multi-head self-attention: tokens attend to each other
+  Each token's repr. updated by full context
+  After L layers: <span class="d-accent">contextualized representations</span>
+
+       │
+       ▼
+<span class="d-cyan">POOLING (critical design choice):</span>
+  Option A: [CLS] token        ← BERT default
+  Option B: Mean of all tokens ← Sentence-BERT ★
+  Option C: Max pooling
+  Option D: Weighted mean
+
+       │
+       ▼
+<span class="d-accent">OUTPUT: Single vector ∈ ℝ⁷⁶⁸</span>
+  [0.12, -0.87, 0.34, ..., 0.91]
+</div>
+
+<div class="section-header"><h3>Embedding Model Comparison</h3></div>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Model</th><th>Dim</th><th>Deployment</th><th>Quality</th><th>Key Notes</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>all-MiniLM-L6-v2</strong></td><td>384</td><td>Local</td>
+      <td><span class="model-pill via-pill">Good</span></td>
+      <td>Fast, small. Good for prototyping.</td>
+    </tr>
+    <tr>
+      <td><strong>all-mpnet-base-v2</strong></td><td>768</td><td>Local</td>
+      <td><span class="model-pill via-pill">Better</span></td>
+      <td>Solid general-purpose SBERT model.</td>
+    </tr>
+    <tr>
+      <td><strong>bge-large-en-v1.5</strong></td><td>1024</td><td>Local</td>
+      <td><span class="model-pill yes-pill">SOTA</span></td>
+      <td>Top retrieval benchmarks. Needs query prefix.</td>
+    </tr>
+    <tr>
+      <td><strong>e5-large-v2</strong></td><td>1024</td><td>Local</td>
+      <td><span class="model-pill yes-pill">SOTA</span></td>
+      <td>"passage:" / "query:" prefix required.</td>
+    </tr>
+    <tr>
+      <td><strong>instructor-xl</strong></td><td>768</td><td>Local</td>
+      <td><span class="model-pill yes-pill">SOTA</span></td>
+      <td>Task-specific instructions. Very flexible.</td>
+    </tr>
+    <tr>
+      <td><strong>text-embedding-3-large</strong></td><td>3072</td><td>API (OpenAI)</td>
+      <td><span class="model-pill yes-pill">Best</span></td>
+      <td>Highest quality. Costs per token.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout callout-red">
+  <span class="callout-icon">🚨</span>
+  <div class="callout-body">
+    <strong>Domain Mismatch — #1 Embedding Quality Problem</strong>
+    <p>A model trained on Wikipedia and Common Crawl may produce poor embeddings for medical jargon, legal text, or financial formulae. Domain-specific fine-tuning of the embedding model is usually the highest-ROI improvement you can make.</p>
+  </div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 4 ═══════════════════════════════════════ -->
+<section id="part4">
+<div class="part-header">
+  <div class="part-number">Part 04</div>
+  <h2>Time Series: Foundations</h2>
+  <p class="part-desc">What makes time series fundamentally different from text, and the core concepts you need before building RAG for TS.</p>
+</div>
+
+<div class="section-header"><h3>Text vs. Time Series: Fundamental Differences</h3></div>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Property</th><th>Text</th><th>Time Series</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Data type</strong></td><td>Discrete tokens</td><td>Continuous real values</td></tr>
+    <tr><td><strong>Order</strong></td><td>Semantic order</td><td>Causal temporal order (inviolable)</td></tr>
+    <tr><td><strong>Local structure</strong></td><td>Phrase / sentence</td><td>Window / segment</td></tr>
+    <tr><td><strong>Global structure</strong></td><td>Document hierarchy</td><td>Trend + Seasonality + Noise</td></tr>
+    <tr><td><strong>Similarity</strong></td><td>Semantic content</td><td>Shape, dynamics, frequency</td></tr>
+    <tr><td><strong>Preprocessing</strong></td><td>Tokenization</td><td>Scaling, differencing, normalization</td></tr>
+    <tr><td><strong>Missing data</strong></td><td>Rare, easy</td><td>Common, complex (irregular timestamps)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="section-header"><h3>Time Series Decomposition</h3></div>
+
+<div class="diagram">
+  <div class="diagram-label">Components</div>
+  x(t) = <span class="d-accent">Trend(t)</span> + <span class="d-cyan">Seasonality(t)</span> + <span class="d-amber">Residual(t)</span>
+
+<span class="d-accent">TREND:</span>     Long-term direction
+  x: <span class="d-accent">↗↗↗↗↗↗↗↗↗↗</span>  (persistent upward movement)
+
+<span class="d-cyan">SEASONALITY:</span>  Regular periodic patterns
+  x: <span class="d-cyan">──/\/\/\/\/\/\/\/\/\──</span>  (e.g., daily electricity cycle)
+
+<span class="d-amber">RESIDUAL:</span>    Random fluctuations + anomalies
+  x: <span class="d-amber">~noise + |spike|</span>
+
+<span class="d-green">COMBINED:</span>
+     <span class="d-cyan">/\/\/\/\</span>  <span class="d-cyan">/\/\/\/\</span>  <span class="d-cyan">/\/\/\/\</span>
+    <span class="d-cyan">/</span>         <span class="d-cyan">/</span>         <span class="d-cyan">/</span>          <span class="d-accent">↗↗</span>
+</div>
+
+<div class="section-header"><h3>Windowing (The Chunking Analogue)</h3></div>
+
+<div class="diagram">
+  <div class="diagram-label">Sliding Windows</div>
+Original: [<span class="d-green">x₁ x₂ x₃ x₄ x₅ x₆ x₇ x₈ x₉ x₁₀</span>]
+
+Window W=4, Stride S=2:
+
+<span class="d-cyan">Window 1:</span> [<span class="d-cyan">x₁ x₂ x₃ x₄</span>]
+<span class="d-purple">Window 2:</span>         [<span class="d-purple">x₃ x₄ x₅ x₆</span>]   ← overlap = 2
+<span class="d-green">Window 3:</span>                 [<span class="d-green">x₅ x₆ x₇ x₈</span>]
+<span class="d-amber">Window 4:</span>                         [<span class="d-amber">x₇ x₈ x₉ x₁₀</span>]
+
+<span class="d-muted">Stride=1 → Maximum overlap (expensive)
+Stride=W → No overlap (may miss cross-boundary patterns)</span>
+
+<span class="d-accent">FORECASTING SETUP:</span>
+  Input window:  [x₁ ··· x_W]         ← look-back history
+  Target:        [x_{W+1} ··· x_{W+H}] ← forecast horizon H
+</div>
+
+<div class="section-header"><h3>Anomaly Types</h3></div>
+
+<div class="diagram">
+  <div class="diagram-label">Patterns</div>
+<span class="d-cyan">POINT ANOMALY:</span>
+  <span class="d-muted">─────────</span><span class="d-red">|</span><span class="d-muted">────────</span>   ← single spike far from baseline
+
+<span class="d-cyan">CONTEXTUAL ANOMALY:</span>
+  <span class="d-muted">/\/\/\/\</span>  <span class="d-red">──────</span>  <span class="d-muted">/\/\/\/\</span>   ← flat during normally oscillating period
+
+<span class="d-cyan">COLLECTIVE ANOMALY:</span>
+  <span class="d-muted">──────</span><span class="d-red">/\/\/\/\/\</span><span class="d-muted">──────</span>   ← unusual oscillating pattern
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 5 ═══════════════════════════════════════ -->
+<section id="part5">
+<div class="part-header">
+  <div class="part-number">Part 05</div>
+  <h2>RAG for Time Series: Architectures</h2>
+  <p class="part-desc">Three distinct architectural approaches for adapting RAG to numerical time series, with deep trade-off analysis.</p>
+</div>
+
+<div class="callout callout-purple">
+  <span class="callout-icon">🎯</span>
+  <div class="callout-body">
+    <strong>The Core Challenge</strong>
+    <p>In text RAG, documents and queries are the same type (text). In TS RAG, we need an embedding model appropriate for numerical sequences — language models trained on text are the wrong tool for raw numbers.</p>
+  </div>
+</div>
+
+<div class="arch-grid">
+  <!-- ARCH A -->
+  <div class="arch-card">
+    <div class="arch-label">Architecture A</div>
+    <div class="arch-name">Direct Numerical Embedding</div>
+    <div class="arch-flow">
+      <div class="step"><span class="step-dot" style="background:var(--accent-cyan)"></span>Raw Time Series</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-cyan)"></span>Windowing</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-cyan)"></span>TS Embedding Model<br><span style="color:var(--text-muted);font-size:10px">(PatchTST, TS2Vec)</span></div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-cyan)"></span>Vector Database</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-cyan)"></span>Retrieve Similar Windows</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-primary)"></span>LLM Reasoning</div>
+    </div>
+  </div>
+
+  <!-- ARCH B -->
+  <div class="arch-card">
+    <div class="arch-label">Architecture B</div>
+    <div class="arch-name">Verbalize Then Embed</div>
+    <div class="arch-flow">
+      <div class="step"><span class="step-dot" style="background:var(--accent-green)"></span>Raw Time Series</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-green)"></span>Text Verbalization<br><span style="color:var(--text-muted);font-size:10px">(stats → natural language)</span></div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-green)"></span>Text Embedding<br><span style="color:var(--text-muted);font-size:10px">(SBERT, BGE, E5)</span></div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-green)"></span>Vector Database</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-green)"></span>Retrieved Text Contexts</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-primary)"></span>LLM (native domain)</div>
+    </div>
+  </div>
+
+  <!-- ARCH C -->
+  <div class="arch-card">
+    <div class="arch-label">Architecture C</div>
+    <div class="arch-name">Hybrid Dual Retrieval</div>
+    <div class="arch-flow">
+      <div class="step"><span class="step-dot" style="background:var(--accent-amber)"></span>Raw Time Series</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼ ───────────────────┐</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-amber)"></span>Numerical Index│ Metadata Index</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>(shape features) (labels, context)</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼                   ▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-amber)"></span>Num. Similarity │ Meta. Similarity</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼ ───────────────────┘</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-amber)"></span>Fusion / Re-ranking</div>
+      <div class="step"><span class="step-dot" style="background:var(--text-muted)"></span>▼</div>
+      <div class="step"><span class="step-dot" style="background:var(--accent-primary)"></span>LLM Reasoning</div>
+    </div>
+  </div>
+</div>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Criterion</th><th>Arch A (Numerical)</th><th>Arch B (Text)</th><th>Arch C (Hybrid)</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Similarity type</strong></td><td>Shape-based</td><td>Semantic</td><td>Both</td></tr>
+    <tr><td><strong>Precision</strong></td><td>High</td><td>Medium</td><td>High</td></tr>
+    <tr><td><strong>LLM reasoning ease</strong></td><td>Hard (raw numbers)</td><td>Easy (native text)</td><td>Medium</td></tr>
+    <tr><td><strong>Implementation complexity</strong></td><td>Medium</td><td>Low ★ Start here</td><td>High</td></tr>
+    <tr><td><strong>Information loss</strong></td><td>Low</td><td>High</td><td>Low</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Pattern matching</td><td>Domain knowledge</td><td>Production</td></tr>
+  </tbody>
+</table>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 6 ═══════════════════════════════════════ -->
+<section id="part6">
+<div class="part-header">
+  <div class="part-number">Part 06</div>
+  <h2>Research Landscape: Foundation Models for Time Series</h2>
+  <p class="part-desc">State-of-the-art models, which produce embeddings, which forecast, and which integrate into RAG.</p>
+</div>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Model</th><th>Origin</th><th>Type</th><th>Embeddings?</th><th>Forecasting?</th><th>RAG-Ready?</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>PatchTST</strong> ★</td><td>2023</td><td>Encoder</td>
+      <td><span class="model-pill yes-pill">YES — Direct</span></td>
+      <td><span class="model-pill yes-pill">Yes</span></td>
+      <td><span class="model-pill yes-pill">Best choice</span></td>
+    </tr>
+    <tr>
+      <td><strong>TS2Vec</strong> ★</td><td>2022</td><td>Repr. Learning</td>
+      <td><span class="model-pill yes-pill">YES — Designed for it</span></td>
+      <td><span class="model-pill no-pill">No</span></td>
+      <td><span class="model-pill yes-pill">Excellent</span></td>
+    </tr>
+    <tr>
+      <td><strong>Chronos</strong></td><td>Amazon 2024</td><td>Foundation (gen)</td>
+      <td><span class="model-pill via-pill">Via encoder</span></td>
+      <td><span class="model-pill yes-pill">Yes</span></td>
+      <td><span class="model-pill via-pill">Adapted</span></td>
+    </tr>
+    <tr>
+      <td><strong>TimesFM</strong></td><td>Google 2024</td><td>Foundation (gen)</td>
+      <td><span class="model-pill via-pill">Via encoder</span></td>
+      <td><span class="model-pill yes-pill">Yes (100B pts)</span></td>
+      <td><span class="model-pill via-pill">Adapted</span></td>
+    </tr>
+    <tr>
+      <td><strong>Lag-Llama</strong></td><td>2024</td><td>Foundation (gen)</td>
+      <td><span class="model-pill via-pill">Via encoder</span></td>
+      <td><span class="model-pill yes-pill">Probabilistic</span></td>
+      <td><span class="model-pill via-pill">Adapted</span></td>
+    </tr>
+    <tr>
+      <td><strong>Moirai</strong></td><td>Salesforce 2024</td><td>Foundation (gen)</td>
+      <td><span class="model-pill via-pill">Via encoder</span></td>
+      <td><span class="model-pill yes-pill">Universal</span></td>
+      <td><span class="model-pill via-pill">Adapted</span></td>
+    </tr>
+    <tr>
+      <td><strong>TinyTimeMixer</strong></td><td>IBM 2024</td><td>Lightweight</td>
+      <td><span class="model-pill no-pill">No</span></td>
+      <td><span class="model-pill yes-pill">Fast inference</span></td>
+      <td><span class="model-pill via-pill">Adapted</span></td>
+    </tr>
+    <tr>
+      <td><strong>TimeGPT</strong></td><td>Nixtla</td><td>API-only</td>
+      <td><span class="model-pill no-pill">No</span></td>
+      <td><span class="model-pill yes-pill">Yes</span></td>
+      <td><span class="model-pill no-pill">No (closed)</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout callout-green">
+  <span class="callout-icon">🏆</span>
+  <div class="callout-body">
+    <strong>Recommendation for RAG</strong>
+    <p><strong>PatchTST</strong> for Architecture A: patch-level representations are high-quality and the architecture is well-understood. <strong>TS2Vec</strong> as alternative: specifically designed for representation learning, handles arbitrary-length windows. Start with PatchTST.</p>
+  </div>
+</div>
+
+<div class="section-header"><h4>PatchTST — How It Patches Time Series</h4></div>
+
+<div class="diagram">
+  <div class="diagram-label">PatchTST</div>
+TIME SERIES: [<span class="d-green">x₁ x₂ x₃ x₄ x₅ x₆ x₇ x₈ x₉ x₁₀ x₁₁ x₁₂</span>]
+
+<span class="d-cyan">PATCHES</span> (size=4, stride=2):
+  P₁ = [<span class="d-cyan">x₁ x₂ x₃ x₄</span>]
+  P₂ = [<span class="d-purple">x₃ x₄ x₅ x₆</span>]   ← overlapping patches
+  P₃ = [<span class="d-amber">x₅ x₆ x₇ x₈</span>]
+  P₄ = [<span class="d-green">x₉ x₁₀ x₁₁ x₁₂</span>]
+
+Each Pᵢ → <span class="d-accent">linear projection</span> → <span class="d-accent">transformer encoder</span> → patch embedding
+All patch embeddings → <span class="d-accent">mean pool</span> → <span class="d-accent">series embedding</span> ∈ ℝᵈ
+
+<span class="d-muted">Analogy: Like ViT image patches, but for 1D numerical sequences.
+The patch = the "word" of the time series vocabulary.</span>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 7 ═══════════════════════════════════════ -->
+<section id="part7">
+<div class="part-header">
+  <div class="part-number">Part 07</div>
+  <h2>Datasets & Recommended Project</h2>
+  <p class="part-desc">Public datasets for learning, and one portfolio-worthy project suitable for a Master's thesis.</p>
+</div>
+
+<div class="dataset-grid">
+
+  <div class="dataset-card">
+    <div class="dataset-name">ETT (Electricity Transformer Temperature)</div>
+    <div class="dataset-source">GitHub — Informer Paper · 4 CSV files · ~70k rows each</div>
+    <div class="dataset-desc">Oil temperature + 6 electrical load features. The most widely-used benchmark for time series research. Clear seasonal patterns.</div>
+    <div class="dataset-meta">
+      <span class="badge diff-easy">Easy / Medium</span>
+      <span class="badge badge-blue">Energy</span>
+    </div>
+  </div>
+
+  <div class="dataset-card">
+    <div class="dataset-name">UCR Time Series Archive</div>
+    <div class="dataset-source">timeseriesclassification.com · 128 datasets</div>
+    <div class="dataset-desc">Pre-labeled datasets for ECG, motion, audio, and more. Perfect for learning time series similarity search and retrieval evaluation.</div>
+    <div class="dataset-meta">
+      <span class="badge diff-easy">Easy → Hard</span>
+      <span class="badge badge-cyan">Classification</span>
+    </div>
+  </div>
+
+  <div class="dataset-card">
+    <div class="dataset-name">UCI Electricity Load Diagrams</div>
+    <div class="dataset-source">UCI ML Repository · 370 clients · 4 years · 15-min</div>
+    <div class="dataset-desc">Real electricity consumption data with clear patterns and anomalies. Recommended for the main project.</div>
+    <div class="dataset-meta">
+      <span class="badge diff-medium">Medium</span>
+      <span class="badge badge-green">Energy ★</span>
+    </div>
+  </div>
+
+  <div class="dataset-card">
+    <div class="dataset-name">PhysioNet / MIT-BIH ECG</div>
+    <div class="dataset-source">physionet.org · GB-scale · Clinical</div>
+    <div class="dataset-desc">Real clinical ECG signals and ICU monitoring. High-impact application. Requires domain knowledge.</div>
+    <div class="dataset-meta">
+      <span class="badge diff-hard">Hard</span>
+      <span class="badge badge-purple">Healthcare</span>
+    </div>
+  </div>
+
+  <div class="dataset-card">
+    <div class="dataset-name">M4 Competition</div>
+    <div class="dataset-source">Kaggle · 100,000 time series · 6 frequencies</div>
+    <div class="dataset-desc">Gold standard forecasting benchmark across diverse domains. Ideal for evaluating RAG-enhanced forecasting.</div>
+    <div class="dataset-meta">
+      <span class="badge diff-medium">Medium</span>
+      <span class="badge badge-amber">Forecasting</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="callout callout-cyan">
+  <span class="callout-icon">🎯</span>
+  <div class="callout-body">
+    <strong>Recommended Project: TimeRAG-Energy</strong>
+    <p><em>Retrieval-Augmented Anomaly Detection and Explanation for Smart Grid Data</em> — Realistic, educational, technically impressive, portfolio-worthy, extendable toward PhD research.</p>
+  </div>
+</div>
+
+<div class="code-block">
+  <div class="code-block-header">
+    <span class="code-block-lang">Project Demo — System Output</span>
+    <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+  </div>
+  <pre><span class="cm">USER INPUT:</span>
+<span class="st">"Electricity consumption at meter 042 is showing an unusual spike at 14:00 today."</span>
+
+<span class="cm">SYSTEM PIPELINE:</span>
+<span class="kw">1.</span> Extract current window [14:00-16:00] for meter 042
+<span class="kw">2.</span> Embed with PatchTST encoder → vector ∈ ℝ²⁵⁶
+<span class="kw">3.</span> Retrieve top-3 similar historical windows from Qdrant:
+   <span class="d-cyan">→ 2022-08-03 14:00</span>: Similar spike → cause: <span class="d-green">HVAC malfunction</span>
+   <span class="d-cyan">→ 2023-01-15 13:30</span>: Similar spike → cause: <span class="d-green">Production line restart</span>
+   <span class="d-cyan">→ 2023-06-20 14:15</span>: Similar spike → cause: <span class="d-amber">Unknown</span>
+<span class="kw">4.</span> Construct grounded prompt with retrieved examples
+<span class="kw">5.</span> LLM generates:
+
+<span class="d-accent">ANSWER:</span>
+<span class="st">"Based on 3 similar historical patterns, this spike most likely
+indicates an HVAC activation event or equipment restart. 
+Confidence: HIGH (2/3 historical matches same cause).
+Recommendation: Check HVAC unit schedule and production logs
+for 14:00 today. Escalate to maintenance if HVAC not scheduled."</span></pre>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 8 ═══════════════════════════════════════ -->
+<section id="part8">
+<div class="part-header">
+  <div class="part-number">Part 08</div>
+  <h2>Complete Software Architecture</h2>
+  <p class="part-desc">Production-grade folder structure, component responsibilities, and API design.</p>
+</div>
+
+<div class="folder-tree">
+<span class="tree-dir">timerag-energy/</span>
+│
+├── <span class="tree-file">README.md</span>
+├── <span class="tree-file">requirements.txt</span>
+├── <span class="tree-file">.env.example</span>              <span class="tree-note"># API keys, DB config</span>
+├── <span class="tree-file">docker-compose.yml</span>         <span class="tree-note"># Full stack deployment</span>
+│
+├── <span class="tree-dir">data/</span>
+│   ├── <span class="tree-dir">raw/</span>                       <span class="tree-note"># Original downloaded CSVs</span>
+│   ├── <span class="tree-dir">processed/</span>                 <span class="tree-note"># Cleaned, windowed data</span>
+│   └── <span class="tree-dir">embeddings/</span>                <span class="tree-note"># Cached numpy embeddings</span>
+│
+├── <span class="tree-dir">src/</span>
+│   ├── <span class="tree-dir">data/</span>
+│   │   ├── <span class="tree-file">loader.py</span>              <span class="tree-note"># Load CSVs, handle missing</span>
+│   │   ├── <span class="tree-file">preprocessor.py</span>        <span class="tree-note"># Normalize, clean, resample</span>
+│   │   ├── <span class="tree-file">windower.py</span>            <span class="tree-note"># Sliding window generation</span>
+│   │   └── <span class="tree-file">verbalizer.py</span>          <span class="tree-note"># Windows → text descriptions</span>
+│   │
+│   ├── <span class="tree-dir">embeddings/</span>
+│   │   ├── <span class="tree-file">base_embedder.py</span>       <span class="tree-note"># Abstract base class</span>
+│   │   ├── <span class="tree-file">patchtst_embedder.py</span>   <span class="tree-note"># PatchTST encoder wrapper</span>
+│   │   ├── <span class="tree-file">ts2vec_embedder.py</span>     <span class="tree-note"># TS2Vec wrapper</span>
+│   │   └── <span class="tree-file">text_embedder.py</span>       <span class="tree-note"># SBERT/BGE for Arch B</span>
+│   │
+│   ├── <span class="tree-dir">vectordb/</span>
+│   │   ├── <span class="tree-file">qdrant_store.py</span>        <span class="tree-note"># Qdrant collection + HNSW</span>
+│   │   ├── <span class="tree-file">chroma_store.py</span>        <span class="tree-note"># Chroma (dev/prototyping)</span>
+│   │   └── <span class="tree-file">indexer.py</span>             <span class="tree-note"># Offline batch indexing</span>
+│   │
+│   ├── <span class="tree-dir">retrieval/</span>
+│   │   ├── <span class="tree-file">retriever.py</span>           <span class="tree-note"># Core retrieval class</span>
+│   │   ├── <span class="tree-file">reranker.py</span>            <span class="tree-note"># Cross-encoder re-ranking</span>
+│   │   └── <span class="tree-file">hybrid_retriever.py</span>    <span class="tree-note"># Numerical + metadata fusion</span>
+│   │
+│   ├── <span class="tree-dir">llm/</span>
+│   │   ├── <span class="tree-file">prompt_builder.py</span>      <span class="tree-note"># Construct grounded prompts</span>
+│   │   ├── <span class="tree-file">llm_client.py</span>          <span class="tree-note"># OpenAI / Ollama / HF</span>
+│   │   └── <span class="tree-file">response_parser.py</span>     <span class="tree-note"># Parse structured outputs</span>
+│   │
+│   ├── <span class="tree-dir">evaluation/</span>
+│   │   ├── <span class="tree-file">retrieval_metrics.py</span>   <span class="tree-note"># Precision@k, Recall, MRR</span>
+│   │   ├── <span class="tree-file">generation_metrics.py</span>  <span class="tree-note"># Faithfulness, BERTScore</span>
+│   │   └── <span class="tree-file">end_to_end_eval.py</span>     <span class="tree-note"># Full pipeline evaluation</span>
+│   │
+│   └── <span class="tree-dir">api/</span>
+│       ├── <span class="tree-file">main.py</span>                <span class="tree-note"># FastAPI entry point</span>
+│       ├── <span class="tree-dir">routes/</span>
+│       │   ├── <span class="tree-file">query.py</span>           <span class="tree-note"># POST /query</span>
+│       │   └── <span class="tree-file">index.py</span>           <span class="tree-note"># POST /index</span>
+│       └── <span class="tree-file">schemas.py</span>             <span class="tree-note"># Pydantic models</span>
+│
+├── <span class="tree-dir">frontend/</span>
+│   └── <span class="tree-file">app.py</span>                     <span class="tree-note"># Streamlit dashboard</span>
+│
+├── <span class="tree-dir">notebooks/</span>                     <span class="tree-note"># Exploration + demos</span>
+│   ├── <span class="tree-file">01_data_exploration.ipynb</span>
+│   ├── <span class="tree-file">02_windowing.ipynb</span>
+│   ├── <span class="tree-file">03_embedding_analysis.ipynb</span>
+│   └── <span class="tree-file">04_end_to_end_demo.ipynb</span>
+│
+└── <span class="tree-dir">tests/</span>
+    ├── <span class="tree-file">test_windower.py</span>
+    ├── <span class="tree-file">test_embedder.py</span>
+    └── <span class="tree-file">test_retriever.py</span>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 9 ═══════════════════════════════════════ -->
+<section id="part9">
+<div class="part-header">
+  <div class="part-number">Part 09</div>
+  <h2>Development Roadmap</h2>
+  <p class="part-desc">8-week milestone plan from raw data to deployed system, with objectives, theory, and deliverables for each week.</p>
+</div>
+
+<div class="week-grid">
+
+  <div class="week-card">
+    <div class="week-num">Week 01</div>
+    <div class="week-title">Time Series Foundations</div>
+    <ul class="week-items">
+      <li>STL decomposition on Electricity dataset</li>
+      <li>ACF/PACF plots — understand autocorrelation</li>
+      <li>Visual anomaly identification</li>
+      <li>Stationarity tests (ADF)</li>
+    </ul>
+  </div>
+
+  <div class="week-card">
+    <div class="week-num">Week 02</div>
+    <div class="week-title">Windowing Pipeline</div>
+    <ul class="week-items">
+      <li>Build <code>WindowDataset</code> class</li>
+      <li>Global vs. local normalization experiments</li>
+      <li>Window size selection methodology</li>
+      <li>Stride / overlap tradeoff analysis</li>
+    </ul>
+  </div>
+
+  <div class="week-card">
+    <div class="week-num">Week 03</div>
+    <div class="week-title">Embeddings</div>
+    <ul class="week-items">
+      <li>PatchTST encoder implementation</li>
+      <li>TS2Vec contrastive training</li>
+      <li>t-SNE visualization of embedding space</li>
+      <li>Verify anomalous windows cluster separately</li>
+    </ul>
+  </div>
+
+  <div class="week-card">
+    <div class="week-num">Week 04</div>
+    <div class="week-title">Vector Database</div>
+    <ul class="week-items">
+      <li>Qdrant collection schema design</li>
+      <li>HNSW index parameters (M, ef_construction)</li>
+      <li>Metadata payload structure</li>
+      <li>Index all 370 meters × 4 years</li>
+    </ul>
+  </div>
+
+  <div class="week-card">
+    <div class="week-num">Week 05</div>
+    <div class="week-title">Retriever</div>
+    <ul class="week-items">
+      <li>Core <code>TimeSeriesRetriever</code> class</li>
+      <li>Precision@k, Recall@k, MRR evaluation</li>
+      <li>Metadata filtering experiments</li>
+      <li>Re-ranking implementation</li>
+    </ul>
+  </div>
+
+  <div class="week-card">
+    <div class="week-num">Week 06</div>
+    <div class="week-title">LLM Integration</div>
+    <ul class="week-items">
+      <li>Prompt templates for TS context</li>
+      <li>OpenAI + Ollama (local) clients</li>
+      <li>Verbalization of numerical windows</li>
+      <li>Structured output parsing</li>
+    </ul>
+  </div>
+
+  <div class="week-card">
+    <div class="week-num">Week 07</div>
+    <div class="week-title">Evaluation Framework</div>
+    <ul class="week-items">
+      <li>Faithfulness scoring (RAGAS-style)</li>
+      <li>BERTScore for generation quality</li>
+      <li>Labeled anomaly ground truth</li>
+      <li>End-to-end evaluation harness</li>
+    </ul>
+  </div>
+
+  <div class="week-card">
+    <div class="week-num">Week 08</div>
+    <div class="week-title">Deployment</div>
+    <ul class="week-items">
+      <li>FastAPI backend with /query /index</li>
+      <li>Streamlit dashboard with Plotly viz</li>
+      <li>Docker Compose (Qdrant + API + UI)</li>
+      <li>Basic Prometheus monitoring</li>
+    </ul>
+  </div>
+
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════ PART 10 ═══════════════════════════════════════ -->
+<section id="part10">
+<div class="part-header">
+  <div class="part-number">Part 10</div>
+  <h2>Best Practices</h2>
+  <p class="part-desc">Common mistakes, evaluation metrics, and production considerations for RAG and time series systems.</p>
+</div>
+
+<div class="section-header"><h3>Common RAG Mistakes</h3></div>
+
+<div class="mistake-row">
+  <div class="mistake-bad"><strong>❌ Mistake</strong>Using different embedding models for queries and documents</div>
+  <div class="mistake-good"><strong>✓ Correct</strong>Query and documents MUST use the <em>same embedding model</em>. The vector spaces are model-specific.</div>
+</div>
+
+<div class="mistake-row">
+  <div class="mistake-bad"><strong>❌ Mistake</strong>Fixed chunk size without evaluation — picking 512 tokens "because it sounds right"</div>
+  <div class="mistake-good"><strong>✓ Correct</strong>Experiment with 256, 512, 1024. Evaluate retrieval quality at each. Don't assume.</div>
+</div>
+
+<div class="mistake-row">
+  <div class="mistake-bad"><strong>❌ Mistake</strong>Evaluating only the final answer quality, ignoring retrieval quality</div>
+  <div class="mistake-good"><strong>✓ Correct</strong>Evaluate retrieval (Precision@k, Recall, MRR) separately. Retrieval failures cascade into generation failures.</div>
+</div>
+
+<div class="mistake-row">
+  <div class="mistake-bad"><strong>❌ Mistake</strong>Trusting the LLM to refuse when context doesn't contain the answer</div>
+  <div class="mistake-good"><strong>✓ Correct</strong>LLMs still hallucinate even with context. Use faithfulness checks and explicit system prompts.</div>
+</div>
+
+<div class="section-header"><h3>Common Time Series Mistakes</h3></div>
+
+<div class="mistake-row">
+  <div class="mistake-bad"><strong>❌ Mistake</strong>Temporal data leakage — retrieving from the future when evaluating on historical data</div>
+  <div class="mistake-good"><strong>✓ Correct</strong>Enforce strict temporal train/test splits. Never retrieve windows that occur after the query timestamp.</div>
+</div>
+
+<div class="mistake-row">
+  <div class="mistake-bad"><strong>❌ Mistake</strong>Using Euclidean distance for time series similarity — sensitive to phase shifts</div>
+  <div class="mistake-good"><strong>✓ Correct</strong>Use DTW for shape-based matching, or use learned embeddings (PatchTST/TS2Vec) that handle this.</div>
+</div>
+
+<div class="mistake-row">
+  <div class="mistake-bad"><strong>❌ Mistake</strong>Global normalization only — ignoring per-window local scaling</div>
+  <div class="mistake-good"><strong>✓ Correct</strong>Consider local (per-window) z-score normalization for retrieval. Compare both and measure.</div>
+</div>
+
+<div class="section-header"><h3>Evaluation Metrics</h3></div>
+
+<div class="metric-grid">
+
+  <div class="metric-card">
+    <div class="metric-name">Precision@k</div>
+    <div class="metric-formula">= relevant_retrieved / k</div>
+    <div class="metric-desc">Of the k retrieved chunks, what fraction are actually relevant?</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-name">Recall@k</div>
+    <div class="metric-formula">= relevant_retrieved / total_relevant</div>
+    <div class="metric-desc">Of all relevant items, how many did retrieval surface?</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-name">MRR</div>
+    <div class="metric-formula">= mean(1 / rank_first_relevant)</div>
+    <div class="metric-desc">How highly ranked is the first relevant result on average?</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-name">NDCG@k</div>
+    <div class="metric-formula">= DCG@k / IDCG@k</div>
+    <div class="metric-desc">Quality-weighted ranking metric — penalizes relevant items ranked lower.</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-name">Faithfulness</div>
+    <div class="metric-formula">= grounded_claims / total_claims</div>
+    <div class="metric-desc">Fraction of answer claims traceable to retrieved context.</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-name">BERTScore</div>
+    <div class="metric-formula">Semantic F1 vs. reference</div>
+    <div class="metric-desc">Semantic similarity between generated answer and gold reference.</div>
+  </div>
+
+</div>
+
+<div class="section-header"><h3>Latency Optimization</h3></div>
+
+<div class="table-wrapper">
+<table>
+  <thead><tr><th>Bottleneck</th><th>Optimization</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Embedding inference</strong></td><td>Batch processing · GPU · ONNX export · Quantization (INT8)</td></tr>
+    <tr><td><strong>Vector search</strong></td><td>Tune HNSW ef parameter · Reduce nprobe for IVF · Product Quantization</td></tr>
+    <tr><td><strong>LLM generation</strong></td><td>Streaming · Smaller model for simple queries · Semantic cache (GPTCache)</td></tr>
+    <tr><td><strong>End-to-end</strong></td><td>Async pipeline · Cache embeddings for recurring windows · Pre-compute popular queries</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout callout-blue">
+  <span class="callout-icon">🎓</span>
+  <div class="callout-body">
+    <strong>Advisor's Final Note</strong>
+    <p>Time series RAG is genuinely novel. The evaluation methodology alone — how do you know if a retrieved window is "truly" relevant? — is a research contribution. Start with Architecture B (simplest), establish baselines, then upgrade to A or C and measure. Don't assume complexity helps: measure everything.</p>
+  </div>
+</div>
+
+</section>
+
+</div><!-- /content -->
+
+<footer class="footer">
+  <p>RAG for Time Series · Complete University Course Guide · Built with precision for graduate-level study</p>
+</footer>
+
+</main>
+
+<script>
+  // Scrollspy for nav
+  const sections = document.querySelectorAll('section[id]');
+  const navItems = document.querySelectorAll('.nav-item');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(item => item.classList.remove('active'));
+        const active = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
