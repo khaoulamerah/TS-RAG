@@ -1,0 +1,2282 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Comprendre les LLMs | Cours RAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+/* ───────────────────────────── TOKENS ───────────────────────────── */
+:root {
+  --bg: #0d0f14;
+  --bg-2: #13161e;
+  --bg-3: #1a1e2a;
+  --bg-card: #161923;
+  --border: #252a38;
+  --border-2: #2e3547;
+  --text-1: #e8eaf2;
+  --text-2: #9ba3bf;
+  --text-3: #5c6480;
+  --accent: #7c6af7;
+  --accent-2: #a799ff;
+  --accent-glow: rgba(124,106,247,0.18);
+  --teal: #2dd4bf;
+  --teal-soft: rgba(45,212,191,0.12);
+  --amber: #f59e0b;
+  --amber-soft: rgba(245,158,11,0.12);
+  --rose: #f43f5e;
+  --rose-soft: rgba(244,63,94,0.12);
+  --green: #22c55e;
+  --green-soft: rgba(34,197,94,0.12);
+  --blue: #3b82f6;
+  --blue-soft: rgba(59,130,246,0.12);
+  --sidebar-w: 280px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+[data-theme="light"] {
+  --bg: #f8f9fc;
+  --bg-2: #f0f2f8;
+  --bg-3: #e8ebf5;
+  --bg-card: #ffffff;
+  --border: #dde1f0;
+  --border-2: #c8ceea;
+  --text-1: #111827;
+  --text-2: #4b5563;
+  --text-3: #9ca3af;
+  --accent-glow: rgba(124,106,247,0.10);
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+}
+
+/* ───────────────────────────── RESET ───────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-1);
+  line-height: 1.7;
+  font-size: 16px;
+  overflow-x: hidden;
+}
+
+/* ───────────────────────────── PROGRESS BAR ───────────────────────────── */
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  width: 0%; z-index: 1000;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* ───────────────────────────── TOP NAV ───────────────────────────── */
+.topnav {
+  position: fixed; top: 0; left: 0; right: 0; height: 56px;
+  background: rgba(13,15,20,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px; z-index: 900;
+}
+[data-theme="light"] .topnav { background: rgba(248,249,252,0.85); }
+.topnav-brand {
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-2), var(--teal));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex: 1;
+}
+.topnav-search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 6px 12px;
+  flex: 0 0 220px;
+}
+.topnav-search input {
+  background: none; border: none; outline: none;
+  color: var(--text-1); font-size: 13px; width: 100%;
+  font-family: var(--font-body);
+}
+.topnav-search input::placeholder { color: var(--text-3); }
+.btn-theme {
+  background: var(--bg-3); border: 1px solid var(--border);
+  color: var(--text-2); padding: 6px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.btn-theme:hover { border-color: var(--accent); color: var(--accent-2); }
+
+/* ───────────────────────────── LAYOUT ───────────────────────────── */
+.layout {
+  display: flex;
+  padding-top: 56px;
+  min-height: 100vh;
+}
+
+/* ───────────────────────────── SIDEBAR ───────────────────────────── */
+.sidebar {
+  position: fixed; top: 56px; left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--bg-2);
+  border-right: 1px solid var(--border);
+  overflow-y: auto; padding: 24px 0;
+  z-index: 800;
+  transition: transform 0.3s;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+.sidebar-section { padding: 0 16px 8px; }
+.sidebar-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3);
+  padding: 12px 8px 6px;
+}
+.sidebar-item {
+  display: block; padding: 7px 12px; border-radius: var(--radius-sm);
+  color: var(--text-2); text-decoration: none; font-size: 13.5px;
+  transition: all 0.15s; cursor: pointer;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.sidebar-item:hover { background: var(--bg-3); color: var(--text-1); }
+.sidebar-item.active { background: var(--accent-glow); color: var(--accent-2); font-weight: 500; }
+.sidebar-sub { font-size: 12.5px; padding-left: 24px; color: var(--text-3); }
+
+/* ───────────────────────────── MAIN CONTENT ───────────────────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  padding: 48px 64px 120px;
+  max-width: calc(var(--sidebar-w) + 860px);
+}
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .main { margin-left: 0; padding: 32px 24px 100px; }
+}
+
+/* ───────────────────────────── HERO ───────────────────────────── */
+.hero {
+  margin-bottom: 64px;
+  padding: 56px 0 0;
+}
+.hero-eyebrow {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent-2);
+  display: flex; align-items: center; gap: 8px; margin-bottom: 20px;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 24px; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  display: block;
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 900; line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+.hero-title .hl {
+  background: linear-gradient(135deg, var(--accent-2) 0%, var(--teal) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-desc {
+  font-size: 18px; color: var(--text-2); line-height: 1.75;
+  max-width: 640px; margin-bottom: 36px;
+}
+.hero-meta {
+  display: flex; gap: 24px; flex-wrap: wrap;
+}
+.hero-badge {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 14px;
+  font-size: 13px; color: var(--text-2);
+}
+.hero-badge svg { flex-shrink: 0; }
+
+/* ───────────────────────────── OBJECTIVES BOX ───────────────────────────── */
+.objectives {
+  background: linear-gradient(135deg, var(--accent-glow), rgba(45,212,191,0.06));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 32px;
+  margin: 48px 0;
+}
+.objectives h3 {
+  font-size: 14px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent-2); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.obj-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.obj-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--accent-glow); border-radius: var(--radius-sm);
+  padding: 12px 14px; font-size: 14px; color: var(--text-1);
+}
+.obj-dot {
+  width: 6px; height: 6px; background: var(--teal);
+  border-radius: 50%; margin-top: 7px; flex-shrink: 0;
+}
+
+/* ───────────────────────────── SECTIONS ───────────────────────────── */
+.section { margin: 80px 0; }
+.section-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 32px;
+}
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500; color: var(--accent-2);
+  background: var(--accent-glow); border: 1px solid rgba(124,106,247,0.3);
+  border-radius: 6px; padding: 4px 10px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 700; letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: 18px; font-weight: 600; margin: 32px 0 14px;
+  color: var(--text-1);
+}
+h4 {
+  font-size: 15px; font-weight: 600; color: var(--accent-2);
+  margin: 24px 0 10px;
+}
+p { color: var(--text-2); margin-bottom: 16px; line-height: 1.8; }
+strong { color: var(--text-1); font-weight: 600; }
+
+/* ───────────────────────────── CALLOUTS ───────────────────────────── */
+.callout {
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 24px 0;
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.callout-icon { flex-shrink: 0; margin-top: 2px; }
+.callout-body { flex: 1; }
+.callout-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.callout-text { font-size: 14px; color: var(--text-2); line-height: 1.7; margin: 0; }
+.callout.info { background: var(--blue-soft); border: 1px solid rgba(59,130,246,0.3); }
+.callout.info .callout-title { color: #60a5fa; }
+.callout.warn { background: var(--amber-soft); border: 1px solid rgba(245,158,11,0.3); }
+.callout.warn .callout-title { color: var(--amber); }
+.callout.tip { background: var(--green-soft); border: 1px solid rgba(34,197,94,0.3); }
+.callout.tip .callout-title { color: var(--green); }
+.callout.danger { background: var(--rose-soft); border: 1px solid rgba(244,63,94,0.3); }
+.callout.danger .callout-title { color: var(--rose); }
+.callout.concept { background: var(--accent-glow); border: 1px solid rgba(124,106,247,0.3); }
+.callout.concept .callout-title { color: var(--accent-2); }
+
+/* ───────────────────────────── CODE BLOCKS ───────────────────────────── */
+.code-block {
+  background: #0a0c12; border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; margin: 20px 0;
+  box-shadow: var(--shadow);
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: var(--bg-3);
+  border-bottom: 1px solid var(--border);
+}
+.code-lang {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-3); font-weight: 500;
+}
+.copy-btn {
+  background: none; border: 1px solid var(--border);
+  color: var(--text-3); padding: 3px 10px; border-radius: 4px;
+  font-size: 11px; cursor: pointer; transition: all 0.2s;
+  font-family: var(--font-body);
+}
+.copy-btn:hover { border-color: var(--accent); color: var(--accent-2); }
+pre {
+  padding: 20px 24px; overflow-x: auto; font-size: 13px;
+  font-family: var(--font-mono); line-height: 1.8; color: #c9d1d9;
+}
+pre::-webkit-scrollbar { height: 4px; }
+pre::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+.kw { color: #ff7b72; }
+.str { color: #a5d6ff; }
+.cm { color: #8b949e; font-style: italic; }
+.fn { color: #d2a8ff; }
+.num { color: #79c0ff; }
+.var { color: #ffa657; }
+
+/* ───────────────────────────── ASCII ART ───────────────────────────── */
+.ascii-box {
+  background: #0a0c12; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+  color: #a8b5d0; overflow-x: auto; margin: 24px 0;
+  white-space: pre;
+}
+
+/* ───────────────────────────── CARDS ───────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px; margin: 28px 0;
+}
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  transition: all 0.25s; position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  opacity: 0; transition: opacity 0.25s;
+}
+.card:hover { border-color: var(--border-2); transform: translateY(-2px); box-shadow: var(--shadow); }
+.card:hover::before { opacity: 1; }
+.card-icon { font-size: 28px; margin-bottom: 14px; }
+.card-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; color: var(--text-1); }
+.card-desc { font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
+
+/* ───────────────────────────── TABLES ───────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 24px 0; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: var(--bg-3); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-3); padding: 12px 16px; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 11px 16px; font-size: 14px; color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg-2); }
+.td-good { color: var(--green); font-weight: 600; }
+.td-bad { color: var(--rose); }
+.td-mid { color: var(--amber); }
+
+/* ───────────────────────────── TIMELINE ───────────────────────────── */
+.timeline { position: relative; padding: 8px 0; margin: 32px 0; }
+.timeline::before {
+  content: ''; position: absolute; left: 20px; top: 0; bottom: 0;
+  width: 2px; background: linear-gradient(180deg, var(--accent), var(--teal));
+}
+.tl-item { display: flex; gap: 24px; margin-bottom: 32px; position: relative; }
+.tl-dot {
+  width: 14px; height: 14px; background: var(--accent);
+  border-radius: 50%; border: 3px solid var(--bg);
+  flex-shrink: 0; margin-top: 4px; position: relative; z-index: 1;
+  box-shadow: 0 0 12px var(--accent);
+  left: 14px;
+}
+.tl-content { flex: 1; margin-left: 16px; }
+.tl-year {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  color: var(--accent-2); margin-bottom: 4px;
+}
+.tl-title { font-weight: 600; font-size: 15px; color: var(--text-1); margin-bottom: 6px; }
+.tl-desc { font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
+
+/* ───────────────────────────── MERMAID ───────────────────────────── */
+.mermaid-wrap {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px; margin: 28px 0;
+  text-align: center; overflow-x: auto;
+}
+.mermaid { font-size: 14px; }
+
+/* ───────────────────────────── ACCORDION ───────────────────────────── */
+.accordion { margin: 16px 0; }
+.acc-header {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 16px 20px;
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; font-weight: 600; font-size: 15px;
+  transition: all 0.2s; user-select: none;
+}
+.acc-header:hover { border-color: var(--border-2); }
+.acc-header.open {
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  background: var(--bg-3);
+}
+.acc-arrow { transition: transform 0.25s; color: var(--text-3); }
+.acc-header.open .acc-arrow { transform: rotate(180deg); }
+.acc-body {
+  display: none; background: var(--bg-card);
+  border: 1px solid var(--border); border-top: none;
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  padding: 20px 24px;
+  font-size: 14px; color: var(--text-2); line-height: 1.75;
+}
+.acc-body.open { display: block; }
+
+/* ───────────────────────────── QUIZ ───────────────────────────── */
+.quiz-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px; margin: 20px 0;
+}
+.quiz-q { font-weight: 600; font-size: 16px; margin-bottom: 16px; }
+.quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+.quiz-opt {
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  cursor: pointer; font-size: 14px; color: var(--text-2);
+  transition: all 0.2s; display: flex; align-items: center; gap: 10px;
+}
+.quiz-opt:hover { border-color: var(--accent); color: var(--text-1); }
+.quiz-opt.correct { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+.quiz-opt.wrong { background: var(--rose-soft); border-color: var(--rose); color: var(--rose); }
+.quiz-reveal { display: none; margin-top: 16px; padding: 16px; background: var(--bg-3); border-radius: var(--radius-sm); font-size: 14px; color: var(--text-2); }
+.quiz-reveal.show { display: block; }
+
+/* ───────────────────────────── EXERCISE CARDS ───────────────────────────── */
+.ex-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; margin: 16px 0;
+}
+.ex-header {
+  padding: 14px 20px; display: flex; gap: 12px; align-items: center;
+}
+.ex-header.easy { background: rgba(34,197,94,0.08); border-bottom: 1px solid rgba(34,197,94,0.2); }
+.ex-header.medium { background: rgba(245,158,11,0.08); border-bottom: 1px solid rgba(245,158,11,0.2); }
+.ex-header.hard { background: rgba(244,63,94,0.08); border-bottom: 1px solid rgba(244,63,94,0.2); }
+.ex-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; border-radius: 999px; padding: 3px 10px;
+}
+.easy .ex-badge { background: var(--green-soft); color: var(--green); }
+.medium .ex-badge { background: var(--amber-soft); color: var(--amber); }
+.hard .ex-badge { background: var(--rose-soft); color: var(--rose); }
+.ex-title { font-weight: 600; font-size: 14px; }
+.ex-body { padding: 20px 24px; font-size: 14px; color: var(--text-2); line-height: 1.75; }
+.ex-solution {
+  background: var(--bg-2); border-top: 1px solid var(--border);
+  padding: 16px 24px; display: none;
+}
+.ex-solution.show { display: block; }
+.btn-solution {
+  background: none; border: 1px solid var(--border);
+  color: var(--text-3); padding: 6px 14px; border-radius: var(--radius-sm);
+  font-size: 12px; cursor: pointer; margin: 8px 24px 16px;
+  transition: all 0.2s; font-family: var(--font-body);
+}
+.btn-solution:hover { border-color: var(--accent); color: var(--accent-2); }
+
+/* ───────────────────────────── BACK TO TOP ───────────────────────────── */
+#back-top {
+  position: fixed; bottom: 32px; right: 32px;
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--accent), #5a4df0);
+  border: none; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(124,106,247,0.5);
+  opacity: 0; transform: translateY(16px);
+  transition: all 0.3s; z-index: 800;
+}
+#back-top.show { opacity: 1; transform: translateY(0); }
+#back-top:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,106,247,0.6); }
+
+/* ───────────────────────────── HIGHLIGHT SPANS ───────────────────────────── */
+.hl-accent { color: var(--accent-2); font-weight: 600; }
+.hl-teal { color: var(--teal); font-weight: 600; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+
+/* ───────────────────────────── DIVIDER ───────────────────────────── */
+.divider {
+  height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 64px 0;
+}
+
+/* ───────────────────────────── SVG DIAGRAM ───────────────────────────── */
+.svg-wrap {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px; margin: 28px 0;
+  overflow-x: auto;
+}
+
+/* ───────────────────────────── SEARCH HIGHLIGHT ───────────────────────────── */
+.search-highlight { background: rgba(245,158,11,0.3); border-radius: 2px; }
+
+/* ───────────────────────────── FOOTER ───────────────────────────── */
+.chapter-footer {
+  border-top: 1px solid var(--border); margin-top: 80px; padding-top: 48px;
+}
+.footer-cards {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px;
+}
+.footer-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+}
+.footer-card .label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-3); margin-bottom: 8px;
+}
+.footer-card .value { font-size: 16px; font-weight: 600; color: var(--text-1); margin-bottom: 8px; }
+.footer-card .next-link { font-size: 13px; color: var(--accent-2); text-decoration: none; }
+
+/* ───────────────────────────── RESOURCE LINKS ───────────────────────────── */
+.res-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px; margin: 24px 0;
+}
+.res-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 16px 18px;
+  display: flex; gap: 12px; align-items: flex-start;
+  text-decoration: none; transition: all 0.2s;
+}
+.res-item:hover { border-color: var(--border-2); transform: translateY(-1px); }
+.res-type {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; border-radius: 999px; padding: 3px 8px;
+  flex-shrink: 0;
+}
+.res-type.paper { background: var(--blue-soft); color: #60a5fa; }
+.res-type.video { background: var(--rose-soft); color: #fb7185; }
+.res-type.book { background: var(--amber-soft); color: var(--amber); }
+.res-type.code { background: var(--green-soft); color: var(--green); }
+.res-type.doc { background: var(--accent-glow); color: var(--accent-2); }
+.res-title { font-size: 13.5px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+.res-sub { font-size: 12px; color: var(--text-3); }
+
+/* ───────────────────────────── TAG ───────────────────────────── */
+.tag {
+  display: inline-block; background: var(--accent-glow);
+  border: 1px solid rgba(124,106,247,0.3); color: var(--accent-2);
+  border-radius: 999px; padding: 2px 10px; font-size: 12px;
+  font-weight: 500; margin: 2px;
+}
+
+/* ───────────────────────────── SUMMARY BOX ───────────────────────────── */
+.summary-box {
+  background: linear-gradient(135deg, rgba(45,212,191,0.06), var(--accent-glow));
+  border: 1px solid var(--teal); border-radius: var(--radius);
+  padding: 32px; margin: 48px 0;
+}
+.summary-box h3 { color: var(--teal); margin-top: 0; margin-bottom: 20px; }
+.summary-item {
+  display: flex; gap: 12px; margin-bottom: 12px; font-size: 14px; color: var(--text-2);
+}
+.summary-num {
+  width: 24px; height: 24px; background: var(--teal-soft); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  color: var(--teal); flex-shrink: 0;
+}
+
+/* ───────────────────────────── FORMULAS ───────────────────────────── */
+.formula-box {
+  background: #0a0c12; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  text-align: center; margin: 24px 0; font-family: var(--font-mono);
+  font-size: 15px; color: #c9d1d9; line-height: 2;
+}
+.formula-label { font-size: 12px; color: var(--text-3); margin-bottom: 8px; font-family: var(--font-body); }
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<div id="progress-bar"></div>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-brand">🧠 RAG Masterclass</div>
+  <div class="topnav-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="search-input" placeholder="Rechercher dans ce chapitre…">
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">☀️ / 🌙</button>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">📚 Cours RAG</div>
+      <button class="sidebar-item active" onclick="scrollTo(0,0)">Chapitre 1 — LLMs</button>
+      <div class="sidebar-label">Contenu</div>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s1')">1. Objectifs</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s2')">2. Pourquoi les LLMs ?</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s3')">3. Les Transformers</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s4')">4. Tokens &amp; Embeddings</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s5')">5. Mécanisme d'attention</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s6')">6. Pré-entraînement</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s7')">7. Inférence</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s8')">8. Limites</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s9')">9. Hallucinations</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s10')">10. Vers le RAG</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s11')">11. Cas industriels</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s12')">12. Erreurs fréquentes</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s13')">13. Exercices</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s14')">14. Quiz</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s15')">15. Résumé</button>
+      <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s16')">16. Ressources</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-eyebrow">Chapitre 1 sur 12</div>
+      <h1 class="hero-title">
+        Comprendre les<br>
+        <span class="hl">Large Language Models</span>
+      </h1>
+      <p class="hero-desc">
+        Avant d'aborder le RAG, il est indispensable de comprendre les fondements des LLMs — leur architecture, leurs forces, et surtout leurs limites structurelles qui ont rendu le RAG nécessaire.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ~60 min de lecture
+        </div>
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Niveau Master / Doctorat
+        </div>
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Fondation du cours RAG
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 1 : OBJECTIFS ── -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Objectifs d'apprentissage</h2>
+      </div>
+
+      <div class="objectives">
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          À la fin de ce chapitre, vous serez capables de…
+        </h3>
+        <div class="obj-grid">
+          <div class="obj-item"><div class="obj-dot"></div>Expliquer ce qu'est un LLM et comment il a été créé</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre l'architecture Transformer et ses composants</div>
+          <div class="obj-item"><div class="obj-dot"></div>Définir précisément les tokens et les embeddings</div>
+          <div class="obj-item"><div class="obj-dot"></div>Maîtriser le mécanisme d'attention (Self-Attention)</div>
+          <div class="obj-item"><div class="obj-dot"></div>Décrire le processus de pré-entraînement et d'inférence</div>
+          <div class="obj-item"><div class="obj-dot"></div>Identifier les 3 limites structurelles des LLMs</div>
+          <div class="obj-item"><div class="obj-dot"></div>Expliquer pourquoi les hallucinations existent</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre pourquoi ces limites ont conduit à inventer le RAG</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 2 : POURQUOI ── -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Qu'est-ce qu'un LLM et pourquoi existent-ils ?</h2>
+      </div>
+
+      <p>Un <strong>Large Language Model (LLM)</strong> est un modèle de traitement du langage naturel entraîné sur des quantités massives de texte. Il apprend à prédire, comprendre et générer du texte avec une qualité proche de celle d'un humain. Les LLMs contemporains comme GPT-4, Claude, Gemini ou LLaMA représentent l'aboutissement de plusieurs décennies de recherche en intelligence artificielle.</p>
+
+      <h3>La frise chronologique des LLMs</h3>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-year">1950s — 2000s</div>
+            <div class="tl-title">Les débuts du NLP symbolique</div>
+            <div class="tl-desc">Les premiers systèmes utilisaient des règles manuelles écrites par des linguistes. Efficaces dans des domaines étroits, mais incapables de généraliser. ELIZA (1966) imitait la conversation par des règles simples de substitution.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-year">2003</div>
+            <div class="tl-title">Les modèles de langage neuronaux (Bengio et al.)</div>
+            <div class="tl-desc">Yoshua Bengio publie <em>"A Neural Probabilistic Language Model"</em>, posant les bases de l'utilisation de réseaux de neurones pour modéliser le langage. Introduction du concept d'embedding de mots.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-year">2013</div>
+            <div class="tl-title">Word2Vec (Google — Mikolov et al.)</div>
+            <div class="tl-desc">Mikolov publie Word2Vec, montrant que les mots peuvent être représentés comme des vecteurs dans un espace où la géométrie encode le sens. La fameuse relation roi - homme + femme ≈ reine.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-year">2017</div>
+            <div class="tl-title">Attention Is All You Need (Vaswani et al. — Google)</div>
+            <div class="tl-desc">Le papier fondateur de l'architecture Transformer. Il remplace les architectures RNN/LSTM par un mécanisme d'attention pur, beaucoup plus parallélisable et puissant. Tout ce que nous utilisons aujourd'hui en découle directement.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-year">2018</div>
+            <div class="tl-title">BERT et GPT-1</div>
+            <div class="tl-desc">Google publie BERT (bidirectionnel) et OpenAI publie GPT-1 (génératif), deux approches complémentaires basées sur le Transformer. Le pré-entraînement sur de grands corpus devient le paradigme dominant.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-year">2020</div>
+            <div class="tl-title">GPT-3 (175 milliards de paramètres)</div>
+            <div class="tl-desc">OpenAI publie GPT-3. La communauté découvre le phénomène des <em>emergent capabilities</em> : des capacités non anticipées qui émergent à grande échelle (raisonnement, analogies, few-shot learning).</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-year">2022 — 2025</div>
+            <div class="tl-title">L'ère des LLMs conversationnels</div>
+            <div class="tl-desc">ChatGPT, Claude, Gemini, Mistral, LLaMA… Les LLMs deviennent des produits grand public. Le RLHF (Reinforcement Learning from Human Feedback) et l'instruction-tuning permettent des assistants très utiles. Naissance de l'écosystème RAG.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout concept">
+        <div class="callout-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a799ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="callout-body">
+          <div class="callout-title">Définition clé</div>
+          <p class="callout-text">Un <strong>LLM</strong> est un réseau de neurones profond avec des centaines de milliards de paramètres, entraîné sur des téraoctets de texte pour modéliser la distribution des tokens dans le langage naturel. Son objectif d'entraînement est simple : <em>prédire le prochain token</em>. Mais c'est de cette tâche simple qu'émergent des capacités complexes de raisonnement et de compréhension.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 3 : TRANSFORMERS ── -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">L'architecture Transformer</h2>
+      </div>
+
+      <h3>Analogie : l'orchestre et le chef</h3>
+      <p>Imaginez un <strong>orchestre de 100 musiciens</strong>. Chaque musicien joue sa propre partition (un token), mais le chef d'orchestre doit constamment regarder tous les autres musiciens pour synchroniser son jeu. Le mécanisme d'attention, c'est exactement ça : chaque token "regarde" tous les autres tokens et décide à quel point il doit leur "faire attention" pour comprendre son propre rôle dans la phrase.</p>
+
+      <p>Avant le Transformer (2017), on utilisait des architectures <strong>RNN (Recurrent Neural Networks)</strong> et <strong>LSTM</strong>. Ces architectures traitaient le texte <em>séquentiellement</em> — un token après l'autre — comme un musicien qui ne peut entendre que son voisin direct. Les problèmes :</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">⏳</div>
+          <div class="card-title">Lenteur</div>
+          <div class="card-desc">Impossible de paralléliser le traitement. Les GPU restaient sous-utilisés, l'entraînement était extrêmement lent.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧠</div>
+          <div class="card-title">Mémoire à court terme</div>
+          <div class="card-desc">Les RNNs "oubliaient" le début des longues séquences. Impossible de maintenir un contexte sur des centaines de tokens.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📉</div>
+          <div class="card-title">Gradient vanishing</div>
+          <div class="card-desc">Le signal d'apprentissage disparaissait lors de la rétropropagation sur de longues séquences. Entraînement instable.</div>
+        </div>
+      </div>
+
+      <h3>Architecture Transformer : vue d'ensemble</h3>
+
+      <div class="svg-wrap">
+        <svg viewBox="0 0 720 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px">
+          <defs>
+            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#7c6af7;stop-opacity:1"/>
+              <stop offset="100%" style="stop-color:#2dd4bf;stop-opacity:1"/>
+            </linearGradient>
+            <marker id="arrow" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#5c6480"/>
+            </marker>
+            <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#7c6af7"/>
+            </marker>
+          </defs>
+
+          <!-- Background -->
+          <rect width="720" height="520" fill="#161923" rx="12"/>
+
+          <!-- Title -->
+          <text x="360" y="36" text-anchor="middle" font-family="Fraunces,serif" font-size="18" font-weight="900" fill="#e8eaf2">Architecture Transformer (Simplifié)</text>
+
+          <!-- INPUT -->
+          <rect x="60" y="70" width="600" height="50" rx="8" fill="#1a1e2a" stroke="#252a38"/>
+          <text x="360" y="99" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#9ba3bf">🔤  Texte d'entrée : "Le chat mange du poisson"</text>
+
+          <!-- Arrow -->
+          <line x1="360" y1="122" x2="360" y2="148" stroke="#5c6480" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- TOKENIZER -->
+          <rect x="200" y="150" width="320" height="44" rx="8" fill="#1a1e2a" stroke="#2dd4bf" stroke-opacity="0.5"/>
+          <text x="360" y="177" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#2dd4bf">✂️  Tokenizer → [12, 567, 2341, 89, 7892]</text>
+
+          <!-- Arrow -->
+          <line x1="360" y1="196" x2="360" y2="222" stroke="#5c6480" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- EMBEDDING -->
+          <rect x="200" y="224" width="320" height="44" rx="8" fill="#1a1e2a" stroke="#7c6af7" stroke-opacity="0.5"/>
+          <text x="360" y="251" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#a799ff">🔢  Token Embeddings + Positional Encoding</text>
+
+          <!-- Arrow -->
+          <line x1="360" y1="270" x2="360" y2="296" stroke="#5c6480" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- TRANSFORMER BLOCKS -->
+          <rect x="80" y="298" width="560" height="100" rx="10" fill="#13161e" stroke="#7c6af7" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="130" y="320" font-family="Inter,sans-serif" font-size="11" fill="#7c6af7" font-weight="600" letter-spacing="0.08em">N × TRANSFORMER BLOCK</text>
+
+          <rect x="100" y="328" width="160" height="52" rx="7" fill="#1a1e2a" stroke="#2dd4bf" stroke-opacity="0.4"/>
+          <text x="180" y="348" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#2dd4bf">Multi-Head</text>
+          <text x="180" y="364" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#2dd4bf">Self-Attention</text>
+
+          <rect x="280" y="328" width="160" height="52" rx="7" fill="#1a1e2a" stroke="#f59e0b" stroke-opacity="0.4"/>
+          <text x="360" y="348" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#f59e0b">Add &amp; Norm</text>
+          <text x="360" y="364" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#f59e0b">(Residual)</text>
+
+          <rect x="460" y="328" width="160" height="52" rx="7" fill="#1a1e2a" stroke="#a799ff" stroke-opacity="0.4"/>
+          <text x="540" y="348" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a799ff">Feed-Forward</text>
+          <text x="540" y="364" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a799ff">Network</text>
+
+          <!-- Arrows inside block -->
+          <line x1="260" y1="354" x2="278" y2="354" stroke="#5c6480" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <line x1="440" y1="354" x2="458" y2="354" stroke="#5c6480" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- Arrow -->
+          <line x1="360" y1="400" x2="360" y2="426" stroke="#5c6480" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- OUTPUT HEAD -->
+          <rect x="160" y="428" width="400" height="52" rx="8" fill="rgba(124,106,247,0.08)" stroke="url(#g1)"/>
+          <text x="360" y="452" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#e8eaf2">📊  Linear + Softmax → Proba sur le vocabulaire</text>
+          <text x="360" y="470" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">P("le") = 0.02   P("poisson") = 0.71   P("souris") = 0.05…</text>
+
+          <!-- Labels -->
+          <text x="36" y="355" font-family="Inter,sans-serif" font-size="10" fill="#5c6480" transform="rotate(-90,36,355)">GPT-2: 12 blocs / GPT-3: 96 blocs / GPT-4: ~120+ blocs</text>
+        </svg>
+      </div>
+
+      <h3>Les composants clés du Transformer</h3>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🔢</div>
+          <div class="card-title">Token Embedding</div>
+          <div class="card-desc">Convertit chaque token (entier) en un vecteur dense de haute dimension (768, 1024, 4096… dimensions). Ce vecteur encode le sens du token dans un espace continu.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📍</div>
+          <div class="card-title">Positional Encoding</div>
+          <div class="card-desc">Ajoute des informations de position au vecteur d'embedding. Sans ça, le modèle ignorerait l'ordre des tokens — "chat mange poisson" = "poisson mange chat".</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">👁️</div>
+          <div class="card-title">Multi-Head Attention</div>
+          <div class="card-desc">Le cœur du Transformer. Chaque token peut "regarder" tous les autres tokens et pondérer leur importance. Plusieurs "têtes" capturent différents types de relations.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">➕</div>
+          <div class="card-title">Add &amp; Normalize</div>
+          <div class="card-desc">Connexions résiduelles (identité skip) + normalisation de couche. Permettent d'entraîner des réseaux très profonds sans que le gradient disparaisse.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚙️</div>
+          <div class="card-title">Feed-Forward Network</div>
+          <div class="card-desc">Deux couches linéaires avec une activation non-linéaire (GELU/ReLU). Traite chaque token indépendamment. Stocke une grande partie de la "mémoire factuelle" du modèle.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">Linear + Softmax</div>
+          <div class="card-desc">Projette la représentation finale sur le vocabulaire entier (50 000+ tokens) et calcule une distribution de probabilité pour le prochain token.</div>
+        </div>
+      </div>
+
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart LR
+    A[Texte brut] --> B[Tokenizer]
+    B --> C[Token IDs]
+    C --> D[Embedding Layer]
+    D --> E[+ Positional Encoding]
+    E --> F[Transformer Block ×N]
+    F --> G[Linear Projection]
+    G --> H[Softmax]
+    H --> I[Prochain token]
+    
+    style A fill:#1a1e2a,stroke:#252a38,color:#9ba3bf
+    style F fill:#1a1e2a,stroke:#7c6af7,color:#a799ff
+    style I fill:#1a1e2a,stroke:#2dd4bf,color:#2dd4bf
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 4 : TOKENS & EMBEDDINGS ── -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">Tokens &amp; Embeddings</h2>
+      </div>
+
+      <h3>Les Tokens : l'unité fondamentale du langage</h3>
+
+      <p>Un LLM ne "lit" pas des mots. Il ne "voit" pas des caractères. Il traite des <strong>tokens</strong> — des unités de texte qui peuvent correspondre à des mots entiers, des parties de mots, ou des caractères individuels.</p>
+
+      <div class="callout info">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Règle empirique importante</div>
+          <p class="callout-text">En anglais, 1 token ≈ 4 caractères ≈ 0.75 mots. En français et en arabe, la tokenisation est moins efficace car les vocabulaires ont été construits majoritairement sur des corpus anglophones. Un même texte français peut consommer 20 à 30% plus de tokens que son équivalent anglais.</p>
+        </div>
+      </div>
+
+      <h3>La tokenisation BPE (Byte Pair Encoding)</h3>
+      <p>L'algorithme le plus utilisé aujourd'hui. L'idée : commencer par le niveau caractère, puis fusionner les paires les plus fréquentes de manière itérative.</p>
+
+      <div class="ascii-box">
+ALGORITHME BPE — EXEMPLE PAS À PAS
+═══════════════════════════════════
+
+Corpus initial : "le chat mange du poisson et le chien mange un os"
+
+Étape 0 — Niveau caractère :
+   l e   c h a t   m a n g e   d u ...
+
+Étape 1 — Fusion de la paire la plus fréquente ("m", "a") :
+   l e   c h a t   ma n g e   d u ...
+   → "ma" devient un token
+
+Étape 2 — Fusion ("ma", "n") → "man" :
+   l e   c h a t   man g e   d u ...
+
+Étape 3 — Continue jusqu'à atteindre la taille du vocabulaire cible
+          (50 000 tokens pour GPT-2, 100 000 pour GPT-4)
+
+RÉSULTAT FINAL (tokens GPT-3.5) :
+┌────────────────────────────────────────────────┐
+│  Texte : "le chat mange du poisson"            │
+│                                                │
+│  Tokens : ["le", " chat", " mange", " du",    │
+│            " po", "isson"]                     │
+│                                                │
+│  IDs    : [443, 17545, 28712, 1936, 754, 3624] │
+└────────────────────────────────────────────────┘
+
+Note : "poisson" est découpé en "po" + "isson" car ce mot
+est moins fréquent dans le corpus d'entraînement.
+
+Pour comparaison, "the cat eats fish" :
+  Tokens : ["the", " cat", " eats", " fish"]  → 4 tokens
+  "le chat mange du poisson"                  → 6 tokens</div>
+
+      <h3>Les Embeddings : la représentation mathématique du sens</h3>
+
+      <p>Chaque token est ensuite converti en un <strong>vecteur de haute dimension</strong> — un point dans un espace à 768, 1024, ou 4096 dimensions. C'est l'embedding. La propriété fondamentale des embeddings est que <strong>deux concepts similaires ont des vecteurs proches dans cet espace</strong>.</p>
+
+      <div class="svg-wrap">
+        <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px">
+          <rect width="700" height="340" fill="#161923" rx="12"/>
+          <text x="350" y="32" text-anchor="middle" font-family="Fraunces,serif" font-size="16" font-weight="700" fill="#e8eaf2">Espace des Embeddings (simplifié en 2D)</text>
+
+          <!-- Axes -->
+          <line x1="80" y1="290" x2="640" y2="290" stroke="#252a38" stroke-width="1.5"/>
+          <line x1="80" y1="290" x2="80" y2="60" stroke="#252a38" stroke-width="1.5"/>
+          <text x="640" y="310" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">Dimension 1 (ex: concept "animal")</text>
+          <text x="50" y="56" font-family="Inter,sans-serif" font-size="11" fill="#5c6480" transform="rotate(-90,50,160)" text-anchor="middle">Dimension 2 (ex: concept "domestique")</text>
+
+          <!-- Cluster Animaux domestiques -->
+          <ellipse cx="220" cy="130" rx="90" ry="60" fill="rgba(45,212,191,0.06)" stroke="#2dd4bf" stroke-width="1" stroke-dasharray="4,2"/>
+          <text x="220" y="82" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#2dd4bf">Animaux domestiques</text>
+
+          <circle cx="185" cy="120" r="8" fill="#2dd4bf" opacity="0.9"/>
+          <text x="185" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">chat</text>
+
+          <circle cx="245" cy="135" r="8" fill="#2dd4bf" opacity="0.9"/>
+          <text x="245" y="123" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">chien</text>
+
+          <circle cx="210" cy="155" r="7" fill="#2dd4bf" opacity="0.7"/>
+          <text x="210" y="143" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">lapin</text>
+
+          <!-- Cluster Animaux sauvages -->
+          <ellipse cx="420" cy="140" rx="85" ry="55" fill="rgba(124,106,247,0.06)" stroke="#7c6af7" stroke-width="1" stroke-dasharray="4,2"/>
+          <text x="420" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a799ff">Animaux sauvages</text>
+
+          <circle cx="390" cy="130" r="8" fill="#a799ff" opacity="0.9"/>
+          <text x="390" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">lion</text>
+
+          <circle cx="445" cy="145" r="7" fill="#a799ff" opacity="0.9"/>
+          <text x="445" y="133" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">tigre</text>
+
+          <circle cx="415" cy="160" r="7" fill="#a799ff" opacity="0.7"/>
+          <text x="415" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">loup</text>
+
+          <!-- Cluster Tech -->
+          <ellipse cx="540" cy="235" rx="80" ry="45" fill="rgba(245,158,11,0.06)" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,2"/>
+          <text x="540" y="197" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#f59e0b">Technologie</text>
+
+          <circle cx="510" cy="230" r="7" fill="#f59e0b" opacity="0.9"/>
+          <text x="510" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">GPU</text>
+
+          <circle cx="555" cy="240" r="7" fill="#f59e0b" opacity="0.9"/>
+          <text x="555" y="228" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#e8eaf2">CPU</text>
+
+          <!-- Distance annotation -->
+          <line x1="185" y1="120" x2="390" y2="130" stroke="#f43f5e" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="290" y="116" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#f43f5e">distance(chat, lion) = 0.42</text>
+
+          <line x1="185" y1="120" x2="245" y2="135" stroke="#22c55e" stroke-width="1.5"/>
+          <text x="200" y="144" font-family="JetBrains Mono,monospace" font-size="10" fill="#22c55e">distance = 0.08</text>
+
+          <!-- Relation vectorielle -->
+          <text x="350" y="316" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" fill="#7c6af7">roi − homme + femme ≈ reine  (relation linéaire dans l'espace)</text>
+        </svg>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">L'astuce géométrique fondamentale</div>
+          <p class="callout-text">Les embeddings encodent les <em>relations sémantiques</em> sous forme de géométrie vectorielle. Soustraction, addition, distance cosinus — toutes ces opérations mathématiques simples permettent de raisonner sur le sens. C'est ce qui rend les LLMs si puissants, et c'est aussi le principe sur lequel repose la recherche vectorielle dans RAG.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 5 : ATTENTION ── -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2 class="section-title">Le Mécanisme d'Attention</h2>
+      </div>
+
+      <h3>Intuition : résoudre l'ambiguïté contextuelle</h3>
+      <p>Prenons la phrase : <strong>"Le banquier a visité la banque du fleuve."</strong></p>
+      <p>Le mot "banque" peut désigner une institution financière ou le bord d'un cours d'eau. Comment le modèle sait-il lequel choisir ? Grâce à l'attention : le token "banque" "regarde" les tokens voisins ("fleuve") et ajuste sa représentation en conséquence.</p>
+
+      <div class="ascii-box">
+MÉCANISME D'ATTENTION — VUE INTUITIVE
+══════════════════════════════════════
+
+Phrase : "Le banquier a visité la banque du fleuve"
+Tokens :  [Le] [banquier] [a] [visité] [la] [banque] [du] [fleuve]
+
+Pour le token "banque", les scores d'attention sont :
+                                                     
+  ┌──────────┬─────────┬─────────┬─────────┬─────────┐
+  │          │ fleuve  │ visité  │banquier │   la    │
+  ├──────────┼─────────┼─────────┼─────────┼─────────┤
+  │ banque   │  0.45   │  0.20   │  0.15   │  0.08   │ ←  + autres tokens
+  └──────────┴─────────┴─────────┴─────────┴─────────┘
+
+  "fleuve" reçoit le plus d'attention → contextualise "banque"
+  comme bord de cours d'eau, PAS institution financière.
+
+  La représentation finale de "banque" est une SOMME PONDÉRÉE
+  des représentations de tous les tokens, pondérée par ces scores.
+
+  banque_contextualisé = 0.45 × fleuve + 0.20 × visité + 0.15 × banquier + ...
+
+  → Désambiguïsation contextuelle parfaite.</div>
+
+      <h3>Formulation mathématique</h3>
+      <p>Le mécanisme d'attention repose sur trois matrices apprenables pour chaque token : <strong>Query (Q)</strong>, <strong>Key (K)</strong>, et <strong>Value (V)</strong>.</p>
+
+      <div class="callout concept">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a799ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Analogie : bibliothèque</div>
+          <p class="callout-text"><strong>Query (Q)</strong> = votre question à la bibliothécaire : "Je cherche un livre sur la bord des rivières."<br>
+          <strong>Key (K)</strong> = les étiquettes sur les dos des livres : "géographie fluviale", "finance", "jardinage"...<br>
+          <strong>Value (V)</strong> = le contenu réel des livres.<br><br>
+          Le mécanisme calcule la compatibilité entre votre question (Q) et chaque étiquette (K), puis retourne une combinaison pondérée des contenus (V) selon ces scores de compatibilité.</p>
+        </div>
+      </div>
+
+      <div class="formula-box">
+        <div class="formula-label">Formule de l'attention (Vaswani et al., 2017)</div>
+        Attention(Q, K, V) = softmax( Q·Kᵀ / √d_k ) · V<br><br>
+        <span style="color:#9ba3bf;font-size:12px;font-family:Inter,sans-serif">
+          Q ∈ ℝ^(n×d_k)   K ∈ ℝ^(n×d_k)   V ∈ ℝ^(n×d_v)<br>
+          n = longueur de séquence   d_k = dimension des keys   √d_k = facteur d'échelle
+        </span>
+      </div>
+
+      <h4>Décomposition étape par étape</h4>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>Étape 1 — Calcul des scores bruts (Q · Kᵀ)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          On multiplie la Query du token courant par la transposée des Keys de tous les tokens. Le résultat est un vecteur de scores — un score par token de la séquence. Un score élevé signifie "ce token est très pertinent pour ma compréhension".
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>Étape 2 — Normalisation par √d_k</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          Sans cette normalisation, les scores deviendraient très grands avec des dimensions élevées, poussant le softmax dans des régions à gradient quasi nul (problème de saturation). En divisant par √d_k, on stabilise l'entraînement.
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>Étape 3 — Softmax → probabilités d'attention</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          Le softmax convertit les scores bruts en une distribution de probabilité. La somme de tous les poids d'attention = 1. Les tokens avec des scores élevés reçoivent une pondération élevée.
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>Étape 4 — Somme pondérée des Values</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          On multiplie les poids d'attention par les vecteurs Value correspondants. Le résultat est une somme pondérée : la nouvelle représentation du token courant, enrichie par le contexte de tous les autres tokens selon leur pertinence.
+        </div>
+      </div>
+
+      <h3>Multi-Head Attention : voir sous plusieurs angles</h3>
+      <p>Une seule tête d'attention ne peut capturer qu'un type de relation à la fois. Le <strong>Multi-Head Attention</strong> exécute h têtes d'attention en parallèle, chacune apprenant à capturer un type de relation différent :</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <div class="card-title">Tête 1 : Relations syntaxiques</div>
+          <div class="card-desc">Capture les dépendances grammaticales (sujet-verbe, adjectif-nom…)</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <div class="card-title">Tête 2 : Référence pronominale</div>
+          <div class="card-desc">"elle" → quel nom propre désigne ce pronom ?</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <div class="card-title">Tête 3 : Relations sémantiques</div>
+          <div class="card-desc">Synonymes, concepts liés, champ lexical…</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📏</div>
+          <div class="card-title">Tête 4 : Relations positionnelles</div>
+          <div class="card-desc">Tokens proches ou distants dans la séquence.</div>
+        </div>
+      </div>
+
+      <div class="formula-box">
+        <div class="formula-label">Multi-Head Attention</div>
+        MultiHead(Q, K, V) = Concat(head₁, head₂, …, headₕ) · W_O<br><br>
+        où headᵢ = Attention(Q·W_iQ, K·W_iK, V·W_iV)<br><br>
+        <span style="color:#9ba3bf;font-size:12px;font-family:Inter,sans-serif">
+          GPT-3 utilise h=96 têtes avec d_k = 128 par tête
+        </span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 6 : PRÉ-ENTRAÎNEMENT ── -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2 class="section-title">Le Pré-entraînement</h2>
+      </div>
+
+      <h3>La tâche fondamentale : prédire le prochain token</h3>
+      <p>L'entraînement d'un LLM génératif (comme GPT) repose sur une tâche étonnamment simple : <strong>prédire le prochain token</strong> dans une séquence. Pas de labels humains nécessaires — le texte lui-même est le superviseur.</p>
+
+      <div class="ascii-box">
+ENTRAÎNEMENT PAR LANGUAGE MODELING CAUSAL
+══════════════════════════════════════════
+
+Corpus : "Paris est la capitale de la France"
+                         
+Échantillon d'entraînement :
+                         
+  Entrée : "Paris est la capitale"
+  Cible  : "est la capitale de"
+                         
+Ou encore (chaque position prédit la suivante) :
+                         
+  Position 1 : [Paris]          → prédit : "est"
+  Position 2 : [Paris est]      → prédit : "la"
+  Position 3 : [Paris est la]   → prédit : "capitale"
+  Position 4 : [...]            → prédit : "de"
+  ...
+
+FONCTION DE PERTE : Cross-Entropy
+                         
+  L = -Σ log P(token_réel | contexte)
+                         
+  → Le modèle apprend à maximiser la probabilité
+    du token suivant réel.
+
+DONNÉES D'ENTRAÎNEMENT TYPIQUES :
+  ┌─────────────────────────────────┬─────────────────┐
+  │  Source                         │  Proportion     │
+  ├─────────────────────────────────┼─────────────────┤
+  │  Common Crawl (web)             │  ~60%           │
+  │  WebText / Reddit               │  ~22%           │
+  │  Livres (Books1, Books2)        │  ~12%           │
+  │  Wikipédia                      │  ~3%            │
+  │  Code (GitHub)                  │  ~3%            │
+  └─────────────────────────────────┴─────────────────┘</div>
+
+      <h3>Pourquoi cette tâche simple crée-t-elle de l'intelligence ?</h3>
+      <p>C'est la question philosophique centrale. Pour prédire correctement le prochain token dans des millions de contextes différents, le modèle est <em>forcé</em> d'apprendre :</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">📝</div>
+          <div class="card-title">La grammaire</div>
+          <div class="card-desc">Pour prédire "mange" après "Le chat", il faut connaître les règles syntaxiques de la langue.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌍</div>
+          <div class="card-title">Les faits du monde</div>
+          <div class="card-desc">Pour compléter "La capitale de la France est…", il faut avoir absorbé des connaissances encyclopédiques.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧩</div>
+          <div class="card-title">Le raisonnement</div>
+          <div class="card-desc">Pour continuer un texte de résolution de problème, le modèle apprend les patterns logiques.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎨</div>
+          <div class="card-title">Les styles</div>
+          <div class="card-desc">Poème, code, e-mail, rapport — le modèle apprend à distinguer et reproduire chaque style.</div>
+        </div>
+      </div>
+
+      <h3>Les phases de l'entraînement complet</h3>
+
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart TD
+    A[📚 Corpus brut<br/>Téraoctets de texte] --> B[Pré-entraînement<br/>Self-supervised<br/>plusieurs mois sur des milliers de GPU]
+    B --> C[Modèle de base<br/>Base Model<br/>Excellente compréhension,<br/>mais pas encore utile]
+    C --> D[Instruction Fine-Tuning<br/>SFT - Supervised<br/>Exemples humains de question-réponse]
+    D --> E[RLHF<br/>Reinforcement Learning<br/>from Human Feedback]
+    E --> F[Modèle aligné<br/>ChatGPT, Claude, etc.<br/>Utile, inoffensif, honnête]
+    
+    style A fill:#1a1e2a,stroke:#252a38,color:#9ba3bf
+    style B fill:#1a1e2a,stroke:#7c6af7,color:#a799ff
+    style C fill:#1a1e2a,stroke:#2dd4bf,color:#2dd4bf
+    style D fill:#1a1e2a,stroke:#f59e0b,color:#f59e0b
+    style E fill:#1a1e2a,stroke:#22c55e,color:#22c55e
+    style F fill:rgba(124,106,247,0.15),stroke:#7c6af7,color:#e8eaf2
+        </div>
+      </div>
+
+      <h3>L'échelle et les lois de puissance (Scaling Laws)</h3>
+      <p>Kaplan et al. (OpenAI, 2020) ont découvert que les performances des LLMs suivent des <strong>lois de puissance</strong> prévisibles en fonction de trois variables :</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Variable</th><th>Modèle</th><th>Ordre de grandeur</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Nb de paramètres (N)</td><td>GPT-3</td><td>175 milliards</td></tr>
+            <tr><td>Nb de paramètres (N)</td><td>GPT-4 (estimé)</td><td>1 000+ milliards</td></tr>
+            <tr><td>Tokens d'entraînement (D)</td><td>LLaMA-3</td><td>15 000 milliards</td></tr>
+            <tr><td>FLOP d'entraînement (C)</td><td>GPT-4</td><td>~2.1 × 10²⁵</td></tr>
+            <tr><td>Coût d'entraînement</td><td>GPT-4 (estimé)</td><td>50-100 millions $</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">La limite du Scaling pur</div>
+          <p class="callout-text">Chinchilla (DeepMind, 2022) a démontré que la plupart des grands modèles étaient <em>sous-entraînés en données</em> par rapport à leur taille. La règle Chinchilla : pour N paramètres, il faut ~20×N tokens d'entraînement pour une performance optimale. LLaMA-3 applique cet insight avec 15T de tokens pour un modèle de 70B.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 7 : INFÉRENCE ── -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <h2 class="section-title">L'Inférence : comment un LLM génère du texte</h2>
+      </div>
+
+      <h3>La génération token par token</h3>
+      <p>Un LLM génère du texte de manière <strong>auto-régressive</strong> : un token à la fois, chaque nouveau token conditionné sur tous les tokens précédents (y compris ceux qu'il vient de générer).</p>
+
+      <div class="ascii-box">
+GÉNÉRATION AUTO-RÉGRESSIVE
+══════════════════════════
+
+Prompt : "La capitale de la France est"
+
+Étape 1 :
+  Entrée  : "La capitale de la France est"
+  Softmax : P("Paris") = 0.92, P("Lyon") = 0.03, P("une") = 0.02...
+  Samplé  : "Paris"
+  Sortie  : "La capitale de la France est Paris"
+
+Étape 2 :
+  Entrée  : "La capitale de la France est Paris"
+  Softmax : P(".") = 0.78, P(",") = 0.10, P("et") = 0.06...
+  Samplé  : "."
+  Sortie  : "La capitale de la France est Paris."
+
+Étape 3 : Token spécial [EOS] (End of Sequence)
+  → Arrêt de la génération.
+
+PARAMÈTRES DE GÉNÉRATION :
+  ┌────────────────────────────────────────────────────────┐
+  │  Température (T)                                       │
+  │  ─────────────────────                                 │
+  │  T = 0.0  → Déterministe (always max proba token)     │
+  │  T = 1.0  → Distribution originale                    │
+  │  T > 1.0  → Plus aléatoire, créatif                   │
+  │  T < 1.0  → Plus concentré, conservateur              │
+  │                                                        │
+  │  Top-P (Nucleus Sampling)                              │
+  │  ─────────────────────────                             │
+  │  Ne considère que les tokens dont la proba cumulée    │
+  │  atteint P. top_p=0.95 → ignore les tokens rares.    │
+  │                                                        │
+  │  Top-K                                                 │
+  │  ────────                                              │
+  │  Ne considère que les K tokens les plus probables.    │
+  └────────────────────────────────────────────────────────┘</div>
+
+      <h3>La fenêtre de contexte (Context Window)</h3>
+      <p>Un LLM ne peut traiter qu'un nombre limité de tokens à la fois. Cette limite s'appelle la <strong>fenêtre de contexte</strong>.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Modèle</th><th>Fenêtre de contexte</th><th>Equivalent en pages</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>GPT-2 (2019)</td><td class="td-bad">1 024 tokens</td><td>~0.7 page</td></tr>
+            <tr><td>GPT-3.5 (2022)</td><td>4 096 tokens</td><td>~3 pages</td></tr>
+            <tr><td>GPT-4 (mars 2023)</td><td>8 192 tokens</td><td>~6 pages</td></tr>
+            <tr><td>GPT-4 Turbo (fin 2023)</td><td>128 000 tokens</td><td>~96 pages</td></tr>
+            <tr><td>Claude 3 Opus (2024)</td><td>200 000 tokens</td><td>~150 pages</td></tr>
+            <tr><td>Gemini 1.5 Pro (2024)</td><td class="td-good">1 000 000 tokens</td><td>~750 pages</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Le problème "Lost in the Middle" (Liu et al., 2023)</div>
+          <p class="callout-text">Même avec une grande fenêtre de contexte, les LLMs accordent moins d'attention aux informations situées au <em>milieu</em> du contexte. Les informations en début et en fin de prompt sont mieux mémorisées. Ce phénomène est critique pour le RAG : l'ordre des documents injectés dans le prompt impacte la qualité des réponses.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 8 : LIMITES ── -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2 class="section-title">Les 3 limites structurelles des LLMs</h2>
+      </div>
+
+      <p>Ces limites ne sont pas des bugs. Elles sont des <strong>conséquences directes du design</strong> des LLMs. Comprendre leur origine est essentiel pour comprendre pourquoi le RAG a été inventé.</p>
+
+      <div class="svg-wrap">
+        <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px">
+          <rect width="720" height="300" fill="#161923" rx="12"/>
+          <text x="360" y="36" text-anchor="middle" font-family="Fraunces,serif" font-size="18" font-weight="700" fill="#e8eaf2">Les 3 Limites Structurelles des LLMs</text>
+
+          <!-- Limit 1 -->
+          <rect x="30" y="60" width="200" height="200" rx="10" fill="#1a1e2a" stroke="#f43f5e" stroke-width="1.5"/>
+          <text x="130" y="88" text-anchor="middle" font-size="28">⏰</text>
+          <text x="130" y="114" text-anchor="middle" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#f43f5e">Limite Temporelle</text>
+          <text x="130" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">Connaissance figée</text>
+          <text x="130" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">à la date</text>
+          <text x="130" y="172" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">d'entraînement.</text>
+          <text x="130" y="200" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#f43f5e">"Knowledge Cutoff"</text>
+          <text x="130" y="220" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">GPT-4 : avril 2023</text>
+          <text x="130" y="237" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">Claude : août 2025</text>
+
+          <!-- Limit 2 -->
+          <rect x="260" y="60" width="200" height="200" rx="10" fill="#1a1e2a" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="360" y="88" text-anchor="middle" font-size="28">🔒</text>
+          <text x="360" y="114" text-anchor="middle" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#f59e0b">Limite de Connaissance</text>
+          <text x="360" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">Accès uniquement</text>
+          <text x="360" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">aux données publiques.</text>
+          <text x="360" y="175" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">Données privées,</text>
+          <text x="360" y="192" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">internes, propriétaires</text>
+          <text x="360" y="209" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">= inconnues.</text>
+          <text x="360" y="237" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#f59e0b">"Domain Blindness"</text>
+
+          <!-- Limit 3 -->
+          <rect x="490" y="60" width="200" height="200" rx="10" fill="#1a1e2a" stroke="#a799ff" stroke-width="1.5"/>
+          <text x="590" y="88" text-anchor="middle" font-size="28">👻</text>
+          <text x="590" y="114" text-anchor="middle" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#a799ff">Limite de Fiabilité</text>
+          <text x="590" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">Le modèle peut</text>
+          <text x="590" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">inventer des réponses</text>
+          <text x="590" y="172" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">plausibles mais fausses.</text>
+          <text x="590" y="200" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#a799ff">"Hallucination"</text>
+          <text x="590" y="220" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">10–30% selon</text>
+          <text x="590" y="237" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">les benchmarks</text>
+        </svg>
+      </div>
+
+      <h3>Limite 1 : Le Knowledge Cutoff (coupure temporelle)</h3>
+      <p>Un LLM ne peut pas connaître les événements postérieurs à sa date d'entraînement. Une fois entraîné, le modèle est <strong>figé</strong>. Il est comme une encyclopédie imprimée : extraordinairement riche, mais statique. Si vous lui demandez les résultats d'une élection qui s'est tenue hier, il est incapable de répondre correctement.</p>
+
+      <div class="callout info">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Pourquoi ne pas ré-entraîner le modèle chaque semaine ?</div>
+          <p class="callout-text">Entraîner GPT-4 coûterait environ 50 à 100 millions de dollars et des semaines de calcul sur des milliers de GPU A100. C'est économiquement et techniquement impossible à faire en continu. D'où la nécessité du RAG, qui permet de connecter le LLM à des données fraîches sans ré-entraînement.</p>
+        </div>
+      </div>
+
+      <h3>Limite 2 : L'ignorance des données privées</h3>
+      <p>Les LLMs ont été entraînés sur des données <strong>publiques</strong> — pages web, livres, articles. Ils n'ont jamais vu :</p>
+
+      <div class="card-grid">
+        <div class="card"><div class="card-icon">📋</div><div class="card-title">Documents internes</div><div class="card-desc">Politique RH, procédures qualité, réglements internes…</div></div>
+        <div class="card"><div class="card-icon">📊</div><div class="card-title">Données clients</div><div class="card-desc">CRM, historiques d'achats, tickets de support…</div></div>
+        <div class="card"><div class="card-icon">🔬</div><div class="card-title">Recherches propriétaires</div><div class="card-desc">Rapports confidentiels, brevets, données de laboratoire…</div></div>
+        <div class="card"><div class="card-icon">🏭</div><div class="card-title">Données industrielles</div><div class="card-desc">Données capteurs, historiques de maintenance, CAO…</div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 9 : HALLUCINATIONS ── -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2 class="section-title">Pourquoi les LLMs hallucinent</h2>
+      </div>
+
+      <h3>Définition précise</h3>
+      <p>Une <strong>hallucination</strong> est une génération de contenu factuellement incorrect mais présenté avec confiance par le LLM. Ce n'est pas un mensonge délibéré — le modèle n'a aucune intention. C'est une propriété émergente de son processus de génération.</p>
+
+      <div class="callout danger">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Exemples réels d'hallucinations célèbres</div>
+          <p class="callout-text">
+            • Un avocat américain a soumis un mémoire juridique avec des citations inventées par ChatGPT — les affaires et juges n'existaient pas. Il a été sanctionné par le tribunal.<br><br>
+            • ChatGPT a fabriqué des références bibliographiques entières (auteurs, titres, journaux, années) pour des articles scientifiques qui n'ont jamais existé.<br><br>
+            • Des LLMs ont affirmé avec confiance que des personnalités vivantes étaient décédées, ou inventé des biographies entières.
+          </p>
+        </div>
+      </div>
+
+      <h3>Les 5 causes profondes des hallucinations</h3>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>⚡ Cause 1 — Le modèle est entraîné à compléter, pas à vérifier</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>L'objectif d'entraînement est : <em>"prédire le token suivant le plus probable"</em>. Ce n'est pas : <em>"ne jamais affirmer quelque chose de faux"</em>. Le modèle n'a aucune représentation interne de "je ne sais pas" — il est structurellement conçu pour toujours produire une continuation.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🧠 Cause 2 — La mémoire paramétrique est imprécise</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Un LLM ne "mémorise" pas les faits comme une base de données. Il encode des <em>distributions statistiques</em> sur les tokens. Un fait rare (mentionné une fois dans le corpus) sera encodé de manière diffuse et imprécise. Le modèle peut alors "interpoler" entre des faits connus pour produire des faits nouveaux plausibles mais faux.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📊 Cause 3 — Biais de plausibilité vs vérité</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Le modèle maximise la probabilité selon son distribution apprise, pas la vérité factuelle. Une réponse statistiquement plausible n'est pas nécessairement vraie. Si tous les textes sur un sujet suggèrent une réponse X (même incorrecte), le modèle la reproduira.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🔄 Cause 4 — L'auto-régression amplifie les erreurs</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Chaque token généré devient une entrée pour le token suivant. Si le modèle génère un fait faux au token 50, il va ensuite "construire" sur ce fait faux pour les tokens 51, 52, 53… L'erreur initiale est amplifiée et élaborée dans une direction de plus en plus incorrecte.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📝 Cause 5 — L'RLHF peut encourager la confiance</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Pendant l'alignement RLHF, les annotateurs humains préfèrent souvent des réponses fluides et confidentes. Cela peut inadvertamment entraîner le modèle à répondre avec assurance même quand il devrait exprimer de l'incertitude.</p>
+        </div>
+      </div>
+
+      <div class="ascii-box">
+ANATOMIE D'UNE HALLUCINATION
+═════════════════════════════
+
+Question : "Quelle est la population de Lyon en 2024 ?"
+
+Ce que fait le LLM en interne :
+┌─────────────────────────────────────────────────────────┐
+│  Token générés jusqu'ici : "La population de Lyon en   │
+│  2024 est de..."                                         │
+│                                                          │
+│  Distribution sur les tokens suivants :                  │
+│    P("5")     = 0.18   ← ville de taille moyenne        │
+│    P("4")     = 0.15   ← statistiquement plausible      │
+│    P("6")     = 0.12                                     │
+│    P("2")     = 0.09                                     │
+│    P("...")   = ...                                       │
+│                                                          │
+│  Samplé : "5"                                            │
+│  Alors génère : "...est de 5..." → puis "18" → "000"   │
+│  Résultat : "518 000 habitants"                          │
+│                                                          │
+│  RÉALITÉ : ~522 000 (données 2022)                       │
+│                                                          │
+│  → Pas si loin ! Mais si la question avait été sur      │
+│    une ville obscure, l'écart aurait pu être énorme.    │
+└─────────────────────────────────────────────────────────┘
+
+Pour des faits précis (dates exactes, noms propres rares,
+chiffres spécifiques, citations) : taux d'erreur élevé.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 10 : VERS LE RAG ── -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <h2 class="section-title">De ces limites naît le RAG</h2>
+      </div>
+
+      <h3>La solution intuitive : donner un accès à une bibliothèque</h3>
+      <p>Imaginez un brillant consultant qui sait tout sur votre secteur en général, mais ne connaît pas vos données internes. Vous avez deux options :</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🎓</div>
+          <div class="card-title">Option A — Fine-Tuning</div>
+          <div class="card-desc">Lui faire lire et mémoriser tous vos documents internes. Coûteux, lent, et si vos documents changent demain, il faut tout recommencer.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📚</div>
+          <div class="card-title">Option B — RAG</div>
+          <div class="card-desc">Lui donner accès à une salle de documentation. Avant de vous répondre, il consulte les documents pertinents. La salle peut être mise à jour à tout moment.</div>
+        </div>
+      </div>
+
+      <p>Le RAG (Retrieval-Augmented Generation) est l'<strong>Option B</strong>. Il enrichit le prompt envoyé au LLM avec des informations récupérées dynamiquement depuis une base de connaissances externe.</p>
+
+      <div class="ascii-box">
+COMMENT LE RAG RÉSOUT LES 3 LIMITES
+══════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│  LIMITE 1 : Knowledge Cutoff                                │
+│  ─────────────────────────────                              │
+│  Sans RAG : "Je ne sais pas ce qui s'est passé après       │
+│              ma date d'entraînement."                        │
+│  Avec RAG  : La base de documents est mise à jour chaque   │
+│              jour. Le LLM reçoit les informations actuelles │
+│              dans son prompt.                                │
+│                                                             │
+│  LIMITE 2 : Données privées                                 │
+│  ──────────────────────────────                             │
+│  Sans RAG : "Je ne connais pas votre règlement intérieur."  │
+│  Avec RAG  : Votre règlement est dans la base. Quand on    │
+│              pose une question RH, il est injecté dans le   │
+│              prompt.                                         │
+│                                                             │
+│  LIMITE 3 : Hallucinations                                  │
+│  ─────────────────────────────                              │
+│  Sans RAG : Le LLM invente les détails qu'il ne connaît    │
+│             pas.                                             │
+│  Avec RAG  : Le LLM répond en s'appuyant sur des sources   │
+│             citées et vérifiables. Il peut dire "selon     │
+│             [Document X]..."                                 │
+└─────────────────────────────────────────────────────────────┘</div>
+
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart TD
+    A[Question utilisateur] --> B[Transformer la question<br/>en vecteur d'embedding]
+    B --> C[Rechercher dans la<br/>base vectorielle]
+    C --> D[Récupérer les<br/>Top-K documents pertinents]
+    D --> E[Construire le prompt augmenté<br/>Question + Documents]
+    E --> F[LLM génère la réponse<br/>en s'appuyant sur les docs]
+    F --> G[Réponse sourcée<br/>et vérifiable]
+
+    style A fill:#1a1e2a,stroke:#252a38,color:#9ba3bf
+    style C fill:#1a1e2a,stroke:#2dd4bf,color:#2dd4bf
+    style F fill:#1a1e2a,stroke:#7c6af7,color:#a799ff
+    style G fill:rgba(34,197,94,0.1),stroke:#22c55e,color:#22c55e
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">La grande idée du RAG en une phrase</div>
+          <p class="callout-text">Plutôt que d'essayer de tout faire apprendre au modèle, on sépare les responsabilités : le <strong>LLM</strong> gère la compréhension et la génération de langage naturel, la <strong>base de connaissances</strong> gère les faits précis et actualisés. Les deux travaillent ensemble à chaque inférence.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 11 : CAS INDUSTRIELS ── -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <span class="section-num">11</span>
+        <h2 class="section-title">Comment l'industrie utilise ces concepts</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Entreprise</th><th>Utilisation des LLMs</th><th>Problème identifié → Solution RAG</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>OpenAI</strong></td>
+              <td>ChatGPT avec browsing</td>
+              <td>Knowledge cutoff → Web search intégré (RAG avec Internet)</td>
+            </tr>
+            <tr>
+              <td><strong>Microsoft</strong></td>
+              <td>Copilot pour Microsoft 365</td>
+              <td>Données privées → RAG sur documents SharePoint/Teams/Email</td>
+            </tr>
+            <tr>
+              <td><strong>Google</strong></td>
+              <td>Gemini + NotebookLM</td>
+              <td>Hallucinations → Grounding avec Search + sources citées</td>
+            </tr>
+            <tr>
+              <td><strong>Anthropic</strong></td>
+              <td>Claude avec base de connaissances</td>
+              <td>Données fraîches → Connecteurs vers bases documentaires</td>
+            </tr>
+            <tr>
+              <td><strong>Meta</strong></td>
+              <td>LLaMA + RAG open source</td>
+              <td>Accès libre → LLaMA-Index, LangChain, démocratisation du RAG</td>
+            </tr>
+            <tr>
+              <td><strong>AWS</strong></td>
+              <td>Amazon Bedrock Knowledge Bases</td>
+              <td>Enterprise → RAG managé sur S3, RDS, SharePoint…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout concept">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a799ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Insight de l'industrie</div>
+          <p class="callout-text">En 2024, Gartner estimait que plus de <strong>80% des projets LLM en entreprise</strong> impliquent une forme de RAG ou de grounding avec des données externes. Le RAG est devenu le pattern architectural dominant pour les applications LLM en production.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 12 : ERREURS FRÉQUENTES ── -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <span class="section-num">12</span>
+        <h2 class="section-title">Erreurs fréquentes des débutants</h2>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 1 — Croire que plus de paramètres = moins d'hallucinations</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Pourquoi cette erreur :</strong> Intuitivement, un modèle plus grand "sait" plus de choses.<br>
+          <strong>Réalité :</strong> Les modèles plus grands hallucinent sur des aspects différents, pas nécessairement moins. Ils peuvent être plus confiants dans leurs erreurs. La taille seule ne résout pas le problème des faits précis et rares.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 2 — Confondre température et hallucination</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Pourquoi cette erreur :</strong> "Si je mets la température à 0, le modèle ne va plus inventer."<br>
+          <strong>Réalité :</strong> La température à 0 rend la génération déterministe, mais ne supprime pas les hallucinations. Le modèle choisira toujours le token le plus probable — et ce token peut être factuellement faux. La température influence la créativité, pas la factualité.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 3 — Penser que le Transformer "comprend" vraiment</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Pourquoi cette erreur :</strong> Les LLMs produisent des réponses si pertinentes qu'il semble qu'ils "comprennent" comme un humain.<br>
+          <strong>Réalité :</strong> Un LLM est un modèle statistique d'extrêmement haute qualité. Il modélise des distributions de tokens, pas des représentations symboliques du monde. Cette distinction est fondamentale pour comprendre quand il va échouer.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 4 — Sous-estimer le coût de la fenêtre de contexte</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Pourquoi cette erreur :</strong> "Puisque GPT-4 a 128K tokens de contexte, j'y mets tous mes documents."<br>
+          <strong>Réalité :</strong> Le coût en API est proportionnel aux tokens. 128K tokens à chaque requête = coût prohibitif en production. De plus, Lost in the Middle dégrade la qualité. Le RAG est plus économique et plus précis.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 5 — Croire que le Fine-Tuning remplace le RAG pour les données privées</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Pourquoi cette erreur :</strong> "Si je fine-tune le modèle sur mes données, il les connaîtra."<br>
+          <strong>Réalité :</strong> Le fine-tuning est excellent pour adapter le <em>style</em> et le <em>format</em> de sortie. Pour injecter des <em>faits</em>, il est inefficace et risqué — le modèle peut "oublier" les faits précédents (catastrophic forgetting), mélanger les informations, ou ne pas retrouver les faits avec précision lors de l'inférence.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 13 : EXERCICES ── -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <span class="section-num">13</span>
+        <h2 class="section-title">Exercices</h2>
+      </div>
+
+      <!-- EASY -->
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 1 — Tokenisation manuelle</span>
+        </div>
+        <div class="ex-body">
+          <p>Imaginez que vous utilisez un tokeniseur BPE simple. Voici le vocabulaire connu :</p>
+          <p><em>Vocabulaire : ["le", "la", "chat", "chien", "mange", " ", "po", "is", "son", "un", "e"]</em></p>
+          <p><strong>Question :</strong> Comment tokeniseriez-vous la phrase <em>"le chien mange un poisson"</em> avec ce vocabulaire ? Listez les tokens et expliquez pourquoi "poisson" est découpé différemment de "chien".</p>
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Correction :</strong><br><br>
+          Tokens : ["le", " ", "chien", " ", "mange", " ", "un", " ", "po", "isson"]<br><br>
+          <strong>Explication :</strong> "chien" est un token entier car il est fréquent dans le corpus d'entraînement. "poisson" = "po" + "isson" car il est moins fréquent — le tokeniseur BPE n'a pas fusionné tous ses caractères en un seul token. (Note : avec un vocabulaire plus restreint, "isson" pourrait à son tour se décomposer en "is" + "son".) Cette asymétrie illustre un biais du BPE vers les termes fréquents (souvent anglais dans les LLMs actuels).
+        </div>
+      </div>
+
+      <!-- EASY 2 -->
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 2 — Identifier les limites</span>
+        </div>
+        <div class="ex-body">
+          <p>Pour chacune des demandes suivantes, identifiez quelle(s) limite(s) structurelle(s) du LLM entre en jeu :</p>
+          <ol style="margin-left:20px;margin-top:8px;color:var(--text-2)">
+            <li style="margin-bottom:8px">"Quel est le résultat du match PSG-Barcelone d'hier soir ?"</li>
+            <li style="margin-bottom:8px">"Quel est le contenu de notre contrat client n°A2024-897 ?"</li>
+            <li style="margin-bottom:8px">"Donne-moi la bibliographie exacte de tous les articles publiés par le Dr Jean Dupont de l'Université de Bordeaux."</li>
+          </ol>
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Corrections :</strong><br><br>
+          <strong>1.</strong> Limite temporelle (Knowledge Cutoff) — Le match a eu lieu après la date d'entraînement.<br><br>
+          <strong>2.</strong> Limite des données privées (Domain Blindness) — Un contrat client est une donnée propriétaire non-publique.<br><br>
+          <strong>3.</strong> Risque d'hallucination — Le LLM pourrait inventer des titres d'articles plausibles mais inexistants pour un chercheur inconnu. C'est le cas classique de la "fabrication de citations".
+        </div>
+      </div>
+
+      <!-- MEDIUM -->
+      <div class="ex-card">
+        <div class="ex-header medium">
+          <span class="ex-badge">Moyen</span>
+          <span class="ex-title">Exercice 3 — Analyser le mécanisme d'attention</span>
+        </div>
+        <div class="ex-body">
+          <p>Soit la phrase : <strong>"Marie a donné son livre à Paul car elle savait qu'il l'aimait."</strong></p>
+          <p>Identifiez les relations de référence que le mécanisme d'attention doit résoudre. Pour chaque pronom ambigu ("son", "elle", "il", "l'"), indiquez quel token il référence et pourquoi c'est non-trivial.</p>
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Correction :</strong><br><br>
+          <strong>"son"</strong> → Marie (pas Paul, accord grammatical). Non-trivial car "son" peut référencer n'importe quelle entité possessive mentionnée avant.<br><br>
+          <strong>"elle"</strong> → Marie (accord féminin, Paul est masculin). L'attention utilise les informations de genre encodées dans les embeddings.<br><br>
+          <strong>"il"</strong> → Paul (accord masculin). Mais dans "elle savait qu'il l'aimait", l'attention doit traverser une proposition subordonnée — défi pour les RNNs, trivial pour les Transformers.<br><br>
+          <strong>"l'"</strong> → le livre (objet du don, logique narrative). C'est la résolution la plus complexe : elle nécessite une compréhension sémantique (aimer un livre est plus logique qu'aimer Marie dans ce contexte).
+        </div>
+      </div>
+
+      <!-- HARD -->
+      <div class="ex-card">
+        <div class="ex-header hard">
+          <span class="ex-badge">Difficile</span>
+          <span class="ex-title">Exercice 4 — Raisonner sur les Scaling Laws</span>
+        </div>
+        <div class="ex-body">
+          <p>D'après les Scaling Laws de Chinchilla, un modèle de 7 milliards de paramètres devrait être entraîné sur approximativement 140 milliards de tokens pour un entraînement optimal.</p>
+          <p><strong>Question a)</strong> LLaMA-2 7B a été entraîné sur 2 000 milliards de tokens. Que peut-on en déduire par rapport aux recommandations de Chinchilla ?</p>
+          <p><strong>Question b)</strong> Pourquoi Meta a-t-il fait ce choix, selon vous ?</p>
+          <p><strong>Question c)</strong> Quel est l'impact sur les performances d'inférence par rapport à un modèle 70B entraîné sur 140B tokens ?</p>
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Correction :</strong><br><br>
+          <strong>a)</strong> 2 000B tokens >> 140B tokens recommandés → LLaMA-2 7B est sur-entraîné en données selon Chinchilla. Il a vu ~14x plus de données qu'un entraînement "Chinchilla-optimal" le préconiserait.<br><br>
+          <strong>b)</strong> Meta optimise pour l'<em>inférence</em>, pas pour la perte d'entraînement. Un petit modèle sur-entraîné sur des données de haute qualité peut rivaliser avec un grand modèle peu entraîné. Pour des millions d'utilisateurs, avoir un modèle 7B performant est beaucoup plus économique à déployer qu'un modèle 70B, même si ce dernier atteint la même performance avec moins de tokens d'entraînement.<br><br>
+          <strong>c)</strong> LLaMA-2 7B sur-entraîné peut surpasser un 70B sous-entraîné sur de nombreuses tâches tout en étant 10x plus rapide à l'inférence et 10x moins cher. L'insight clé : <em>la taille du modèle et la qualité du modèle ne sont pas synonymes</em> — ce sont les données d'entraînement qui font la différence.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 14 : QUIZ ── -->
+    <div class="section" id="s14">
+      <div class="section-header">
+        <span class="section-num">14</span>
+        <h2 class="section-title">Quiz d'auto-évaluation</h2>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q1. Quel est l'objectif d'entraînement principal d'un LLM génératif (type GPT) ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 A) Classer des documents par catégorie</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, true)">✅ B) Prédire le token suivant dans une séquence</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 C) Répondre correctement aux questions de fait</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 D) Générer des images à partir de texte</div>
+        </div>
+        <div class="quiz-reveal">La tâche fondamentale est la prédiction du prochain token (Causal Language Modeling). C'est de cette tâche auto-supervisée sur des corpus massifs que toutes les capacités émergentes dérivent.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q2. Dans le mécanisme d'attention, que représente la "Value" (V) ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 A) La question posée par le token courant</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 B) L'étiquette permettant d'identifier chaque token</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, true)">✅ C) Le contenu réel qui sera agrégé selon les poids d'attention</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 D) Le score de similarité entre deux tokens</div>
+        </div>
+        <div class="quiz-reveal">V (Value) est le contenu que l'on va "lire" une fois que les scores d'attention ont déterminé l'importance de chaque token. Q cherche, K s'identifie, V fournit l'information.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q3. Pourquoi divise-t-on les scores d'attention par √d_k dans la formule de Vaswani et al. ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 A) Pour normaliser les embeddings à norme unitaire</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 B) Pour accélérer le calcul matriciel</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, true)">✅ C) Pour éviter la saturation du softmax avec des scores trop grands</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 D) Pour introduire une non-linéarité dans le mécanisme</div>
+        </div>
+        <div class="quiz-reveal">Sans normalisation par √d_k, le produit scalaire Q·Kᵀ croît avec la dimension, poussant le softmax dans des régions proches de 0 ou 1 à gradient quasi-nul. La normalisation stabilise l'entraînement.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q4. Lequel de ces facteurs est la principale cause des hallucinations dans les LLMs ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 A) Une température de génération trop élevée</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, true)">✅ B) Le modèle optimise la probabilité statistique, pas la vérité factuelle</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 C) Un nombre insuffisant de paramètres</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 D) L'utilisation du RLHF pendant l'alignement</div>
+        </div>
+        <div class="quiz-reveal">La cause fondamentale est structurelle : le LLM génère des tokens selon leur probabilité conditionnelle apprise, pas selon leur vérité factuelle. Un token statistiquement plausible peut être factuellement faux.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q5. Pourquoi le RAG est-il préféré au Fine-Tuning pour les données fréquemment mises à jour ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 A) Le RAG est plus performant sur toutes les tâches</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 B) Le Fine-Tuning ne fonctionne pas avec les Transformers modernes</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, true)">✅ C) Mettre à jour la base de documents est immédiat ; re-entraîner est coûteux et lent</div>
+          <div class="quiz-opt" onclick="answerQuiz(this, false)">🔴 D) Le Fine-Tuning augmente les hallucinations</div>
+        </div>
+        <div class="quiz-reveal">La flexibilité est l'avantage clé du RAG : ajouter un document à la base vectorielle prend secondes à minutes. Re-entraîner un LLM sur des nouvelles données prend des semaines et coûte des millions. Pour des données dynamiques, RAG est la seule approche viable.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 15 : RÉSUMÉ ── -->
+    <div class="section" id="s15">
+      <div class="section-header">
+        <span class="section-num">15</span>
+        <h2 class="section-title">Résumé du chapitre</h2>
+      </div>
+
+      <div class="summary-box">
+        <h3>🎯 Ce qu'il faut absolument retenir</h3>
+        <div class="summary-item">
+          <div class="summary-num">1</div>
+          <div>Un <strong>LLM</strong> est un réseau de neurones profond entraîné sur des téraoctets de texte pour prédire le prochain token. De cette tâche simple émergent des capacités complexes.</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num">2</div>
+          <div>L'<strong>architecture Transformer</strong> (2017) est la fondation de tous les LLMs modernes. Elle remplace les RNNs par un mécanisme d'attention pur, parallélisable et puissant.</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num">3</div>
+          <div>Les <strong>tokens</strong> sont les unités de base (≈4 chars en anglais). Les <strong>embeddings</strong> sont leurs représentations vectorielles dans un espace de haute dimension où la géométrie encode le sens.</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num">4</div>
+          <div>Le <strong>mécanisme d'attention</strong> permet à chaque token de "regarder" tous les autres avec des poids différents (Q·Kᵀ/√d_k → softmax → ×V), résolvant l'ambiguïté contextuelle.</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num">5</div>
+          <div>La <strong>génération</strong> est auto-régressive : un token à la fois, chacun conditionné sur tous les précédents. Température et Top-P contrôlent le compromis créativité/précision.</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num">6</div>
+          <div>Les <strong>3 limites structurelles</strong> : Knowledge Cutoff (données figées), Domain Blindness (données privées inconnues), Hallucinations (génération de faux factuels plausibles).</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num">7</div>
+          <div>Les <strong>hallucinations</strong> viennent de l'objectif d'entraînement : maximiser la probabilité statistique du prochain token ≠ maximiser la vérité factuelle.</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num">8</div>
+          <div>Le <strong>RAG</strong> résout ces 3 limites en injectant dynamiquement des documents pertinents dans le prompt, sans modifier le modèle, permettant des données actuelles, privées, et sourcées.</div>
+        </div>
+      </div>
+
+      <h3>Tags conceptuels clés</h3>
+      <div style="margin-top:12px">
+        <span class="tag">Transformer</span>
+        <span class="tag">Self-Attention</span>
+        <span class="tag">Token BPE</span>
+        <span class="tag">Embedding</span>
+        <span class="tag">Knowledge Cutoff</span>
+        <span class="tag">Hallucination</span>
+        <span class="tag">Auto-régression</span>
+        <span class="tag">Scaling Laws</span>
+        <span class="tag">Context Window</span>
+        <span class="tag">RLHF</span>
+        <span class="tag">Fine-Tuning vs RAG</span>
+        <span class="tag">Lost in the Middle</span>
+        <span class="tag">Multi-Head Attention</span>
+        <span class="tag">Softmax</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SECTION 16 : RESSOURCES ── -->
+    <div class="section" id="s16">
+      <div class="section-header">
+        <span class="section-num">16</span>
+        <h2 class="section-title">Ressources pour aller plus loin</h2>
+      </div>
+
+      <h3>📄 Articles scientifiques fondateurs</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://arxiv.org/abs/1706.03762" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div>
+            <div class="res-title">Attention Is All You Need</div>
+            <div class="res-sub">Vaswani et al., Google, 2017 — L'article qui a tout changé</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2001.08361" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div>
+            <div class="res-title">Scaling Laws for Neural LMs</div>
+            <div class="res-sub">Kaplan et al., OpenAI, 2020 — Les lois de puissance</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2203.15556" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div>
+            <div class="res-title">Training Compute-Optimal LLMs</div>
+            <div class="res-sub">Hoffmann et al., DeepMind, 2022 — Chinchilla Laws</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2307.03172" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div>
+            <div class="res-title">Lost in the Middle</div>
+            <div class="res-sub">Liu et al., 2023 — Biais du contexte LLM</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>🎥 Vidéos et cours recommandés</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://www.youtube.com/watch?v=wjZofJX0v4M" target="_blank">
+          <span class="res-type video">Vidéo</span>
+          <div>
+            <div class="res-title">But what is a GPT?</div>
+            <div class="res-sub">3Blue1Brown — Visualisation intuitive du Transformer</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://www.youtube.com/@AndrejKarpathy" target="_blank">
+          <span class="res-type video">Vidéo</span>
+          <div>
+            <div class="res-title">Let's build GPT from scratch</div>
+            <div class="res-sub">Andrej Karpathy — Implémentation complète de GPT-2</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://www.deeplearning.ai/short-courses/chatgpt-prompt-engineering-for-developers/" target="_blank">
+          <span class="res-type video">Cours</span>
+          <div>
+            <div class="res-title">DeepLearning.AI Short Courses</div>
+            <div class="res-sub">Andrew Ng — RAG, LLMs, Fine-Tuning</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>📚 Livres</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://www.oreilly.com/library/view/natural-language-processing/9781098136789/" target="_blank">
+          <span class="res-type book">Livre</span>
+          <div>
+            <div class="res-title">Natural Language Processing with Transformers</div>
+            <div class="res-sub">Lewis Tunstall et al. (O'Reilly) — Référence pratique</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://www.amazon.fr/Deep-Learning-Ian-Goodfellow/dp/0262035618" target="_blank">
+          <span class="res-type book">Livre</span>
+          <div>
+            <div class="res-title">Deep Learning</div>
+            <div class="res-sub">Goodfellow, Bengio, Courville — Le livre fondamental</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>💻 Ressources pratiques</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://huggingface.co/docs/transformers/index" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div>
+            <div class="res-title">Hugging Face Transformers</div>
+            <div class="res-sub">Documentation officielle — Bibliothèque de référence</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://github.com/karpathy/nanoGPT" target="_blank">
+          <span class="res-type code">GitHub</span>
+          <div>
+            <div class="res-title">nanoGPT</div>
+            <div class="res-sub">Karpathy — Implémentation minimaliste de GPT-2</div>
+          </div>
+        </a>
+        <a class="res-item" href="https://platform.openai.com/tokenizer" target="_blank">
+          <span class="res-type doc">Outil</span>
+          <div>
+            <div class="res-title">OpenAI Tokenizer</div>
+            <div class="res-sub">Visualiser la tokenisation de votre texte en live</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- ── CHAPTER FOOTER ── -->
+    <div class="chapter-footer">
+      <div class="footer-cards">
+        <div class="footer-card">
+          <div class="label">✅ Ce que nous avons appris</div>
+          <div class="value">Fondements des LLMs</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Architecture Transformer, tokens, embeddings, attention, pré-entraînement, inférence, et les 3 limites structurelles qui ont conduit à l'invention du RAG.</div>
+        </div>
+        <div class="footer-card">
+          <div class="label">👉 Chapitre suivant</div>
+          <div class="value">Qu'est-ce que le RAG ?</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Nous allons plonger dans l'architecture complète du RAG : pipeline d'indexation, chunking, embeddings, bases vectorielles, retrieval, et génération augmentée.</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:32px 0">
+        <div style="display:inline-flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 28px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-size:14px;color:var(--text-2)">Écrivez <strong style="color:var(--accent-2)">"Suivant"</strong> pour accéder au Chapitre 2 — Architecture RAG</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding-bottom:16px;font-size:12px;color:var(--text-3)">
+        RAG Masterclass · Chapitre 1 sur 12 · Cours universitaire interactif
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- BACK TO TOP -->
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+// ── MERMAID INIT ──
+mermaid.initialize({
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#1a1e2a',
+    primaryTextColor: '#e8eaf2',
+    primaryBorderColor: '#7c6af7',
+    lineColor: '#5c6480',
+    secondaryColor: '#13161e',
+    tertiaryColor: '#252a38',
+    edgeLabelBackground: '#161923',
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '13px',
+  },
+  flowchart: { curve: 'basis' }
+});
+
+// ── PROGRESS BAR ──
+window.addEventListener('scroll', () => {
+  const st = window.scrollY;
+  const dh = document.documentElement.scrollHeight - window.innerHeight;
+  const prog = dh > 0 ? (st / dh) * 100 : 0;
+  document.getElementById('progress-bar').style.width = prog + '%';
+
+  const bt = document.getElementById('back-top');
+  bt.classList.toggle('show', st > 400);
+
+  // Sidebar active item
+  const sections = document.querySelectorAll('.section');
+  let current = '';
+  sections.forEach(s => {
+    if (s.offsetTop - 100 <= st) current = s.id;
+  });
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('active');
+    if (item.getAttribute('onclick')?.includes(current)) {
+      item.classList.add('active');
+    }
+  });
+});
+
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const h = document.documentElement;
+  const isLight = h.getAttribute('data-theme') === 'light';
+  h.setAttribute('data-theme', isLight ? 'dark' : 'light');
+  mermaid.initialize({ theme: isLight ? 'dark' : 'default' });
+}
+
+// ── SCROLL TO SECTION ──
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── ACCORDION ──
+function toggleAcc(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// ── QUIZ ──
+function answerQuiz(opt, correct) {
+  const opts = opt.closest('.quiz-opts').querySelectorAll('.quiz-opt');
+  opts.forEach(o => {
+    o.style.pointerEvents = 'none';
+    if (o === opt) o.classList.add(correct ? 'correct' : 'wrong');
+  });
+  const reveal = opt.closest('.quiz-card').querySelector('.quiz-reveal');
+  if (reveal) reveal.classList.add('show');
+}
+
+// ── SOLUTION TOGGLE ──
+function toggleSolution(btn) {
+  const sol = btn.nextElementSibling;
+  sol.classList.toggle('show');
+  btn.textContent = sol.classList.contains('show') ? '🙈 Masquer la correction' : '📖 Voir la correction';
+}
+
+// ── COPY CODE BLOCKS ──
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const code = btn.closest('.code-block').querySelector('pre').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = '✓ Copié';
+      setTimeout(() => btn.textContent = 'Copier', 2000);
+    });
+  });
+});
+
+// ── SEARCH HIGHLIGHTING ──
+const searchInput = document.getElementById('search-input');
+let searchTimeout;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const query = searchInput.value.trim();
+    // Remove previous highlights
+    document.querySelectorAll('.search-highlight').forEach(el => {
+      el.outerHTML = el.textContent;
+    });
+    if (query.length < 2) return;
+    const main = document.querySelector('.main');
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, null);
+    const nodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement.closest('script,style') === null && regex.test(node.textContent)) {
+        nodes.push(node);
+      }
+    }
+    nodes.forEach(n => {
+      const span = document.createElement('span');
+      span.innerHTML = n.textContent.replace(regex, '<mark class="search-highlight">$1</mark>');
+      n.parentNode.replaceChild(span, n);
+    });
+    const first = document.querySelector('.search-highlight');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
+});
+</script>
+</body>
+</html>
