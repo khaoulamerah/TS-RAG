@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Bases de Données Vectorielles | Cours RAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f14;--bg-2:#13161e;--bg-3:#1a1e2a;--bg-card:#161923;
+  --border:#252a38;--border-2:#2e3547;
+  --text-1:#e8eaf2;--text-2:#9ba3bf;--text-3:#5c6480;
+  --accent:#7c6af7;--accent-2:#a799ff;--accent-glow:rgba(124,106,247,.18);
+  --teal:#2dd4bf;--teal-soft:rgba(45,212,191,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --rose:#f43f5e;--rose-soft:rgba(244,63,94,.12);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --blue:#3b82f6;--blue-soft:rgba(59,130,246,.12);
+  --cyan:#06b6d4;--cyan-soft:rgba(6,182,212,.12);
+  --sidebar-w:280px;--radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --font-display:'Fraunces',serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#f8f9fc;--bg-2:#f0f2f8;--bg-3:#e8ebf5;--bg-card:#ffffff;
+  --border:#dde1f0;--border-2:#c8ceea;--text-1:#111827;--text-2:#4b5563;--text-3:#9ca3af;
+  --accent-glow:rgba(124,106,247,.10);--shadow:0 4px 24px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text-1);line-height:1.7;font-size:16px;overflow-x:hidden}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--blue));width:0%;z-index:1000;box-shadow:0 0 10px var(--cyan)}
+.topnav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(13,15,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:900}
+[data-theme="light"] .topnav{background:rgba(248,249,252,.85)}
+.topnav-brand{font-family:var(--font-display);font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex:1}
+.topnav-search{display:flex;align-items:center;gap:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;flex:0 0 220px}
+.topnav-search input{background:none;border:none;outline:none;color:var(--text-1);font-size:13px;width:100%;font-family:var(--font-body)}
+.topnav-search input::placeholder{color:var(--text-3)}
+.btn-theme{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all .2s}
+.btn-theme:hover{border-color:var(--cyan);color:var(--cyan)}
+.layout{display:flex;padding-top:56px;min-height:100vh}
+.sidebar{position:fixed;top:56px;left:0;bottom:0;width:var(--sidebar-w);background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;padding:24px 0;z-index:800}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);padding:12px 24px 6px}
+.sidebar-item{display:block;padding:7px 24px;color:var(--text-2);font-size:13.5px;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg-3);color:var(--text-1)}
+.sidebar-item.active{background:var(--cyan-soft);color:var(--cyan);font-weight:500}
+.sidebar-sub{font-size:12.5px;padding-left:36px;color:var(--text-3)}
+.sidebar-chapter{font-size:12px;color:var(--text-3);padding:4px 24px;display:flex;align-items:center;gap:8px}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 64px 120px;max-width:calc(var(--sidebar-w) + 860px)}
+@media(max-width:900px){.sidebar{transform:translateX(-100%)}.main{margin-left:0;padding:32px 24px 100px}}
+.hero{margin-bottom:64px;padding:56px 0 0}
+.hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.hero-eyebrow::before{content:'';width:24px;height:2px;background:linear-gradient(90deg,var(--cyan),var(--blue));display:block}
+.hero-title{font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:24px}
+.hero-title .hl{background:linear-gradient(135deg,var(--cyan) 0%,var(--blue) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:18px;color:var(--text-2);line-height:1.75;max-width:640px;margin-bottom:36px}
+.hero-meta{display:flex;gap:24px;flex-wrap:wrap}
+.hero-badge{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--text-2)}
+.objectives{background:linear-gradient(135deg,var(--cyan-soft),var(--blue-soft));border:1px solid var(--cyan);border-radius:var(--radius);padding:32px;margin:48px 0}
+.objectives h3{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.obj-item{display:flex;align-items:flex-start;gap:10px;background:var(--cyan-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;color:var(--text-1)}
+.obj-dot{width:6px;height:6px;background:var(--cyan);border-radius:50%;margin-top:7px;flex-shrink:0}
+.section{margin:80px 0}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.section-num{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--cyan);background:var(--cyan-soft);border:1px solid rgba(6,182,212,.3);border-radius:6px;padding:4px 10px}
+.section-title{font-family:var(--font-display);font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:600;margin:32px 0 14px;color:var(--text-1)}
+h4{font-size:15px;font-weight:600;color:var(--cyan);margin:24px 0 10px}
+p{color:var(--text-2);margin-bottom:16px;line-height:1.8}
+strong{color:var(--text-1);font-weight:600}
+.callout{border-radius:var(--radius);padding:20px 24px;margin:24px 0;display:flex;gap:16px;align-items:flex-start}
+.callout-icon{flex-shrink:0;margin-top:2px}
+.callout-body{flex:1}
+.callout-title{font-weight:600;font-size:14px;margin-bottom:6px}
+.callout-text{font-size:14px;color:var(--text-2);line-height:1.7;margin:0}
+.callout.info{background:var(--blue-soft);border:1px solid rgba(59,130,246,.3)}.callout.info .callout-title{color:#60a5fa}
+.callout.warn{background:var(--amber-soft);border:1px solid rgba(245,158,11,.3)}.callout.warn .callout-title{color:var(--amber)}
+.callout.tip{background:var(--green-soft);border:1px solid rgba(34,197,94,.3)}.callout.tip .callout-title{color:var(--green)}
+.callout.danger{background:var(--rose-soft);border:1px solid rgba(244,63,94,.3)}.callout.danger .callout-title{color:var(--rose)}
+.callout.concept{background:var(--accent-glow);border:1px solid rgba(124,106,247,.3)}.callout.concept .callout-title{color:var(--accent-2)}
+.callout.cyan{background:var(--cyan-soft);border:1px solid rgba(6,182,212,.3)}.callout.cyan .callout-title{color:var(--cyan)}
+.code-block{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:20px 0;box-shadow:var(--shadow)}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-3);border-bottom:1px solid var(--border)}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:var(--text-3);font-weight:500}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-3);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.copy-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+pre{padding:20px 24px;overflow-x:auto;font-size:13px;font-family:var(--font-mono);line-height:1.8;color:#c9d1d9}
+.kw{color:#ff7b72}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.fn{color:#d2a8ff}.num{color:#79c0ff}.var{color:#ffa657}
+.ascii-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#a8b5d0;overflow-x:auto;margin:24px 0;white-space:pre}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin:28px 0}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--blue));opacity:0;transition:opacity .25s}
+.card:hover{border-color:var(--border-2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:28px;margin-bottom:14px}
+.card-title{font-weight:600;font-size:15px;margin-bottom:8px;color:var(--text-1)}
+.card-desc{font-size:13.5px;color:var(--text-2);line-height:1.7}
+.table-wrap{overflow-x:auto;margin:24px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg-3);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 16px;font-size:14px;color:var(--text-2);border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg-2)}
+.td-good{color:var(--green);font-weight:600}.td-bad{color:var(--rose)}.td-mid{color:var(--amber)}
+.accordion{margin:16px 0}
+.acc-header{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;font-size:15px;transition:all .2s;user-select:none}
+.acc-header:hover{border-color:var(--border-2)}
+.acc-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;background:var(--bg-3)}
+.acc-arrow{transition:transform .25s;color:var(--text-3)}
+.acc-header.open .acc-arrow{transform:rotate(180deg)}
+.acc-body{display:none;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-bottom-left-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.acc-body.open{display:block}
+.quiz-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:20px 0}
+.quiz-q{font-weight:600;font-size:16px;margin-bottom:16px}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text-2);transition:all .2s}
+.quiz-opt:hover{border-color:var(--cyan);color:var(--text-1)}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.quiz-reveal{display:none;margin-top:16px;padding:16px;background:var(--bg-3);border-radius:var(--radius-sm);font-size:14px;color:var(--text-2)}
+.quiz-reveal.show{display:block}
+.ex-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0}
+.ex-header{padding:14px 20px;display:flex;gap:12px;align-items:center}
+.ex-header.easy{background:rgba(34,197,94,.08);border-bottom:1px solid rgba(34,197,94,.2)}
+.ex-header.medium{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2)}
+.ex-header.hard{background:rgba(244,63,94,.08);border-bottom:1px solid rgba(244,63,94,.2)}
+.ex-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+.easy .ex-badge{background:var(--green-soft);color:var(--green)}
+.medium .ex-badge{background:var(--amber-soft);color:var(--amber)}
+.hard .ex-badge{background:var(--rose-soft);color:var(--rose)}
+.ex-title{font-weight:600;font-size:14px}
+.ex-body{padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.ex-solution{background:var(--bg-2);border-top:1px solid var(--border);padding:16px 24px;display:none}
+.ex-solution.show{display:block}
+.btn-solution{background:none;border:1px solid var(--border);color:var(--text-3);padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;margin:8px 24px 16px;transition:all .2s;font-family:var(--font-body)}
+.btn-solution:hover{border-color:var(--cyan);color:var(--cyan)}
+#back-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:linear-gradient(135deg,var(--cyan),var(--blue));border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(6,182,212,.4);opacity:0;transform:translateY(16px);transition:all .3s;z-index:800}
+#back-top.show{opacity:1;transform:translateY(0)}
+#back-top:hover{transform:translateY(-2px)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:64px 0}
+.svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;overflow-x:auto}
+.mermaid-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;text-align:center;overflow-x:auto}
+.formula-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;margin:24px 0;font-family:var(--font-mono);font-size:14px;color:#c9d1d9;line-height:2.2}
+.formula-label{font-size:12px;color:var(--text-3);margin-bottom:8px;font-family:var(--font-body)}
+.tag{display:inline-block;background:var(--cyan-soft);border:1px solid rgba(6,182,212,.3);color:var(--cyan);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;margin:2px}
+.summary-box{background:linear-gradient(135deg,var(--cyan-soft),var(--blue-soft));border:1px solid var(--cyan);border-radius:var(--radius);padding:32px;margin:48px 0}
+.summary-box h3{color:var(--cyan);margin-top:0;margin-bottom:20px}
+.summary-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;color:var(--text-2)}
+.summary-num{width:24px;height:24px;background:var(--cyan-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--cyan);flex-shrink:0}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:24px 0}
+.res-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;text-decoration:none;transition:all .2s}
+.res-item:hover{border-color:var(--border-2);transform:translateY(-1px)}
+.res-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 8px;flex-shrink:0}
+.res-type.paper{background:var(--blue-soft);color:#60a5fa}
+.res-type.video{background:var(--rose-soft);color:#fb7185}
+.res-type.book{background:var(--amber-soft);color:var(--amber)}
+.res-type.code{background:var(--green-soft);color:var(--green)}
+.res-type.doc{background:var(--cyan-soft);color:var(--cyan)}
+.res-title{font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:3px}
+.res-sub{font-size:12px;color:var(--text-3)}
+.chapter-footer{border-top:1px solid var(--border);margin-top:80px;padding-top:48px}
+.footer-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px}
+.footer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.footer-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px}
+.footer-card .value{font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.search-highlight{background:rgba(245,158,11,.3);border-radius:2px}
+@media(max-width:600px){.footer-cards{grid-template-columns:1fr}}
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:28px 0}
+@media(max-width:600px){.cmp-grid{grid-template-columns:1fr}}
+.cmp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.cmp-header{padding:14px 20px;font-weight:700;font-size:15px;border-bottom:1px solid var(--border)}
+.cmp-header.a{background:var(--cyan-soft);color:var(--cyan)}
+.cmp-header.b{background:var(--accent-glow);color:var(--accent-2)}
+.cmp-body{padding:16px 20px;font-size:13.5px;color:var(--text-2);line-height:1.8}
+.cmp-item{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.cmp-check{color:var(--green);flex-shrink:0;font-size:13px}
+.cmp-cross{color:var(--rose);flex-shrink:0;font-size:13px}
+
+/* HNSW graph visual */
+.hnsw-canvas-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:24px 0}
+
+/* DB feature cards */
+.db-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:16px;display:flex;gap:18px;align-items:flex-start;transition:all .2s}
+.db-card:hover{border-color:var(--border-2);transform:translateY(-1px)}
+.db-logo{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.db-info{flex:1}
+.db-name{font-weight:700;font-size:16px;color:var(--text-1);margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.db-badge{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:3px 9px}
+.db-badge.os{background:var(--green-soft);color:var(--green)}
+.db-badge.saas{background:var(--blue-soft);color:#60a5fa}
+.db-meta{font-family:var(--font-mono);font-size:11px;color:var(--text-3);margin-bottom:8px}
+.db-desc{font-size:13.5px;color:var(--text-2);line-height:1.7}
+.db-stars{font-size:12px;color:var(--amber);margin-top:6px}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<nav class="topnav">
+  <div class="topnav-brand">🧠 RAG Masterclass</div>
+  <div class="topnav-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Rechercher dans ce chapitre…">
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">☀️ / 🌙</button>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-chapter">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <a href="chapitre-03-embeddings.html" style="color:var(--text-3);text-decoration:none;font-size:12px">Ch.3 — Embeddings</a>
+    </div>
+    <div class="sidebar-label">🗄️ Chapitre 4</div>
+    <button class="sidebar-item active" onclick="scrollTo(0,0)">Bases Vectorielles</button>
+    <div class="sidebar-label">Contenu</div>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s1')">1. Objectifs</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s2')">2. Pourquoi une base spéciale ?</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s3')">3. Le problème du Nearest Neighbor</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s4')">4. Algorithme HNSW</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s5')">5. Algorithme IVF</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s6')">6. Quantification (PQ)</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s7')">7. Comparatif des outils</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s8')">8. FAISS en détail</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s9')">9. Filtrage par métadonnées</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s10')">10. Scalabilité &amp; sharding</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s11')">11. Cas industriels</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s12')">12. Erreurs fréquentes</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s13')">13. Exercices</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s14')">14. Quiz</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s15')">15. Résumé</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s16')">16. Ressources</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-eyebrow">Chapitre 4 sur 12</div>
+      <h1 class="hero-title">
+        Les <span class="hl">Bases de Données</span><br>Vectorielles
+      </h1>
+      <p class="hero-desc">
+        Comment chercher le vecteur le plus proche parmi des milliards en quelques millisecondes ? Ce chapitre dissèque les algorithmes HNSW et IVF, la quantification vectorielle, et compare les principaux outils du marché.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ~60 min de lecture
+        </div>
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Master / AI Engineer
+        </div>
+        <div class="hero-badge">⚙️ Systèmes &amp; Algorithmes</div>
+      </div>
+    </div>
+
+    <!-- OBJECTIFS -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Objectifs d'apprentissage</h2>
+      </div>
+      <div class="objectives">
+        <h3>À la fin de ce chapitre, vous serez capables de…</h3>
+        <div class="obj-grid">
+          <div class="obj-item"><div class="obj-dot"></div>Expliquer pourquoi les bases relationnelles ne suffisent pas</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre le problème du Nearest Neighbor Search à l'échelle</div>
+          <div class="obj-item"><div class="obj-dot"></div>Décrire en détail l'algorithme HNSW</div>
+          <div class="obj-item"><div class="obj-dot"></div>Décrire l'algorithme IVF et la quantification produit (PQ)</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comparer FAISS, ChromaDB, Qdrant, Weaviate, Pinecone, pgvector, Milvus</div>
+          <div class="obj-item"><div class="obj-dot"></div>Implémenter le filtrage par métadonnées</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre les stratégies de scalabilité (sharding, replication)</div>
+          <div class="obj-item"><div class="obj-dot"></div>Choisir la bonne base vectorielle pour son projet</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 2 -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Pourquoi une base de données spécialisée ?</h2>
+      </div>
+
+      <p>Une fois que nous avons transformé nos chunks en vecteurs (chapitre 3), il faut les stocker quelque part et pouvoir les rechercher efficacement. La question naturelle : pourquoi ne pas simplement utiliser PostgreSQL ou MongoDB ?</p>
+
+      <h3>Le problème de la recherche par similarité à l'échelle</h3>
+      <div class="ascii-box">POURQUOI SQL NE SUFFIT PAS — DÉMONSTRATION
+══════════════════════════════════════════
+
+Imaginez 10 millions de vecteurs de 1024 dimensions chacun.
+
+APPROCHE NAÏVE (brute force) :
+  Pour chaque requête, comparer le vecteur de la question
+  à TOUS les 10 millions de vecteurs stockés.
+
+  Coût par comparaison : 1024 multiplications + additions
+  Coût total : 10 000 000 × 1024 ≈ 10.24 milliards d'opérations
+  
+  Sur un CPU standard (~10 GFLOPS effectifs) :
+  Temps estimé : ~1 seconde PAR REQUÊTE
+
+  → Inacceptable pour une application interactive
+    (on veut < 100ms idéalement)
+
+AVEC UNE BASE VECTORIELLE (index ANN) :
+  Temps estimé : ~5-20ms PAR REQUÊTE
+  
+  → 50 à 200x plus rapide !
+  → Grâce aux structures d'index spécialisées (HNSW, IVF)</div>
+
+      <h3>Bases SQL/NoSQL vs Bases Vectorielles</h3>
+      <div class="cmp-grid">
+        <div class="cmp-card">
+          <div class="cmp-header a">🗄️ Base Vectorielle</div>
+          <div class="cmp-body">
+            <div class="cmp-item"><span class="cmp-check">✓</span>Index optimisé pour la similarité (HNSW, IVF)</div>
+            <div class="cmp-item"><span class="cmp-check">✓</span>Recherche approximative ultra-rapide (ANN)</div>
+            <div class="cmp-item"><span class="cmp-check">✓</span>Scalable à des milliards de vecteurs</div>
+            <div class="cmp-item"><span class="cmp-check">✓</span>Combine filtre métadonnées + similarité</div>
+            <div class="cmp-item"><span class="cmp-cross">✗</span>Résultats approximatifs (recall &lt; 100%)</div>
+          </div>
+        </div>
+        <div class="cmp-card">
+          <div class="cmp-header b">📊 Base SQL classique</div>
+          <div class="cmp-body">
+            <div class="cmp-item"><span class="cmp-check">✓</span>Requêtes exactes, transactions ACID</div>
+            <div class="cmp-item"><span class="cmp-check">✓</span>Relations complexes (JOIN)</div>
+            <div class="cmp-item"><span class="cmp-cross">✗</span>Pas d'index natif pour similarité vectorielle</div>
+            <div class="cmp-item"><span class="cmp-cross">✗</span>Brute force = trop lent à l'échelle</div>
+            <div class="cmp-item"><span class="cmp-cross">✗</span>Index B-Tree inadapté aux hautes dimensions</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout cyan">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Le "fléau de la dimension" (Curse of Dimensionality)</div>
+          <p class="callout-text">En haute dimension (768+), les structures d'index classiques (B-Tree, R-Tree) deviennent inefficaces : presque tous les points sont "à peu près à la même distance" les uns des autres, rendant le partitionnement de l'espace difficile. Les bases vectorielles utilisent des algorithmes spécifiquement conçus pour contourner ce problème.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 3 -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">Le problème du Nearest Neighbor Search</h2>
+      </div>
+
+      <h3>kNN exact vs ANN approximatif</h3>
+      <p>Le problème fondamental : étant donné un vecteur requête q, trouver les K vecteurs les plus proches dans une collection de N vecteurs.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Approche</th><th>Complexité</th><th>Précision</th><th>Usage</th></tr></thead>
+          <tbody>
+            <tr><td><strong>kNN exact (brute force)</strong></td><td class="td-bad">O(N × d)</td><td class="td-good">100% (exact)</td><td>Petites collections (&lt;100K)</td></tr>
+            <tr><td><strong>ANN (Approximate NN)</strong></td><td class="td-good">O(log N) à O(√N)</td><td class="td-mid">95-99.9% (recall)</td><td>Production, grandes collections</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Le compromis fondamental des bases vectorielles : <strong>échanger un peu de précision contre énormément de vitesse</strong>. En pratique, le recall@10 de 98% est largement suffisant — la différence entre le 1er et le 11e résultat le plus proche est rarement significative pour l'utilisateur final.</p>
+
+      <h3>Les deux familles d'algorithmes ANN</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <div class="card-title">Graph-Based (HNSW)</div>
+          <div class="card-desc">Construit un graphe de proximité hiérarchique. Navigation rapide via "petits sauts". Excellent recall, usage mémoire élevé.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🗂️</div>
+          <div class="card-title">Partition-Based (IVF)</div>
+          <div class="card-desc">Partitionne l'espace en clusters (Voronoï). Cherche dans les clusters les plus proches uniquement. Bon compromis mémoire/vitesse.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎲</div>
+          <div class="card-title">Hashing (LSH)</div>
+          <div class="card-desc">Locality-Sensitive Hashing — fonctions de hash qui collisionnent pour les vecteurs proches. Moins utilisé aujourd'hui (HNSW le surpasse).</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌲</div>
+          <div class="card-title">Tree-Based (Annoy)</div>
+          <div class="card-desc">Arbres binaires aléatoires (random projections). Utilisé par Spotify. Plus simple mais moins performant que HNSW à grande échelle.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 4 : HNSW -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">L'algorithme HNSW en détail</h2>
+      </div>
+
+      <p><strong>HNSW (Hierarchical Navigable Small World)</strong>, proposé par Malkov & Yashunin (2016), est l'algorithme le plus utilisé en production aujourd'hui (ChromaDB, Qdrant, Weaviate, Milvus). Il s'inspire de la théorie des "petits mondes" (six degrés de séparation).</p>
+
+      <h3>Analogie : le réseau routier hiérarchique</h3>
+      <p>Imaginez voyager de Paris à un petit village du Sud de la France. Vous ne prenez pas immédiatement les petites routes locales — vous empruntez d'abord l'autoroute (grands sauts), puis les routes départementales, puis les chemins communaux (petits sauts précis). HNSW fonctionne exactement ainsi avec un graphe multi-couches.</p>
+
+      <h3>Visualisation interactive du graphe HNSW</h3>
+      <div class="hnsw-canvas-wrap">
+        <canvas id="hnswCanvas" width="760" height="420" style="width:100%;border-radius:8px;background:#0a0c12;cursor:pointer"></canvas>
+        <p style="font-size:12px;color:var(--text-3);margin-top:12px;text-align:center">Cliquez sur "Simuler une recherche" pour visualiser le parcours du graphe HNSW</p>
+        <div style="text-align:center;margin-top:12px">
+          <button id="hnswSimBtn" style="background:var(--cyan-soft);border:1px solid var(--cyan);color:var(--cyan);padding:8px 20px;border-radius:8px;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:600">▶ Simuler une recherche</button>
+          <button id="hnswResetBtn" style="background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:8px 20px;border-radius:8px;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;margin-left:8px">↺ Réinitialiser</button>
+        </div>
+      </div>
+
+      <h3>Construction du graphe HNSW — étape par étape</h3>
+      <div class="ascii-box">CONSTRUCTION DE L'INDEX HNSW
+══════════════════════════════
+
+STRUCTURE MULTI-COUCHES :
+
+  Couche 2 (sommet — peu de nœuds, longues connexions)
+  ●───────────────●───────────────●
+                                   
+  Couche 1 (intermédiaire)
+  ●─────●─────●─────●─────●─────●
+                                   
+  Couche 0 (base — TOUS les nœuds, connexions courtes)
+  ●─●─●─●─●─●─●─●─●─●─●─●─●─●─●─●─●─●─●─●
+
+ALGORITHME D'INSERTION D'UN NOUVEAU VECTEUR v :
+  1. Tirer aléatoirement le niveau maximum L de v
+     (probabilité décroissante exponentiellement : P(L) ∝ 1/2^L)
+     → La plupart des nœuds sont seulement en couche 0
+     → Quelques nœuds "hubs" montent jusqu'en couche 2-3
+
+  2. Depuis le point d'entrée (couche la plus haute),
+     descendre couche par couche :
+     - À chaque couche, trouver les voisins les plus proches de v
+     - Connecter v à ces voisins (max M connexions, ex: M=16)
+     - Descendre d'une couche, répéter
+
+  3. Le graphe résultant permet une recherche en O(log N)
+
+ALGORITHME DE RECHERCHE (Greedy Search) :
+  1. Partir du point d'entrée en couche supérieure
+  2. Se déplacer vers le voisin le plus proche de la requête
+  3. Si aucun voisin n'est plus proche → descendre une couche
+  4. Répéter jusqu'à la couche 0
+  5. Effectuer une recherche locale plus fine en couche 0
+  6. Retourner les K plus proches trouvés</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Paramètre HNSW</th><th>Rôle</th><th>Valeur typique</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td><strong>M</strong></td><td>Nb max de connexions par nœud</td><td>16-64</td><td>↑M = meilleur recall, plus de mémoire</td></tr>
+            <tr><td><strong>ef_construction</strong></td><td>Taille de la liste de candidats à la construction</td><td>100-500</td><td>↑ = meilleur graphe, construction plus lente</td></tr>
+            <tr><td><strong>ef_search</strong></td><td>Taille de la liste de candidats à la recherche</td><td>50-200</td><td>↑ = meilleur recall, recherche plus lente</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Performances HNSW en pratique</div>
+          <p class="callout-text">Avec M=16, ef_search=100 : recherche en ~1-5ms parmi 10M vecteurs, recall@10 &gt; 98%. C'est cette performance qui rend le RAG viable en production à grande échelle.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 5 : IVF -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2 class="section-title">L'algorithme IVF (Inverted File Index)</h2>
+      </div>
+
+      <p>IVF est l'algorithme de référence de FAISS pour les très grandes collections. Il repose sur le <strong>clustering de l'espace vectoriel</strong> via k-means.</p>
+
+      <h3>Principe : diviser pour régner</h3>
+      <div class="ascii-box">ALGORITHME IVF — PRINCIPE
+══════════════════════════
+
+ÉTAPE 1 — Construction de l'index (offline) :
+  1. Appliquer k-means sur tous les vecteurs → K centroïdes
+     (ex: K = √N pour N vecteurs, souvent K=1024 à 65536)
+  2. Chaque vecteur est assigné au centroïde le plus proche
+  3. On obtient K "listes inversées" (clusters)
+
+  Centroïde 1 (zone "animaux")     : [v23, v67, v102, v341, ...]
+  Centroïde 2 (zone "technologie") : [v12, v88, v210, ...]
+  Centroïde 3 (zone "finance")     : [v5, v44, v199, v256, ...]
+  ...
+
+ÉTAPE 2 — Recherche (online) :
+  1. Calculer la distance entre le vecteur requête q et
+     TOUS les K centroïdes (rapide car K << N)
+  2. Sélectionner les "nprobe" centroïdes les plus proches
+     (ex: nprobe=8 sur K=1024 clusters)
+  3. Chercher EXHAUSTIVEMENT dans ces nprobe clusters
+     seulement (pas dans toute la base !)
+  4. Retourner les K plus proches parmi ces candidats
+
+EXEMPLE NUMÉRIQUE :
+  N = 10 000 000 vecteurs, K = 10 000 clusters
+  Taille moyenne d'un cluster ≈ 1000 vecteurs
+  nprobe = 10 → on cherche dans 10 000 vecteurs au lieu de 10M
+  → Réduction de calcul : 1000x !</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Paramètre IVF</th><th>Rôle</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td><strong>nlist (K)</strong></td><td>Nombre de clusters/centroïdes</td><td>↑ = clusters plus petits, recherche + précise mais + lente à construire</td></tr>
+            <tr><td><strong>nprobe</strong></td><td>Nombre de clusters explorés à la recherche</td><td>↑ = meilleur recall, recherche plus lente</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Le problème de bordure ("edge problem")</div>
+          <p class="callout-text">Si le vecteur requête se trouve à la frontière entre deux clusters, le vrai plus proche voisin peut se trouver dans un cluster voisin non exploré. Augmenter nprobe atténue ce problème mais augmente le temps de calcul — c'est le compromis central de IVF.</p>
+        </div>
+      </div>
+
+      <h3>HNSW vs IVF : quand choisir quoi ?</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Critère</th><th>HNSW</th><th>IVF (+ PQ)</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Vitesse de recherche</strong></td><td class="td-good">Très rapide</td><td class="td-mid">Rapide</td></tr>
+            <tr><td><strong>Recall</strong></td><td class="td-good">Excellent (&gt;98%)</td><td class="td-mid">Bon (90-97%)</td></tr>
+            <tr><td><strong>Usage mémoire</strong></td><td class="td-bad">Élevé (graphe + vecteurs)</td><td class="td-good">Faible (avec PQ)</td></tr>
+            <tr><td><strong>Mises à jour incrémentales</strong></td><td class="td-good">Faciles</td><td class="td-mid">Nécessite parfois re-clustering</td></tr>
+            <tr><td><strong>Très grande échelle (&gt;100M)</strong></td><td class="td-mid">Mémoire limitante</td><td class="td-good">Meilleur avec compression PQ</td></tr>
+            <tr><td><strong>Utilisé par</strong></td><td>ChromaDB, Qdrant, Weaviate</td><td>FAISS (par défaut), Milvus</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 6 : QUANTIFICATION -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2 class="section-title">La Quantification Vectorielle (Product Quantization)</h2>
+      </div>
+
+      <p>À très grande échelle (centaines de millions de vecteurs), même un index efficace consomme énormément de mémoire. La <strong>Quantification Produit (PQ)</strong> compresse les vecteurs pour réduire drastiquement l'empreinte mémoire.</p>
+
+      <h3>Le problème de mémoire à grande échelle</h3>
+      <div class="ascii-box">CALCUL DE L'EMPREINTE MÉMOIRE
+══════════════════════════════
+
+100 millions de vecteurs × 1024 dimensions × 4 bytes (float32)
+= 100 000 000 × 1024 × 4 bytes
+= 409 600 000 000 bytes
+≈ 410 GB de RAM nécessaire !
+
+→ Impossible de tenir en mémoire sur un serveur standard.
+
+AVEC PRODUCT QUANTIZATION (PQ) :
+  Compression typique : 4-32x
+  410 GB → ~13-100 GB
+
+→ Tient sur un serveur standard avec de la RAM raisonnable.</div>
+
+      <h3>Comment fonctionne la Product Quantization</h3>
+      <div class="ascii-box">PRODUCT QUANTIZATION — PRINCIPE
+══════════════════════════════════
+
+ÉTAPE 1 — Découper le vecteur en sous-vecteurs :
+  Vecteur original (1024 dims) :
+  [v1, v2, ..., v128 | v129, ..., v256 | ... | v897, ..., v1024]
+   └── sous-vecteur 1 ──┘└── sous-vecteur 2 ──┘    └ sous-vecteur 8 ┘
+  
+  8 sous-vecteurs de 128 dimensions chacun
+
+ÉTAPE 2 — Quantifier chaque sous-espace séparément :
+  Pour le sous-espace 1 :
+    Appliquer k-means avec 256 centroïdes (= 1 byte d'index)
+    Remplacer le sous-vecteur par l'INDEX du centroïde le plus proche
+  
+  Sous-vecteur 1 [0.23,-0.71,...] → centroïde #142 → byte: 142
+  Sous-vecteur 2 [0.55, 0.12,...] → centroïde #89  → byte: 89
+  ...
+  Sous-vecteur 8 [-0.3, 0.66,...] → centroïde #201 → byte: 201
+
+ÉTAPE 3 — Stockage compressé :
+  Vecteur original : 1024 × 4 bytes = 4096 bytes
+  Vecteur quantifié : 8 bytes (1 byte par sous-espace !)
+  
+  Taux de compression : 4096 / 8 = 512x  (!!)
+  (En pratique 16-64x est plus courant avec des paramètres réalistes)
+
+CALCUL DE DISTANCE APPROXIMÉ :
+  On précalcule une table de distances entre tous les centroïdes
+  de chaque sous-espace. La distance entre 2 vecteurs quantifiés
+  se calcule par "lookup" dans ces tables — extrêmement rapide.</div>
+
+      <div class="callout concept">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a799ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Le trade-off de la compression</div>
+          <p class="callout-text">PQ introduit une perte d'information : la distance calculée sur les vecteurs quantifiés est approximative. En pratique, la perte de recall est faible (1-3%) pour un gain de mémoire énorme (16-64x). C'est souvent un excellent compromis pour les très grandes collections. FAISS combine fréquemment IVF + PQ : <code>IndexIVFPQ</code>.</p>
+        </div>
+      </div>
+
+      <h3>Scalar Quantization (SQ) — alternative plus simple</h3>
+      <p>Une approche plus simple : réduire la précision numérique de float32 (4 bytes) à int8 (1 byte) ou même binaire (1 bit) par dimension. Moins de compression que PQ mais plus rapide à calculer et plus simple à implémenter.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Compression</th><th>Perte de précision</th><th>Complexité</th></tr></thead>
+          <tbody>
+            <tr><td>Aucune (float32)</td><td>1x</td><td class="td-good">Aucune</td><td>—</td></tr>
+            <tr><td>Scalar Quantization (int8)</td><td>4x</td><td class="td-mid">Faible</td><td class="td-good">Simple</td></tr>
+            <tr><td>Binary Quantization</td><td>32x</td><td class="td-bad">Notable</td><td class="td-good">Simple</td></tr>
+            <tr><td>Product Quantization</td><td>16-64x</td><td class="td-mid">Faible-modérée</td><td class="td-bad">Complexe</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 7 : COMPARATIF -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <h2 class="section-title">Comparatif détaillé des outils du marché</h2>
+      </div>
+
+      <div class="db-card">
+        <div class="db-logo" style="background:rgba(59,130,246,.15);color:#60a5fa">📘</div>
+        <div class="db-info">
+          <div class="db-name">FAISS <span class="db-badge os">Open Source</span></div>
+          <div class="db-meta">Meta AI · Bibliothèque (pas un serveur) · C++/Python · GPU support</div>
+          <div class="db-desc">La référence académique et industrielle. Extrêmement rapide, supporte GPU nativement. N'est PAS une base de données complète : pas de serveur, pas de persistance native, pas de filtrage par métadonnées intégré. Idéal pour le research, le batch processing, ou comme moteur sous-jacent d'une solution custom.</div>
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-logo" style="background:rgba(34,197,94,.15);color:#22c55e">🎨</div>
+        <div class="db-info">
+          <div class="db-name">ChromaDB <span class="db-badge os">Open Source</span></div>
+          <div class="db-meta">Chroma Inc. · Base embarquée ou serveur · Python-native</div>
+          <div class="db-desc">Conçue pour la simplicité et l'expérience développeur. Excellent pour le prototypage et les projets de taille moyenne. S'intègre nativement avec LangChain et LlamaIndex. Moins performante que Qdrant/Milvus à très grande échelle.</div>
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-logo" style="background:rgba(244,63,94,.15);color:#f43f5e">🦀</div>
+        <div class="db-info">
+          <div class="db-name">Qdrant <span class="db-badge os">Open Source</span></div>
+          <div class="db-meta">Qdrant Inc. · Serveur (Rust) · Cloud managé disponible</div>
+          <div class="db-desc">Écrit en Rust pour la performance. Excellent filtrage par métadonnées (payload). Hybrid Search natif. API REST et gRPC. Recommandé pour la production à moyenne/grande échelle avec des besoins de filtrage complexes.</div>
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-logo" style="background:rgba(167,153,255,.15);color:#a799ff">🕸️</div>
+        <div class="db-info">
+          <div class="db-name">Weaviate <span class="db-badge os">Open Source</span></div>
+          <div class="db-meta">Weaviate B.V. · Serveur (Go) · GraphQL API · Cloud managé</div>
+          <div class="db-desc">API GraphQL, modules intégrés (génération de texte, classification). Bon support multi-tenancy pour les applications SaaS. Écosystème riche de modules tiers.</div>
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-logo" style="background:rgba(6,182,212,.15);color:#06b6d4">☁️</div>
+        <div class="db-info">
+          <div class="db-name">Pinecone <span class="db-badge saas">SaaS managé</span></div>
+          <div class="db-meta">Pinecone Systems · Cloud uniquement · Pas open source</div>
+          <div class="db-desc">Zero-ops : pas d'infrastructure à gérer. Scalabilité automatique. Excellent pour les équipes qui veulent se concentrer sur le produit sans gérer l'infrastructure. Coût croissant avec l'échelle, vendor lock-in.</div>
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-logo" style="background:rgba(245,158,11,.15);color:#f59e0b">🐘</div>
+        <div class="db-info">
+          <div class="db-name">pgvector <span class="db-badge os">Open Source</span></div>
+          <div class="db-meta">Extension PostgreSQL · SQL natif · HNSW et IVFFlat</div>
+          <div class="db-desc">Extension pour PostgreSQL existant. Permet de combiner données relationnelles ET vectorielles dans la même base, avec des JOIN SQL classiques. Idéal si vous avez déjà une infrastructure PostgreSQL. Performance correcte mais inférieure aux bases vectorielles dédiées à très grande échelle.</div>
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-logo" style="background:rgba(34,197,94,.15);color:#22c55e">🐂</div>
+        <div class="db-info">
+          <div class="db-name">Milvus <span class="db-badge os">Open Source</span></div>
+          <div class="db-meta">Zilliz · Architecture distribuée · Cloud managé (Zilliz Cloud)</div>
+          <div class="db-desc">Conçu pour l'échelle massive (milliards de vecteurs). Architecture distribuée avec séparation calcul/stockage. Le plus complexe à déployer mais le plus scalable. Utilisé par de grandes entreprises tech.</div>
+        </div>
+      </div>
+
+      <h3>Tableau de synthèse</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Outil</th><th>Type</th><th>Algorithme</th><th>Scalabilité max</th><th>Cas d'usage idéal</th></tr></thead>
+          <tbody>
+            <tr><td>FAISS</td><td>Bibliothèque</td><td>IVF, HNSW, PQ</td><td>Milliards (avec GPU)</td><td>Research, batch, moteur custom</td></tr>
+            <tr><td>ChromaDB</td><td>Embarqué/Serveur</td><td>HNSW</td><td>~10M</td><td>Prototypage, petits projets</td></tr>
+            <tr><td>Qdrant</td><td>Serveur</td><td>HNSW</td><td>~1B</td><td>Production, filtrage avancé</td></tr>
+            <tr><td>Weaviate</td><td>Serveur</td><td>HNSW</td><td>~1B</td><td>SaaS multi-tenant, GraphQL</td></tr>
+            <tr><td>Pinecone</td><td>SaaS</td><td>Propriétaire</td><td>Illimité (cloud)</td><td>Zero-ops, scale automatique</td></tr>
+            <tr><td>pgvector</td><td>Extension SQL</td><td>HNSW, IVFFlat</td><td>~100M</td><td>Infra PostgreSQL existante</td></tr>
+            <tr><td>Milvus</td><td>Distribué</td><td>HNSW, IVF, multiples</td><td>Dizaines de milliards</td><td>Très grande échelle, enterprise</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 8 : FAISS -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2 class="section-title">FAISS en pratique</h2>
+      </div>
+
+      <p>FAISS reste la bibliothèque de référence pour comprendre les fondamentaux. Voici un exemple pratique illustrant les différents types d'index.</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — FAISS, index Flat (exact) vs HNSW vs IVF+PQ</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">import</span> faiss
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+dimension = <span class="num">1024</span>
+n_vectors = <span class="num">1_000_000</span>
+vectors = np.random.random((n_vectors, dimension)).astype(<span class="str">'float32'</span>)
+
+<span class="cm"># ─── Index 1 : Flat (recherche exacte, lent à grande échelle) ───</span>
+index_flat = faiss.IndexFlatIP(dimension)  <span class="cm"># Inner Product</span>
+index_flat.add(vectors)
+<span class="cm"># Recherche : O(N) — lent pour 1M+ vecteurs</span>
+
+<span class="cm"># ─── Index 2 : HNSW (rapide, bon recall, plus de mémoire) ───</span>
+index_hnsw = faiss.IndexHNSWFlat(dimension, <span class="num">32</span>)  <span class="cm"># M=32</span>
+index_hnsw.hnsw.efConstruction = <span class="num">200</span>
+index_hnsw.hnsw.efSearch = <span class="num">128</span>
+index_hnsw.add(vectors)
+
+<span class="cm"># ─── Index 3 : IVF + PQ (scalable, compressé) ───</span>
+nlist = <span class="num">4096</span>          <span class="cm"># nombre de clusters</span>
+m = <span class="num">8</span>                  <span class="cm"># nombre de sous-quantifieurs</span>
+bits = <span class="num">8</span>               <span class="cm"># bits par sous-quantifieur</span>
+
+quantizer = faiss.IndexFlatIP(dimension)
+index_ivfpq = faiss.IndexIVFPQ(quantizer, dimension, nlist, m, bits)
+index_ivfpq.train(vectors)   <span class="cm"># Entraînement k-means requis !</span>
+index_ivfpq.add(vectors)
+index_ivfpq.nprobe = <span class="num">16</span>  <span class="cm"># clusters explorés à la recherche</span>
+
+<span class="cm"># ─── Recherche (identique pour tous les index) ───</span>
+query = np.random.random((<span class="num">1</span>, dimension)).astype(<span class="str">'float32'</span>)
+k = <span class="num">5</span>
+distances, indices = index_hnsw.search(query, k)
+<span class="fn">print</span>(<span class="str">f"Top-{k} indices: {indices}"</span>)
+<span class="fn">print</span>(<span class="str">f"Distances: {distances}"</span>)</pre>
+      </div>
+
+      <h3>Choisir le bon index FAISS</h3>
+      <div class="ascii-box">ARBRE DE DÉCISION — QUEL INDEX FAISS CHOISIR ?
+═══════════════════════════════════════════════
+
+  N < 10K vecteurs ?
+    OUI → IndexFlatIP (recherche exacte, simple, rapide à cette échelle)
+    NON ↓
+
+  N < 1M vecteurs et RAM suffisante ?
+    OUI → IndexHNSWFlat (excellent recall, rapide)
+    NON ↓
+
+  N entre 1M et 100M vecteurs ?
+    OUI → IndexIVFFlat (bon compromis) ou IndexIVFPQ si RAM limitée
+    NON ↓
+
+  N > 100M vecteurs ?
+    → IndexIVFPQ obligatoire (compression nécessaire)
+    → Envisager une architecture distribuée (Milvus) plutôt que FAISS seul</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 9 : FILTRAGE -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2 class="section-title">Le Filtrage par Métadonnées (Hybrid Filtering)</h2>
+      </div>
+
+      <p>En production, on a rarement besoin d'une recherche purement vectorielle. On veut souvent combiner similarité sémantique ET filtres précis sur des métadonnées (date, catégorie, permissions, langue...).</p>
+
+      <div class="ascii-box">EXEMPLE : RECHERCHE AVEC FILTRAGE
+══════════════════════════════════
+
+REQUÊTE UTILISATEUR :
+  "Quelle est la politique de remboursement ?"
+  Filtres : date >= 2024-01-01 AND département = "RH" AND langue = "fr"
+
+SANS FILTRAGE (recherche vectorielle pure) :
+  → Peut retourner un document RH de 2019 (obsolète)
+  → Peut retourner un document en anglais
+  → Peut retourner un document Finance non pertinent
+
+AVEC FILTRAGE COMBINÉ :
+  1. Filtrer d'abord les candidats par métadonnées
+     (date >= 2024, dept=RH, langue=fr)
+  2. PUIS chercher par similarité vectorielle PARMI ces candidats
+  
+  → Résultats précis et pertinents</div>
+
+      <h3>Deux stratégies de filtrage</h3>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🔄 Pre-filtering (filtrer avant la recherche ANN)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>On filtre d'abord les candidats valides selon les métadonnées, puis on effectue la recherche vectorielle uniquement parmi ce sous-ensemble.</p>
+          <p><strong>Avantage :</strong> Résultats garantis conformes aux filtres.</p>
+          <p><strong>Inconvénient :</strong> Si le filtre est très restrictif, on perd les optimisations de l'index ANN (qui suppose souvent qu'on cherche dans toute la collection).</p>
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🔁 Post-filtering (filtrer après la recherche ANN)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>On effectue la recherche ANN normale pour obtenir Top-N candidats (N &gt; K), puis on filtre par métadonnées et on garde les Top-K restants.</p>
+          <p><strong>Avantage :</strong> Performance de recherche optimale (utilise pleinement l'index).</p>
+          <p><strong>Inconvénient :</strong> Risque de sous-remplir les résultats si le filtre élimine beaucoup de candidats — il faut alors élargir N.</p>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Filtered HNSW — La solution moderne</div>
+          <p class="callout-text">Qdrant et Weaviate implémentent un <strong>HNSW filtré natif</strong> : le graphe est parcouru en ignorant dynamiquement les nœuds qui ne satisfont pas le filtre, sans dégrader les performances. C'est l'approche recommandée en production — bien plus efficace que le pre/post-filtering naïf.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Qdrant avec filtrage par métadonnées</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> qdrant_client <span class="kw">import</span> QdrantClient
+<span class="kw">from</span> qdrant_client.models <span class="kw">import</span> Filter, FieldCondition, Range, MatchValue
+
+client = QdrantClient(<span class="str">"localhost"</span>, port=<span class="num">6333</span>)
+
+results = client.search(
+    collection_name=<span class="str">"documents_rh"</span>,
+    query_vector=question_embedding,
+    query_filter=Filter(
+        must=[
+            FieldCondition(key=<span class="str">"departement"</span>, match=MatchValue(value=<span class="str">"RH"</span>)),
+            FieldCondition(key=<span class="str">"langue"</span>, match=MatchValue(value=<span class="str">"fr"</span>)),
+            FieldCondition(key=<span class="str">"date"</span>, range=Range(gte=<span class="str">"2024-01-01"</span>)),
+        ]
+    ),
+    limit=<span class="num">5</span>
+)</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 10 : SCALABILITÉ -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <h2 class="section-title">Scalabilité : Sharding et Réplication</h2>
+      </div>
+
+      <h3>Sharding (partitionnement horizontal)</h3>
+      <p>Quand une collection dépasse la capacité d'un seul serveur, on la divise en <strong>shards</strong> distribués sur plusieurs machines.</p>
+
+      <div class="ascii-box">SHARDING D'UNE COLLECTION VECTORIELLE
+═════════════════════════════════════
+
+Collection de 500M vecteurs → 5 shards de 100M chacun
+
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+  │ Shard 1  │  │ Shard 2  │  │ Shard 3  │  │ Shard 4  │  │ Shard 5  │
+  │ 100M vec │  │ 100M vec │  │ 100M vec │  │ 100M vec │  │ 100M vec │
+  │ Serveur A│  │ Serveur B│  │ Serveur C│  │ Serveur D│  │ Serveur E│
+  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘
+       │             │             │             │             │
+       └─────────────┴──────┬──────┴─────────────┴─────────────┘
+                             │
+                      ┌──────▼──────┐
+                      │  Coordinateur│
+                      │  (Query Router)│
+                      └──────┬──────┘
+                             │
+                          Requête utilisateur
+
+PROCESSUS DE RECHERCHE DISTRIBUÉE (Scatter-Gather) :
+  1. Le coordinateur envoie la requête à TOUS les shards
+  2. Chaque shard retourne ses propres Top-K locaux
+  3. Le coordinateur fusionne et retrie les résultats
+     (5 shards × Top-K → Top-K final global)</div>
+
+      <h3>Réplication (haute disponibilité)</h3>
+      <p>Chaque shard peut être répliqué sur plusieurs serveurs pour la tolérance aux pannes et la répartition de charge en lecture.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🛡️</div>
+          <div class="card-title">Tolérance aux pannes</div>
+          <div class="card-desc">Si un serveur tombe, les répliques prennent le relais sans interruption de service.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Répartition de charge</div>
+          <div class="card-desc">Les requêtes de lecture sont distribuées sur plusieurs répliques pour augmenter le débit.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔄</div>
+          <div class="card-title">Cohérence éventuelle</div>
+          <div class="card-desc">Les écritures se propagent aux répliques avec un léger délai — compromis classique des systèmes distribués (CAP theorem).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 11 : CAS INDUSTRIELS -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <span class="section-num">11</span>
+        <h2 class="section-title">Cas industriels à grande échelle</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Entreprise</th><th>Échelle</th><th>Solution</th><th>Détail technique</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Meta</strong></td><td>Milliards de vecteurs</td><td>FAISS distribué + GPU</td><td>Recherche de contenus similaires sur Facebook/Instagram</td></tr>
+            <tr><td><strong>Spotify</strong></td><td>~100M morceaux</td><td>Annoy (custom)</td><td>Recommandation musicale en temps réel</td></tr>
+            <tr><td><strong>Pinterest</strong></td><td>Milliards d'épingles</td><td>Index custom + ANN</td><td>Recherche visuelle (image-to-image)</td></tr>
+            <tr><td><strong>OpenAI</strong></td><td>Variable selon usage</td><td>Solutions internes</td><td>Retrieval pour ChatGPT browsing/memory</td></tr>
+            <tr><td><strong>Notion AI</strong></td><td>Millions de pages utilisateurs</td><td>Pinecone</td><td>Search sémantique cross-workspace avec permissions</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout cyan">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Leçon de Meta : Multi-Index Hierarchical Navigation</div>
+          <p class="callout-text">À l'échelle de milliards de vecteurs, Meta utilise une architecture hybride : un index grossier rapide (premier filtrage), suivi d'un index HNSW fin pour le re-ranking précis. Cette approche "coarse-to-fine" est le standard pour les déploiements à très grande échelle.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 12 : ERREURS -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <span class="section-num">12</span>
+        <h2 class="section-title">Erreurs fréquentes</h2>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 1 — Choisir une base vectorielle avant de connaître l'échelle</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Déployer Milvus (architecture distribuée complexe) pour 50 000 documents.</p>
+          <p><strong>Cause :</strong> Sur-ingénierie par anticipation d'une échelle qui n'arrivera peut-être jamais.</p>
+          <p><strong>Solution :</strong> Commencer simple (ChromaDB ou pgvector si vous avez déjà PostgreSQL), migrer vers Qdrant/Milvus uniquement quand l'échelle ou les besoins de production le justifient réellement.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 2 — Mal calibrer ef_search / nprobe</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Recall décevant malgré un bon modèle d'embedding.</p>
+          <p><strong>Cause :</strong> Valeurs par défaut trop basses pour la taille de la collection (ef_search=10 sur 10M vecteurs).</p>
+          <p><strong>Solution :</strong> Mesurer le recall@K sur un jeu de test annoté. Augmenter ef_search/nprobe jusqu'à atteindre le recall cible (souvent &gt;95%), en surveillant l'impact sur la latence.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 3 — Oublier de recharger l'index après mise à jour des données</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Les nouveaux documents ajoutés n'apparaissent jamais dans les résultats de recherche.</p>
+          <p><strong>Cause :</strong> Certains index (notamment IVF) nécessitent un ré-entraînement (k-means) périodique pour intégrer correctement les nouvelles données — l'ajout simple peut dégrader la qualité du clustering.</p>
+          <p><strong>Solution :</strong> Privilégier des bases avec mises à jour incrémentales natives (Qdrant, ChromaDB avec HNSW), ou planifier des ré-indexations périodiques pour FAISS-IVF.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 4 — Ignorer le coût mémoire en production</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Out-of-memory en production avec une collection qui grandit.</p>
+          <p><strong>Cause :</strong> HNSW stocke le graphe ET les vecteurs complets en mémoire — coûteux à grande échelle. Pas anticipé pendant le prototypage avec peu de données.</p>
+          <p><strong>Solution :</strong> Estimer la mémoire nécessaire dès la conception (N × d × 4 bytes pour les vecteurs + overhead du graphe ~30-50%). Envisager la quantification (PQ, SQ) si la mémoire est contrainte.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 5 — Faire du post-filtering avec un filtre très restrictif</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Une requête filtrée (ex: département="RH" qui ne représente que 2% des documents) retourne moins de K résultats que demandé, ou aucun résultat.</p>
+          <p><strong>Cause :</strong> Le post-filtering cherche d'abord Top-N candidats globaux, puis filtre — si le filtre élimine 98% des candidats, il ne reste presque rien.</p>
+          <p><strong>Solution :</strong> Utiliser le filtered HNSW natif (Qdrant, Weaviate) qui intègre le filtre dans le parcours du graphe, ou augmenter drastiquement N avant filtrage en post-filtering naïf.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 13 : EXERCICES -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <span class="section-num">13</span>
+        <h2 class="section-title">Exercices</h2>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 1 — Calcul d'empreinte mémoire</span>
+        </div>
+        <div class="ex-body">
+          Vous devez indexer 5 millions de chunks, chacun représenté par un vecteur de 768 dimensions en float32.<br><br>
+          <strong>a)</strong> Calculez l'espace mémoire nécessaire pour stocker uniquement les vecteurs (sans index).<br>
+          <strong>b)</strong> Si vous appliquez une Product Quantization avec un taux de compression de 16x, quelle est la nouvelle taille ?<br>
+          <strong>c)</strong> Cette taille tient-elle dans 8 GB de RAM ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a)</strong> 5 000 000 × 768 × 4 bytes = 15 360 000 000 bytes ≈ <strong>14.3 GB</strong><br><br>
+          <strong>b)</strong> 14.3 GB / 16 ≈ <strong>0.9 GB (~900 MB)</strong><br><br>
+          <strong>c)</strong> Sans PQ : 14.3 GB ne tient PAS confortablement dans 8 GB (en plus de l'overhead du graphe HNSW ~30-50%, soit ~20 GB total). Avec PQ : 0.9 GB tient très confortablement, laissant de la marge pour l'index et le système.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 2 — Choisir la bonne base vectorielle</span>
+        </div>
+        <div class="ex-body">
+          Pour chaque scénario, recommandez une base vectorielle et justifiez :<br><br>
+          <strong>a)</strong> Startup en phase de prototype, 5000 documents, équipe de 2 développeurs.<br>
+          <strong>b)</strong> Entreprise avec PostgreSQL déjà en production, besoin d'ajouter de la recherche sémantique sur 200K documents.<br>
+          <strong>c)</strong> Plateforme SaaS multi-tenant avec isolation stricte des données par client, 50M documents au total.<br>
+          <strong>d)</strong> Équipe sans expertise DevOps, besoin de scalabilité automatique, budget disponible.
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a)</strong> <strong>ChromaDB</strong> — simplicité maximale, embarqué, parfait pour prototypage rapide sans infrastructure.<br><br>
+          <strong>b)</strong> <strong>pgvector</strong> — réutilise l'infrastructure PostgreSQL existante, pas de nouveau système à maintenir, JOIN SQL possibles entre données relationnelles et vectorielles.<br><br>
+          <strong>c)</strong> <strong>Weaviate ou Qdrant</strong> — support natif du multi-tenancy avec isolation forte. Weaviate a un support multi-tenant particulièrement mature.<br><br>
+          <strong>d)</strong> <strong>Pinecone</strong> — SaaS zero-ops, scalabilité automatique gérée par le fournisseur, pas besoin d'expertise infrastructure.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header medium">
+          <span class="ex-badge">Moyen</span>
+          <span class="ex-title">Exercice 3 — Analyser un trade-off HNSW</span>
+        </div>
+        <div class="ex-body">
+          Vous configurez un index HNSW avec les paramètres suivants : M=8, ef_construction=50, ef_search=20.<br>
+          Vous mesurez un recall@10 de 78%, ce qui est insuffisant pour votre cas d'usage (vous visez 95%+).<br><br>
+          <strong>a)</strong> Quels paramètres ajusteriez-vous en priorité et pourquoi ?<br>
+          <strong>b)</strong> Quels sont les coûts de cet ajustement ?<br>
+          <strong>c)</strong> Si malgré l'ajustement vous n'atteignez toujours pas 95%, quelle autre piste explorer ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a)</strong> Prioriser <strong>ef_search</strong> (paramètre de recherche, ajustable sans reconstruire l'index) — l'augmenter à 100-200. Si insuffisant, augmenter aussi M (ex: 16-32) et ef_construction (ex: 200), mais cela nécessite de RECONSTRUIRE l'index entièrement.<br><br>
+          <strong>b)</strong> Augmenter ef_search : coût en latence de recherche (plus de candidats explorés à chaque requête), pas de reconstruction nécessaire. Augmenter M/ef_construction : coût en mémoire (plus de connexions par nœud) ET en temps de construction de l'index (one-time cost), mais améliore le recall structurellement.<br><br>
+          <strong>c)</strong> Si le recall reste insuffisant malgré les paramètres optimaux, le problème peut venir d'ailleurs : qualité du modèle d'embedding (mal adapté au domaine), chunking inadéquat (chunks trop larges/étroits), ou bug dans le pipeline d'indexation (mauvaise normalisation, mismatch de modèle entre indexation et requête).
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header hard">
+          <span class="ex-badge">Difficile</span>
+          <span class="ex-title">Exercice 4 — Architecture complète pour une échelle critique</span>
+        </div>
+        <div class="ex-body">
+          Vous concevez l'infrastructure RAG pour un moteur de recherche juridique avec 200 millions de documents (lois, jurisprudence, contrats), mise à jour quotidienne de ~50 000 nouveaux documents, et un SLA de latence &lt; 200ms pour le retrieval.<br><br>
+          <strong>a)</strong> Quelle architecture proposez-vous (index, sharding, déploiement) ?<br>
+          <strong>b)</strong> Comment gérez-vous les mises à jour quotidiennes sans dégrader le service ?<br>
+          <strong>c)</strong> Quelle stratégie de compression appliquez-vous et pourquoi ?<br>
+          <strong>d)</strong> Comment garantissez-vous le SLA de 200ms ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Architecture :</strong> Milvus (architecture distribuée native) ou Qdrant en mode cluster. Sharding par domaine juridique (droit civil, pénal, commercial...) ou par date, avec ~10-20 shards de 10-20M documents chacun. Réplication x2-3 pour la haute disponibilité.<br><br>
+          <strong>b) Mises à jour :</strong> Pipeline d'ingestion incrémentale (pas de ré-indexation complète quotidienne). Nouveaux documents ajoutés en HNSW de façon incrémentale (faible coût). Ré-indexation complète planifiée mensuellement/trimestriellement en arrière-plan sur un cluster miroir, puis bascule (blue-green deployment) pour éviter toute interruption de service.<br><br>
+          <strong>c) Compression :</strong> Product Quantization (IVF+PQ) compte tenu de l'échelle (200M documents × 1024D × 4 bytes ≈ 820GB sans compression). Avec PQ 16x : ~51GB, gérable en RAM distribuée. Accepter une légère perte de recall (95-97% au lieu de 99%) en échange d'un gain mémoire critique.<br><br>
+          <strong>d) SLA 200ms :</strong> Calibrer ef_search/nprobe pour un compromis recall/vitesse adapté (mesurer empiriquement). Cache des requêtes fréquentes (questions juridiques récurrentes). Architecture coarse-to-fine : filtre rapide par métadonnées (domaine juridique, date) avant la recherche vectorielle fine. Monitoring continu de la latence p95/p99 avec alerting.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 14 : QUIZ -->
+    <div class="section" id="s14">
+      <div class="section-header">
+        <span class="section-num">14</span>
+        <h2 class="section-title">Quiz d'auto-évaluation</h2>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q1. Pourquoi les bases SQL classiques ne conviennent-elles pas à la recherche vectorielle à grande échelle ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Elles ne peuvent pas stocker de nombres décimaux</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Leurs structures d'index (B-Tree) sont inefficaces en haute dimension</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Elles ne supportent pas le langage SQL pour les requêtes complexes</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Elles sont toujours plus lentes que toute base vectorielle</div>
+        </div>
+        <div class="quiz-reveal">Le "fléau de la dimension" rend les structures d'index classiques (B-Tree, R-Tree) inefficaces au-delà de quelques dizaines de dimensions. Les bases vectorielles utilisent des algorithmes spécialisés (HNSW, IVF) conçus pour contourner ce problème.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q2. Dans l'algorithme HNSW, à quoi sert la structure multi-couches ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) À stocker plusieurs copies des vecteurs pour la redondance</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) À permettre des "grands sauts" rapides puis un affinement local progressif</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) À séparer les vecteurs par langue</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) À compresser les vecteurs à différents niveaux de précision</div>
+        </div>
+        <div class="quiz-reveal">Les couches supérieures du graphe HNSW ont peu de nœuds avec des connexions longues (comme des autoroutes), permettant de se rapprocher rapidement de la zone d'intérêt. La couche 0 contient tous les nœuds avec des connexions courtes, permettant un affinement précis localement.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q3. Que fait le paramètre "nprobe" dans l'algorithme IVF ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Définit le nombre total de clusters dans l'index</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Définit le nombre de clusters explorés lors d'une recherche</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Définit la dimension des vecteurs compressés</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Définit le nombre de répliques du serveur</div>
+        </div>
+        <div class="quiz-reveal">nprobe contrôle combien de clusters (parmi tous les clusters créés par k-means) sont explorés exhaustivement lors d'une recherche. Plus nprobe est élevé, meilleur est le recall, mais plus la recherche est lente.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q4. Quel est le principal avantage de la Product Quantization (PQ) ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Elle améliore la précision du retrieval</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Elle élimine le besoin d'un index ANN</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) Elle réduit drastiquement l'empreinte mémoire des vecteurs stockés</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Elle accélère l'entraînement du modèle d'embedding</div>
+        </div>
+        <div class="quiz-reveal">La PQ compresse les vecteurs en les découpant en sous-espaces, chacun quantifié séparément via k-means. Cela permet des compressions de 16-64x, rendant possible le stockage de centaines de millions de vecteurs en RAM raisonnable, au prix d'une légère perte de précision.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q5. Pourquoi le "filtered HNSW" natif (Qdrant, Weaviate) est-il préférable au post-filtering naïf ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Il est plus simple à implémenter</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Il évite le problème de sous-remplissage des résultats avec des filtres restrictifs</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Il ne nécessite pas de métadonnées</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Il fonctionne uniquement avec FAISS</div>
+        </div>
+        <div class="quiz-reveal">Le post-filtering naïf cherche d'abord Top-N candidats globaux puis filtre — si le filtre élimine 95% des candidats, on peut se retrouver avec moins de résultats que demandé. Le filtered HNSW intègre le filtre directement dans le parcours du graphe, garantissant un nombre suffisant de résultats pertinents.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 15 : RÉSUMÉ -->
+    <div class="section" id="s15">
+      <div class="section-header">
+        <span class="section-num">15</span>
+        <h2 class="section-title">Résumé du chapitre</h2>
+      </div>
+
+      <div class="summary-box">
+        <h3>🎯 Ce qu'il faut absolument retenir</h3>
+        <div class="summary-item"><div class="summary-num">1</div><div>Les bases SQL classiques ne conviennent pas à la recherche vectorielle à grande échelle (fléau de la dimension). Les bases vectorielles utilisent des algorithmes <strong>ANN</strong> spécialisés.</div></div>
+        <div class="summary-item"><div class="summary-num">2</div><div><strong>HNSW</strong> utilise un graphe hiérarchique multi-couches pour une recherche en O(log N), avec un excellent recall (&gt;98%). C'est l'algorithme dominant en production.</div></div>
+        <div class="summary-item"><div class="summary-num">3</div><div><strong>IVF</strong> partitionne l'espace par clustering k-means et cherche dans les clusters les plus proches (paramétré par nprobe). Bon compromis mémoire/vitesse à très grande échelle.</div></div>
+        <div class="summary-item"><div class="summary-num">4</div><div>La <strong>Product Quantization</strong> compresse les vecteurs de 16-64x en quantifiant des sous-espaces séparément — essentiel au-delà de centaines de millions de vecteurs.</div></div>
+        <div class="summary-item"><div class="summary-num">5</div><div>Le choix de l'outil dépend de l'échelle et des besoins : <strong>ChromaDB</strong> (prototypage), <strong>Qdrant/Weaviate</strong> (production avec filtrage), <strong>Pinecone</strong> (zero-ops), <strong>pgvector</strong> (infra SQL existante), <strong>Milvus</strong> (très grande échelle).</div></div>
+        <div class="summary-item"><div class="summary-num">6</div><div>Le <strong>filtrage par métadonnées</strong> est crucial en production. Le filtered HNSW natif évite les problèmes du pre/post-filtering naïf.</div></div>
+        <div class="summary-item"><div class="summary-num">7</div><div>À très grande échelle, le <strong>sharding</strong> (partition horizontale) et la <strong>réplication</strong> (haute disponibilité) sont nécessaires, avec une recherche distribuée de type scatter-gather.</div></div>
+        <div class="summary-item"><div class="summary-num">8</div><div>Toujours <strong>mesurer le recall@K</strong> empiriquement plutôt que de se fier aux valeurs par défaut — les paramètres optimaux dépendent fortement de votre échelle et de vos données.</div></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="tag">ANN</span><span class="tag">HNSW</span><span class="tag">IVF</span><span class="tag">Product Quantization</span><span class="tag">Curse of Dimensionality</span><span class="tag">FAISS</span><span class="tag">Qdrant</span><span class="tag">ChromaDB</span><span class="tag">Milvus</span><span class="tag">pgvector</span><span class="tag">Sharding</span><span class="tag">Filtered Search</span><span class="tag">nprobe</span><span class="tag">ef_search</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 16 : RESSOURCES -->
+    <div class="section" id="s16">
+      <div class="section-header">
+        <span class="section-num">16</span>
+        <h2 class="section-title">Ressources pour aller plus loin</h2>
+      </div>
+
+      <h3>📄 Articles fondateurs</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://arxiv.org/abs/1603.09320" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">HNSW</div><div class="res-sub">Malkov & Yashunin, 2016 — L'algorithme de référence</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2401.08281" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">FAISS — The Library</div><div class="res-sub">Douze et al., 2024 — Mise à jour complète FAISS</div></div>
+        </a>
+        <a class="res-item" href="https://www.cs.princeton.edu/cass/papers/pq_tpami.pdf" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">Product Quantization</div><div class="res-sub">Jégou et al., 2011 — Article fondateur PQ</div></div>
+        </a>
+      </div>
+
+      <h3>💻 Outils et documentation</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://github.com/facebookresearch/faiss/wiki" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">FAISS Wiki</div><div class="res-sub">Documentation officielle complète</div></div>
+        </a>
+        <a class="res-item" href="https://qdrant.tech/documentation/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">Qdrant Documentation</div><div class="res-sub">Guide complet + tutoriels</div></div>
+        </a>
+        <a class="res-item" href="https://github.com/erikbern/ann-benchmarks" target="_blank">
+          <span class="res-type code">GitHub</span>
+          <div><div class="res-title">ANN-Benchmarks</div><div class="res-sub">Comparatif de performance de tous les algorithmes ANN</div></div>
+        </a>
+        <a class="res-item" href="https://github.com/pgvector/pgvector" target="_blank">
+          <span class="res-type code">GitHub</span>
+          <div><div class="res-title">pgvector</div><div class="res-sub">Extension PostgreSQL officielle</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="chapter-footer">
+      <div class="footer-cards">
+        <div class="footer-card">
+          <div class="label">✅ Ce que nous avons appris</div>
+          <div class="value">Bases de Données Vectorielles</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Le problème du Nearest Neighbor à l'échelle, les algorithmes HNSW et IVF en détail, la Product Quantization, le comparatif complet des outils (FAISS, Qdrant, ChromaDB, Weaviate, Pinecone, pgvector, Milvus), le filtrage par métadonnées et la scalabilité distribuée.</div>
+        </div>
+        <div class="footer-card">
+          <div class="label">👉 Chapitre suivant</div>
+          <div class="value">Le Chunking Avancé</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Nous allons approfondir les stratégies de chunking : Semantic Chunking en détail, Hierarchical Chunking, Parent-Document Retrieval, et comment évaluer rigoureusement la qualité d'une stratégie de chunking.</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:32px 0">
+        <div style="display:inline-flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 28px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-size:14px;color:var(--text-2)">Écrivez <strong style="color:var(--cyan)">"Suivant"</strong> pour le Chapitre 5 — Chunking Avancé</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding-bottom:16px;font-size:12px;color:var(--text-3)">
+        RAG Masterclass · Chapitre 4 sur 12 · Cours universitaire interactif
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+mermaid.initialize({theme:'dark',themeVariables:{primaryColor:'#1a1e2a',primaryTextColor:'#e8eaf2',primaryBorderColor:'#06b6d4',lineColor:'#5c6480',fontFamily:'Inter,sans-serif',fontSize:'13px'},flowchart:{curve:'basis'}});
+
+window.addEventListener('scroll',()=>{
+  const st=window.scrollY,dh=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progress-bar').style.width=(dh>0?(st/dh)*100:0)+'%';
+  document.getElementById('back-top').classList.toggle('show',st>400);
+  const sections=document.querySelectorAll('.section');
+  let current='';
+  sections.forEach(s=>{if(s.offsetTop-100<=st)current=s.id});
+  document.querySelectorAll('.sidebar-item').forEach(item=>{
+    item.classList.remove('active');
+    if(item.getAttribute('onclick')?.includes(current))item.classList.add('active');
+  });
+});
+function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='light'?'dark':'light')}
+function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleAcc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open')}
+function answerQuiz(opt,correct){
+  opt.closest('.quiz-opts').querySelectorAll('.quiz-opt').forEach(o=>{o.style.pointerEvents='none';if(o===opt)o.classList.add(correct?'correct':'wrong')});
+  const r=opt.closest('.quiz-card').querySelector('.quiz-reveal');if(r)r.classList.add('show');
+}
+function toggleSolution(btn){
+  const s=btn.nextElementSibling;s.classList.toggle('show');
+  btn.textContent=s.classList.contains('show')?'🙈 Masquer la correction':'📖 Voir la correction';
+}
+document.querySelectorAll('.copy-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    navigator.clipboard.writeText(btn.closest('.code-block').querySelector('pre').textContent)
+      .then(()=>{btn.textContent='✓ Copié';setTimeout(()=>btn.textContent='Copier',2000)});
+  });
+});
+const searchInput=document.getElementById('search-input');
+let st2;
+searchInput.addEventListener('input',()=>{
+  clearTimeout(st2);
+  st2=setTimeout(()=>{
+    const q=searchInput.value.trim();
+    document.querySelectorAll('.search-highlight').forEach(el=>{el.outerHTML=el.textContent});
+    if(q.length<2)return;
+    const rx=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    const walker=document.createTreeWalker(document.querySelector('.main'),NodeFilter.SHOW_TEXT,null);
+    const nodes=[];let node;
+    while((node=walker.nextNode())){if(node.parentElement.closest('script,style')===null&&rx.test(node.textContent))nodes.push(node);}
+    nodes.forEach(n=>{const sp=document.createElement('span');sp.innerHTML=n.textContent.replace(rx,'<mark class="search-highlight">$1</mark>');n.parentNode.replaceChild(sp,n);});
+    const first=document.querySelector('.search-highlight');
+    if(first)first.scrollIntoView({behavior:'smooth',block:'center'});
+  },300);
+});
+
+/* HNSW GRAPH VISUALIZATION */
+const hnswCanvas = document.getElementById('hnswCanvas');
+if(hnswCanvas) {
+  const ctx = hnswCanvas.getContext('2d');
+  const W = hnswCanvas.width, H = hnswCanvas.height;
+
+  // 3 layers
+  const layer0 = [];
+  const layer1 = [];
+  const layer2 = [];
+  
+  // Generate layer 0 (base, many nodes)
+  for(let i=0;i<28;i++){
+    layer0.push({x: 40 + Math.random()*(W-80), y: 280 + Math.random()*110, id:i});
+  }
+  // Layer 1 subset
+  const l1idx = [2,5,9,12,16,20,24,7,18];
+  l1idx.forEach(i => layer1.push({x: layer0[i].x, y: 150 + (layer0[i].y-280)*0.3, id:i, baseRef: layer0[i]}));
+  // Layer 2 subset
+  const l2idx = [5,16,24];
+  l2idx.forEach(i => layer2.push({x: layer0[i].x, y: 50, id:i, baseRef: layer0[i]}));
+
+  // Edges within layer 0 (proximity-based)
+  function nearestEdges(nodes, k) {
+    const edges = [];
+    nodes.forEach((n,i) => {
+      const dists = nodes.map((m,j)=>({j, d: j===i?Infinity:Math.hypot(n.x-m.x,n.y-m.y)}));
+      dists.sort((a,b)=>a.d-b.d);
+      for(let t=0;t<k;t++) edges.push([i, dists[t].j]);
+    });
+    return edges;
+  }
+  const edges0 = nearestEdges(layer0, 2);
+  const edges1 = nearestEdges(layer1, 2);
+  const edges2 = nearestEdges(layer2, 1);
+
+  let query = {x: W/2, y: H-20};
+  let searchPath = [];
+  let animating = false;
+  let animStep = 0;
+
+  function drawHNSW() {
+    ctx.clearRect(0,0,W,H);
+    
+    // Layer backgrounds
+    ctx.fillStyle = 'rgba(6,182,212,0.03)';
+    ctx.fillRect(0, 20, W, 70);
+    ctx.fillRect(0, 130, W, 100);
+    ctx.fillRect(0, 260, W, 140);
+
+    ctx.fillStyle = '#5c6480';
+    ctx.font = '11px Inter';
+    ctx.fillText('Couche 2 (hub — peu de nœuds)', 12, 35);
+    ctx.fillText('Couche 1 (intermédiaire)', 12, 145);
+    ctx.fillText('Couche 0 (base — tous les nœuds)', 12, 275);
+
+    // Draw edges
+    ctx.strokeStyle = 'rgba(92,100,128,0.3)';
+    ctx.lineWidth = 1;
+    edges0.forEach(([i,j])=>{ctx.beginPath();ctx.moveTo(layer0[i].x,layer0[i].y);ctx.lineTo(layer0[j].x,layer0[j].y);ctx.stroke();});
+    edges1.forEach(([i,j])=>{ctx.beginPath();ctx.moveTo(layer1[i].x,layer1[i].y);ctx.lineTo(layer1[j].x,layer1[j].y);ctx.stroke();});
+    edges2.forEach(([i,j])=>{ctx.beginPath();ctx.moveTo(layer2[i].x,layer2[i].y);ctx.lineTo(layer2[j].x,layer2[j].y);ctx.stroke();});
+
+    // Vertical connections between layers
+    ctx.strokeStyle = 'rgba(6,182,212,0.2)';
+    ctx.setLineDash([2,2]);
+    layer1.forEach(n=>{ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(n.baseRef.x,n.baseRef.y);ctx.stroke();});
+    layer2.forEach(n=>{ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(n.baseRef.x,n.baseRef.y);ctx.stroke();});
+    ctx.setLineDash([]);
+
+    // Draw search path if animating
+    if(searchPath.length > 1) {
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#06b6d4';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(searchPath[0].x, searchPath[0].y);
+      for(let i=1;i<Math.min(animStep+1,searchPath.length);i++){
+        ctx.lineTo(searchPath[i].x, searchPath[i].y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // Draw nodes
+    [...layer0].forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,5,0,Math.PI*2);
+      ctx.fillStyle = '#252a38'; ctx.fill();
+      ctx.strokeStyle = '#5c6480'; ctx.lineWidth=1; ctx.stroke();
+    });
+    [...layer1].forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,6,0,Math.PI*2);
+      ctx.fillStyle = '#7c6af7'; ctx.fill();
+    });
+    [...layer2].forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,7,0,Math.PI*2);
+      ctx.fillStyle = '#a799ff'; ctx.fill();
+    });
+
+    // Highlight search path nodes
+    if(animating || searchPath.length>0) {
+      for(let i=0;i<Math.min(animStep+1,searchPath.length);i++){
+        const n = searchPath[i];
+        ctx.beginPath();ctx.arc(n.x,n.y, i===animStep?9:6,0,Math.PI*2);
+        ctx.strokeStyle='#22c55e'; ctx.lineWidth=2.5; ctx.stroke();
+        if(i===animStep){
+          ctx.fillStyle='#22c55e';ctx.fill();
+        }
+      }
+    }
+
+    // Query point
+    ctx.beginPath();
+    ctx.arc(query.x, query.y, 8, 0, Math.PI*2);
+    ctx.fillStyle = '#f43f5e';
+    ctx.fill();
+    ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle = '#f43f5e';
+    ctx.font = 'bold 11px Inter';
+    ctx.fillText('Requête (q)', query.x-30, query.y+22);
+
+    // Result highlight
+    if(!animating && searchPath.length>0){
+      const result = searchPath[searchPath.length-1];
+      ctx.beginPath();
+      ctx.arc(result.x, result.y, 11, 0, Math.PI*2);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 11px Inter';
+      ctx.fillText('Trouvé !', result.x+12, result.y-10);
+    }
+  }
+
+  function simulateSearch() {
+    // Build a plausible path: layer2 -> layer1 -> layer0, greedy toward query
+    searchPath = [];
+    let current = layer2[Math.floor(Math.random()*layer2.length)];
+    searchPath.push(current);
+    
+    // Move within layer 2 toward query (1 hop)
+    let bestL2 = layer2.reduce((a,b)=> Math.hypot(a.x-query.x,a.y-query.y) < Math.hypot(b.x-query.x,b.y-query.y) ? a : b);
+    if(bestL2 !== current) searchPath.push(bestL2);
+    
+    // Drop to layer 1
+    let nearL1 = layer1.reduce((a,b)=> Math.hypot(a.x-bestL2.x,a.y-bestL2.y) < Math.hypot(b.x-bestL2.x,b.y-bestL2.y) ? a : b);
+    searchPath.push(nearL1);
+    
+    let bestL1 = layer1.reduce((a,b)=> Math.hypot(a.x-query.x,a.y-query.y) < Math.hypot(b.x-query.x,b.y-query.y) ? a : b);
+    if(bestL1 !== nearL1) searchPath.push(bestL1);
+
+    // Drop to layer 0
+    let nearL0 = layer0.reduce((a,b)=> Math.hypot(a.x-bestL1.x,a.y-bestL1.y) < Math.hypot(b.x-bestL1.x,b.y-bestL1.y) ? a : b);
+    searchPath.push(nearL0);
+
+    let bestL0 = layer0.reduce((a,b)=> Math.hypot(a.x-query.x,a.y-query.y) < Math.hypot(b.x-query.x,b.y-query.y) ? a : b);
+    if(bestL0 !== nearL0) searchPath.push(bestL0);
+
+    animStep = 0;
+    animating = true;
+    drawHNSW();
+    
+    const interval = setInterval(()=>{
+      animStep++;
+      if(animStep >= searchPath.length){
+        clearInterval(interval);
+        animating = false;
+      }
+      drawHNSW();
+    }, 500);
+  }
+
+  document.getElementById('hnswSimBtn').addEventListener('click', simulateSearch);
+  document.getElementById('hnswResetBtn').addEventListener('click', ()=>{
+    searchPath = []; animStep = 0; animating = false; drawHNSW();
+  });
+
+  hnswCanvas.addEventListener('click', e => {
+    if(animating) return;
+    const rect = hnswCanvas.getBoundingClientRect();
+    query.x = (e.clientX - rect.left) * (W / rect.width);
+    query.y = Math.max(265, (e.clientY - rect.top) * (H / rect.height));
+    searchPath = [];
+    drawHNSW();
+  });
+
+  drawHNSW();
+}
+</script>
+</body>
+</html>
