@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Les Embeddings | Cours RAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f14;--bg-2:#13161e;--bg-3:#1a1e2a;--bg-card:#161923;
+  --border:#252a38;--border-2:#2e3547;
+  --text-1:#e8eaf2;--text-2:#9ba3bf;--text-3:#5c6480;
+  --accent:#7c6af7;--accent-2:#a799ff;--accent-glow:rgba(124,106,247,.18);
+  --teal:#2dd4bf;--teal-soft:rgba(45,212,191,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --rose:#f43f5e;--rose-soft:rgba(244,63,94,.12);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --blue:#3b82f6;--blue-soft:rgba(59,130,246,.12);
+  --orange:#fb923c;--orange-soft:rgba(251,146,60,.12);
+  --pink:#ec4899;--pink-soft:rgba(236,72,153,.12);
+  --sidebar-w:280px;--radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --font-display:'Fraunces',serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#f8f9fc;--bg-2:#f0f2f8;--bg-3:#e8ebf5;--bg-card:#ffffff;
+  --border:#dde1f0;--border-2:#c8ceea;--text-1:#111827;--text-2:#4b5563;--text-3:#9ca3af;
+  --accent-glow:rgba(124,106,247,.10);--shadow:0 4px 24px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text-1);line-height:1.7;font-size:16px;overflow-x:hidden}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--orange),var(--pink));width:0%;z-index:1000;box-shadow:0 0 10px var(--orange)}
+.topnav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(13,15,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:900}
+[data-theme="light"] .topnav{background:rgba(248,249,252,.85)}
+.topnav-brand{font-family:var(--font-display);font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex:1}
+.topnav-search{display:flex;align-items:center;gap:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;flex:0 0 220px}
+.topnav-search input{background:none;border:none;outline:none;color:var(--text-1);font-size:13px;width:100%;font-family:var(--font-body)}
+.topnav-search input::placeholder{color:var(--text-3)}
+.btn-theme{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all .2s}
+.btn-theme:hover{border-color:var(--orange);color:var(--orange)}
+.layout{display:flex;padding-top:56px;min-height:100vh}
+.sidebar{position:fixed;top:56px;left:0;bottom:0;width:var(--sidebar-w);background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;padding:24px 0;z-index:800}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);padding:12px 24px 6px}
+.sidebar-item{display:block;padding:7px 24px;color:var(--text-2);font-size:13.5px;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg-3);color:var(--text-1)}
+.sidebar-item.active{background:var(--orange-soft);color:var(--orange);font-weight:500}
+.sidebar-sub{font-size:12.5px;padding-left:36px;color:var(--text-3)}
+.sidebar-chapter{font-size:12px;color:var(--text-3);padding:4px 24px;display:flex;align-items:center;gap:8px}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 64px 120px;max-width:calc(var(--sidebar-w) + 860px)}
+@media(max-width:900px){.sidebar{transform:translateX(-100%)}.main{margin-left:0;padding:32px 24px 100px}}
+.hero{margin-bottom:64px;padding:56px 0 0}
+.hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.hero-eyebrow::before{content:'';width:24px;height:2px;background:linear-gradient(90deg,var(--orange),var(--pink));display:block}
+.hero-title{font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:24px}
+.hero-title .hl{background:linear-gradient(135deg,var(--orange) 0%,var(--pink) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:18px;color:var(--text-2);line-height:1.75;max-width:640px;margin-bottom:36px}
+.hero-meta{display:flex;gap:24px;flex-wrap:wrap}
+.hero-badge{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--text-2)}
+.objectives{background:linear-gradient(135deg,var(--orange-soft),var(--pink-soft));border:1px solid var(--orange);border-radius:var(--radius);padding:32px;margin:48px 0}
+.objectives h3{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.obj-item{display:flex;align-items:flex-start;gap:10px;background:var(--orange-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;color:var(--text-1)}
+.obj-dot{width:6px;height:6px;background:var(--orange);border-radius:50%;margin-top:7px;flex-shrink:0}
+.section{margin:80px 0}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.section-num{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--orange);background:var(--orange-soft);border:1px solid rgba(251,146,60,.3);border-radius:6px;padding:4px 10px}
+.section-title{font-family:var(--font-display);font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:600;margin:32px 0 14px;color:var(--text-1)}
+h4{font-size:15px;font-weight:600;color:var(--orange);margin:24px 0 10px}
+p{color:var(--text-2);margin-bottom:16px;line-height:1.8}
+strong{color:var(--text-1);font-weight:600}
+.callout{border-radius:var(--radius);padding:20px 24px;margin:24px 0;display:flex;gap:16px;align-items:flex-start}
+.callout-icon{flex-shrink:0;margin-top:2px}
+.callout-body{flex:1}
+.callout-title{font-weight:600;font-size:14px;margin-bottom:6px}
+.callout-text{font-size:14px;color:var(--text-2);line-height:1.7;margin:0}
+.callout.info{background:var(--blue-soft);border:1px solid rgba(59,130,246,.3)}.callout.info .callout-title{color:#60a5fa}
+.callout.warn{background:var(--amber-soft);border:1px solid rgba(245,158,11,.3)}.callout.warn .callout-title{color:var(--amber)}
+.callout.tip{background:var(--green-soft);border:1px solid rgba(34,197,94,.3)}.callout.tip .callout-title{color:var(--green)}
+.callout.danger{background:var(--rose-soft);border:1px solid rgba(244,63,94,.3)}.callout.danger .callout-title{color:var(--rose)}
+.callout.concept{background:var(--accent-glow);border:1px solid rgba(124,106,247,.3)}.callout.concept .callout-title{color:var(--accent-2)}
+.callout.orange{background:var(--orange-soft);border:1px solid rgba(251,146,60,.3)}.callout.orange .callout-title{color:var(--orange)}
+.callout.pink{background:var(--pink-soft);border:1px solid rgba(236,72,153,.3)}.callout.pink .callout-title{color:var(--pink)}
+.code-block{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:20px 0;box-shadow:var(--shadow)}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-3);border-bottom:1px solid var(--border)}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:var(--text-3);font-weight:500}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-3);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.copy-btn:hover{border-color:var(--orange);color:var(--orange)}
+pre{padding:20px 24px;overflow-x:auto;font-size:13px;font-family:var(--font-mono);line-height:1.8;color:#c9d1d9}
+.kw{color:#ff7b72}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.fn{color:#d2a8ff}.num{color:#79c0ff}.var{color:#ffa657}
+.ascii-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#a8b5d0;overflow-x:auto;margin:24px 0;white-space:pre}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin:28px 0}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--orange),var(--pink));opacity:0;transition:opacity .25s}
+.card:hover{border-color:var(--border-2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:28px;margin-bottom:14px}
+.card-title{font-weight:600;font-size:15px;margin-bottom:8px;color:var(--text-1)}
+.card-desc{font-size:13.5px;color:var(--text-2);line-height:1.7}
+.table-wrap{overflow-x:auto;margin:24px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg-3);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 16px;font-size:14px;color:var(--text-2);border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg-2)}
+.td-good{color:var(--green);font-weight:600}.td-bad{color:var(--rose)}.td-mid{color:var(--amber)}
+.accordion{margin:16px 0}
+.acc-header{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;font-size:15px;transition:all .2s;user-select:none}
+.acc-header:hover{border-color:var(--border-2)}
+.acc-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;background:var(--bg-3)}
+.acc-arrow{transition:transform .25s;color:var(--text-3)}
+.acc-header.open .acc-arrow{transform:rotate(180deg)}
+.acc-body{display:none;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-bottom-left-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.acc-body.open{display:block}
+.quiz-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:20px 0}
+.quiz-q{font-weight:600;font-size:16px;margin-bottom:16px}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text-2);transition:all .2s}
+.quiz-opt:hover{border-color:var(--orange);color:var(--text-1)}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.quiz-reveal{display:none;margin-top:16px;padding:16px;background:var(--bg-3);border-radius:var(--radius-sm);font-size:14px;color:var(--text-2)}
+.quiz-reveal.show{display:block}
+.ex-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0}
+.ex-header{padding:14px 20px;display:flex;gap:12px;align-items:center}
+.ex-header.easy{background:rgba(34,197,94,.08);border-bottom:1px solid rgba(34,197,94,.2)}
+.ex-header.medium{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2)}
+.ex-header.hard{background:rgba(244,63,94,.08);border-bottom:1px solid rgba(244,63,94,.2)}
+.ex-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+.easy .ex-badge{background:var(--green-soft);color:var(--green)}
+.medium .ex-badge{background:var(--amber-soft);color:var(--amber)}
+.hard .ex-badge{background:var(--rose-soft);color:var(--rose)}
+.ex-title{font-weight:600;font-size:14px}
+.ex-body{padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.ex-solution{background:var(--bg-2);border-top:1px solid var(--border);padding:16px 24px;display:none}
+.ex-solution.show{display:block}
+.btn-solution{background:none;border:1px solid var(--border);color:var(--text-3);padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;margin:8px 24px 16px;transition:all .2s;font-family:var(--font-body)}
+.btn-solution:hover{border-color:var(--orange);color:var(--orange)}
+#back-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:linear-gradient(135deg,var(--orange),var(--pink));border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(251,146,60,.4);opacity:0;transform:translateY(16px);transition:all .3s;z-index:800}
+#back-top.show{opacity:1;transform:translateY(0)}
+#back-top:hover{transform:translateY(-2px)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:64px 0}
+.svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;overflow-x:auto}
+.mermaid-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;text-align:center;overflow-x:auto}
+.formula-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;margin:24px 0;font-family:var(--font-mono);font-size:14px;color:#c9d1d9;line-height:2.2}
+.formula-label{font-size:12px;color:var(--text-3);margin-bottom:8px;font-family:var(--font-body)}
+.tag{display:inline-block;background:var(--orange-soft);border:1px solid rgba(251,146,60,.3);color:var(--orange);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;margin:2px}
+.summary-box{background:linear-gradient(135deg,var(--orange-soft),var(--pink-soft));border:1px solid var(--orange);border-radius:var(--radius);padding:32px;margin:48px 0}
+.summary-box h3{color:var(--orange);margin-top:0;margin-bottom:20px}
+.summary-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;color:var(--text-2)}
+.summary-num{width:24px;height:24px;background:var(--orange-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--orange);flex-shrink:0}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:24px 0}
+.res-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;text-decoration:none;transition:all .2s}
+.res-item:hover{border-color:var(--border-2);transform:translateY(-1px)}
+.res-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 8px;flex-shrink:0}
+.res-type.paper{background:var(--blue-soft);color:#60a5fa}
+.res-type.video{background:var(--rose-soft);color:#fb7185}
+.res-type.book{background:var(--amber-soft);color:var(--amber)}
+.res-type.code{background:var(--green-soft);color:var(--green)}
+.res-type.doc{background:var(--orange-soft);color:var(--orange)}
+.res-title{font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:3px}
+.res-sub{font-size:12px;color:var(--text-3)}
+.chapter-footer{border-top:1px solid var(--border);margin-top:80px;padding-top:48px}
+.footer-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px}
+.footer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.footer-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px}
+.footer-card .value{font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.search-highlight{background:rgba(245,158,11,.3);border-radius:2px}
+@media(max-width:600px){.footer-cards{grid-template-columns:1fr}}
+
+/* Embedding space interactive demo */
+.embed-demo{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:28px 0}
+.embed-demo h4{color:var(--orange);margin-top:0;margin-bottom:16px}
+.vector-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.vector-label{font-family:var(--font-mono);font-size:12px;color:var(--text-2);min-width:220px}
+.vector-bar-wrap{flex:1;display:flex;gap:3px;min-width:200px}
+.vector-cell{height:28px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--font-mono);color:white;transition:all .3s;flex:1}
+.sim-badge{background:var(--orange-soft);border:1px solid rgba(251,146,60,.4);color:var(--orange);font-family:var(--font-mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap}
+
+/* Training diagram */
+.train-row{display:flex;align-items:center;gap:0;margin-bottom:12px}
+.train-cell{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:var(--text-2);flex:1;text-align:center}
+.train-arrow{color:var(--text-3);font-size:18px;padding:0 8px;flex-shrink:0}
+.train-cell.pos{border-color:rgba(34,197,94,.4);background:var(--green-soft);color:var(--green)}
+.train-cell.neg{border-color:rgba(244,63,94,.4);background:var(--rose-soft);color:var(--rose)}
+.train-cell.anchor{border-color:rgba(251,146,60,.4);background:var(--orange-soft);color:var(--orange)}
+
+/* Model cards */
+.model-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;transition:all .2s}
+.model-card:hover{border-color:var(--border-2)}
+.model-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:4px 12px;flex-shrink:0;margin-top:2px}
+.model-badge.open{background:var(--green-soft);color:var(--green)}
+.model-badge.api{background:var(--blue-soft);color:#60a5fa}
+.model-info{flex:1}
+.model-name{font-weight:700;font-size:15px;color:var(--text-1);margin-bottom:4px}
+.model-meta{font-family:var(--font-mono);font-size:11px;color:var(--text-3);margin-bottom:6px}
+.model-desc{font-size:13px;color:var(--text-2);line-height:1.65}
+.model-score{font-family:var(--font-mono);font-size:13px;color:var(--orange);font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<nav class="topnav">
+  <div class="topnav-brand">🧠 RAG Masterclass</div>
+  <div class="topnav-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Rechercher dans ce chapitre…">
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">☀️ / 🌙</button>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-chapter">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <a href="chapitre-02-rag-architecture.html" style="color:var(--text-3);text-decoration:none;font-size:12px">Ch.2 — Architecture RAG</a>
+    </div>
+    <div class="sidebar-label">🔢 Chapitre 3</div>
+    <button class="sidebar-item active" onclick="scrollTo(0,0)">Les Embeddings</button>
+    <div class="sidebar-label">Contenu</div>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s1')">1. Objectifs</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s2')">2. Intuition profonde</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s3')">3. Géométrie des embeddings</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s4')">4. Comment ils sont entraînés</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s5')">5. Contrastive Learning</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s6')">6. Bi-Encoder vs Cross-Encoder</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s7')">7. Mesures de similarité</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s8')">8. Benchmark MTEB</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s9')">9. Modèles populaires</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s10')">10. Embeddings multimodaux</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s11')">11. Cas industriels</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s12')">12. Erreurs fréquentes</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s13')">13. Exercices</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s14')">14. Quiz</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s15')">15. Résumé</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s16')">16. Ressources</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-eyebrow">Chapitre 3 sur 12</div>
+      <h1 class="hero-title">
+        Les <span class="hl">Embeddings</span><br>en profondeur
+      </h1>
+      <p class="hero-desc">
+        Les embeddings sont le cœur mathématique du RAG. Comprendre comment ils encodent le sens, comment ils sont entraînés, et comment les évaluer est indispensable pour construire des systèmes RAG de qualité.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ~65 min de lecture
+        </div>
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Master / Doctorat
+        </div>
+        <div class="hero-badge">🔢 Math + Intuition</div>
+      </div>
+    </div>
+
+    <!-- OBJECTIFS -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Objectifs d'apprentissage</h2>
+      </div>
+      <div class="objectives">
+        <h3>À la fin de ce chapitre, vous serez capables de…</h3>
+        <div class="obj-grid">
+          <div class="obj-item"><div class="obj-dot"></div>Expliquer intuitivement ce qu'est un espace d'embedding</div>
+          <div class="obj-item"><div class="obj-dot"></div>Décrire les propriétés géométriques des embeddings</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre l'entraînement par Contrastive Learning</div>
+          <div class="obj-item"><div class="obj-dot"></div>Distinguer Bi-Encoder et Cross-Encoder</div>
+          <div class="obj-item"><div class="obj-dot"></div>Calculer et interpréter la similarité cosinus et L2</div>
+          <div class="obj-item"><div class="obj-dot"></div>Lire et interpréter les benchmarks MTEB</div>
+          <div class="obj-item"><div class="obj-dot"></div>Choisir le bon modèle d'embedding pour son use case</div>
+          <div class="obj-item"><div class="obj-dot"></div>Connaître les embeddings multimodaux et leur usage RAG</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 2 : INTUITION -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Intuition profonde : qu'est-ce qu'un embedding ?</h2>
+      </div>
+
+      <h3>L'analogie de la carte géographique</h3>
+      <p>Imaginez que vous deviez placer des milliers de mots sur une carte géographique selon leur sens. Vous mettriez <strong>"chat"</strong> et <strong>"chien"</strong> proches l'un de l'autre (animaux de compagnie). <strong>"voiture"</strong> et <strong>"camion"</strong> dans un autre quartier (véhicules). <strong>"joie"</strong> et <strong>"bonheur"</strong> voisins (émotions positives). <strong>"Paris"</strong> et <strong>"capitale"</strong> dans la même zone (géographie politique).</p>
+
+      <p>Un <strong>embedding</strong> est exactement cette carte — mais en <strong>768, 1024 ou 4096 dimensions</strong> au lieu de 2. Chaque mot, phrase ou document devient un <em>point</em> dans cet espace multidimensionnel. Et la règle fondamentale : <strong>deux textes proches géographiquement ont un sens similaire.</strong></p>
+
+      <div class="callout orange">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Définition formelle</div>
+          <p class="callout-text">Un <strong>embedding</strong> est une fonction f : texte → ℝᵈ qui mappe un texte de longueur variable vers un vecteur de dimension fixe d, tel que la distance géométrique entre deux vecteurs reflète la distance sémantique entre les textes correspondants. Cette propriété n'est pas donnée — elle est <em>apprise</em> par le modèle sur des millions d'exemples.</p>
+        </div>
+      </div>
+
+      <h3>Pourquoi les embeddings ont-ils été inventés ?</h3>
+      <p>Avant les embeddings neuronaux, les méthodes de recherche d'information (TF-IDF, BM25) comparaient les textes par leurs <strong>mots en commun</strong>. Problèmes :</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🔤</div>
+          <div class="card-title">Problème de vocabulaire</div>
+          <div class="card-desc">"voiture" et "automobile" = 0 mots en commun → TF-IDF pense que ce sont des concepts sans relation.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎭</div>
+          <div class="card-title">Problème de polysémie</div>
+          <div class="card-desc">"banque" (fleuve) et "banque" (finance) = même mot → TF-IDF croit qu'ils sont identiques.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <div class="card-title">Problème de composition</div>
+          <div class="card-desc">"chat qui mange" vs "félin consommant sa nourriture" → TF-IDF: 0 similarité. Embedding: haute similarité.</div>
+        </div>
+      </div>
+
+      <p>Les embeddings résolvent tous ces problèmes en encodant le <strong>sens</strong> plutôt que la forme des mots.</p>
+
+      <h3>Visualisation interactive : l'espace des embeddings</h3>
+      <div class="embed-demo">
+        <h4>🗺️ Exploration de l'espace sémantique (2D simplifié)</h4>
+        <p style="font-size:13px;color:var(--text-3);margin-bottom:16px">Les vecteurs réels ont 768-4096 dimensions. Cette visualisation projette sur 2D pour l'illustration.</p>
+        <canvas id="embedCanvas" width="760" height="360" style="width:100%;border-radius:8px;background:#0a0c12;cursor:crosshair"></canvas>
+        <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2)">
+          <span>🟠 Animaux</span><span>🟣 Technologies</span><span>🔵 Géographie</span><span>🟢 Émotions</span><span>🔴 Nourriture</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 3 : GÉOMÉTRIE -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">La géométrie de l'espace des embeddings</h2>
+      </div>
+
+      <h3>Propriété 1 : Similarité par proximité</h3>
+      <p>La propriété fondamentale : des textes sémantiquement proches produisent des vecteurs géométriquement proches. Mais "proche" peut se mesurer de plusieurs façons.</p>
+
+      <div class="ascii-box">ESPACE VECTORIEL 3D (simplifié depuis 768D réels)
+══════════════════════════════════════════════════
+
+                    Z (émotion/sentiment)
+                    ↑
+           bonheur  ●
+                    |   ● joie
+                    |
+            colère  ● ← émotions négatives
+                    |
+    ────────────────┼──────────────────── Y (concret/abstrait)
+                   /|
+          /        |
+  chien  ●         |
+  chat   ●         |  ← animaux proches entre eux
+                    |
+  GPU  ●            |
+  CPU  ●            |  ← tech proches entre eux
+        ↙           |
+       X (vivant/inerte)
+
+OBSERVATION :
+• chien et chat sont proches (même cluster)
+• chien et GPU sont loin (clusters différents)
+• joie et bonheur sont proches
+• colère et joie sont plus loin (même domaine émotionnel,
+  mais sentiment opposé)</div>
+
+      <h3>Propriété 2 : Relations vectorielles (analogies)</h3>
+      <p>L'une des découvertes les plus surprenantes de Word2Vec (2013) : les <strong>relations sémantiques s'encodent comme des translations vectorielles</strong>.</p>
+
+      <div class="ascii-box">ANALOGIES VECTORIELLES — PROPRIÉTÉ ALGÉBRIQUE
+═══════════════════════════════════════════════
+
+La relation "capitale de" est encodée comme un VECTEUR constant :
+
+  vecteur(Paris) - vecteur(France) ≈ vecteur(Berlin) - vecteur(Allemagne)
+                                    ≈ vecteur(Rome)   - vecteur(Italie)
+
+→ Le vecteur "capitale" = Paris - France ≈ Berlin - Allemagne
+
+EXEMPLES CLASSIQUES :
+  roi   - homme + femme  ≈  reine
+  Paris - France + Italie ≈  Rome
+  médecin - homme + femme ≈  infirmière (BIAIS ! — révèle des biais du corpus)
+
+IMPLICATION POUR LE RAG :
+  Cette propriété n'est pas exploitée directement en RAG standard,
+  mais elle révèle que l'espace d'embedding est STRUCTURÉ et
+  CONTINU — pas aléatoire. Les questions et leurs réponses occupent
+  des régions proches, d'où l'efficacité du retrieval.</div>
+
+      <h3>Propriété 3 : Isotropie et anisotropie</h3>
+      <p>Un problème important dans les LLMs : les embeddings de tokens ont tendance à occuper un <strong>cône étroit</strong> dans l'espace (anisotropie), ce qui dégrade la qualité des comparaisons. Les modèles d'embedding modernes corrigent ce problème via la normalisation.</p>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">La normalisation L2 — toujours le faire</div>
+          <p class="callout-text">Avant de calculer la similarité cosinus, normalisez toujours vos vecteurs à norme unitaire (‖v‖ = 1). Cela rend la similarité cosinus équivalente au produit scalaire (beaucoup plus rapide à calculer), et supprime l'effet de longueur du texte sur le score.</p>
+        </div>
+      </div>
+
+      <h3>Démonstration des vecteurs réels</h3>
+      <div class="embed-demo">
+        <h4>🔢 Représentation vectorielle réelle (dimensions 1-12 sur 768)</h4>
+        <div id="vectorDemo">
+          <div class="vector-row">
+            <div class="vector-label">chat</div>
+            <div class="vector-bar-wrap" id="v-chat"></div>
+            <div class="sim-badge" id="sim-chat">—</div>
+          </div>
+          <div class="vector-row">
+            <div class="vector-label">chien</div>
+            <div class="vector-bar-wrap" id="v-chien"></div>
+            <div class="sim-badge" id="sim-chien">sim = 0.94</div>
+          </div>
+          <div class="vector-row">
+            <div class="vector-label">félin domestique</div>
+            <div class="vector-bar-wrap" id="v-felin"></div>
+            <div class="sim-badge" id="sim-felin">sim = 0.91</div>
+          </div>
+          <div class="vector-row">
+            <div class="vector-label">intelligence artificielle</div>
+            <div class="vector-bar-wrap" id="v-ia"></div>
+            <div class="sim-badge" id="sim-ia">sim = 0.08</div>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-3);margin-top:16px">Valeurs illustratives. Les vrais vecteurs contiennent 768 à 4096 valeurs float32.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 4 : ENTRAÎNEMENT -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">Comment les modèles d'embedding sont entraînés</h2>
+      </div>
+
+      <p>Un modèle d'embedding n'est pas entraîné comme un LLM génératif. Son objectif n'est pas de prédire le token suivant, mais d'apprendre une <strong>représentation vectorielle</strong> où la géométrie encode le sens.</p>
+
+      <h3>Étape 1 : Architecture de base — le Sentence Transformer</h3>
+      <p>La famille de modèles la plus utilisée pour les embeddings est celle des <strong>Sentence Transformers</strong> (Reimers & Gurevych, 2019). L'architecture :</p>
+
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart LR
+    A["📝 Texte d'entrée<br/>'Le chat mange du poisson'"] --> B["Tokenizer<br/>→ IDs de tokens"]
+    B --> C["BERT / RoBERTa<br/>Transformer Encoder"]
+    C --> D["Token Embeddings<br/>n × 768 dimensions"]
+    D --> E["Pooling Layer<br/>(Mean / CLS / Max)"]
+    E --> F["Sentence Embedding<br/>1 × 768 dimensions"]
+    F --> G["Normalisation L2<br/>‖v‖ = 1"]
+    G --> H["✅ Embedding final<br/>prêt pour la similarité"]
+    style C fill:#1a1e2a,stroke:#fb923c,color:#fb923c
+    style F fill:#1a1e2a,stroke:#ec4899,color:#ec4899
+    style H fill:rgba(251,146,60,.1),stroke:#fb923c,color:#e8eaf2
+        </div>
+      </div>
+
+      <h3>La couche de Pooling : agréger les tokens</h3>
+      <p>Un Transformer produit un vecteur <em>par token</em>. Pour obtenir un seul vecteur représentant toute la phrase, on utilise une opération de pooling :</p>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📊 Mean Pooling — La méthode recommandée</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Calcule la <strong>moyenne</strong> de tous les vecteurs de tokens (en ignorant les tokens de padding). C'est la méthode qui donne les meilleurs résultats empiriques pour la recherche sémantique. Tous les tokens contribuent également à la représentation finale.</p>
+          <div class="formula-box" style="font-size:13px">
+            sentence_embedding = (1/n) × Σᵢ token_embedding_i × mask_i
+          </div>
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🎯 CLS Pooling — Historique de BERT</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>BERT introduit un token spécial <code>[CLS]</code> au début de chaque séquence. Son vecteur de sortie était censé capturer la représentation globale de la phrase. Fonctionne bien quand le modèle est explicitement fine-tuné pour cela, mais souvent inférieur au Mean Pooling.</p>
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>⬆️ Max Pooling — Capture les caractéristiques saillantes</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Prend la valeur maximale sur chaque dimension, tous tokens confondus. Capture les "pics" de signal dans le texte plutôt qu'une moyenne équilibrée. Utile pour capturer les termes les plus importants, mais perd de l'information de contexte.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 5 : CONTRASTIVE LEARNING -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2 class="section-title">L'entraînement par Contrastive Learning</h2>
+      </div>
+
+      <p>Le <strong>Contrastive Learning</strong> est le paradigme dominant pour entraîner les modèles d'embedding. L'idée : entraîner le modèle à rapprocher les paires similaires et à éloigner les paires dissimilaires dans l'espace vectoriel.</p>
+
+      <h3>Le principe : triplets (Anchor, Positive, Negative)</h3>
+
+      <div style="margin:24px 0">
+        <div class="train-row">
+          <div class="train-cell anchor">🔵 Anchor (A)<br><em>"Politique congés entreprise"</em></div>
+          <div class="train-arrow">→</div>
+          <div class="train-cell pos">✅ Positive (P) — Similaire<br><em>"Jours de vacances accordés"</em></div>
+          <div class="train-arrow">→</div>
+          <div style="padding:8px;font-size:13px;color:var(--green);text-align:center;min-width:80px">Rapprocher<br>↕ petit</div>
+        </div>
+        <div class="train-row" style="margin-top:8px">
+          <div class="train-cell anchor">🔵 Anchor (A)<br><em>"Politique congés entreprise"</em></div>
+          <div class="train-arrow">→</div>
+          <div class="train-cell neg">❌ Negative (N) — Dissimilaire<br><em>"Budget R&D troisième trimestre"</em></div>
+          <div class="train-arrow">→</div>
+          <div style="padding:8px;font-size:13px;color:var(--rose);text-align:center;min-width:80px">Éloigner<br>↕ grand</div>
+        </div>
+      </div>
+
+      <div class="formula-box">
+        <div class="formula-label">Triplet Loss (Schroff et al., 2015)</div>
+        L(A, P, N) = max(0, ‖f(A) - f(P)‖² - ‖f(A) - f(N)‖² + margin)<br><br>
+        <span style="color:#9ba3bf;font-size:12px;font-family:Inter,sans-serif">
+          f(·) = modèle d'embedding  |  margin = marge de séparation (ex: 0.5)<br>
+          La perte est nulle si la distance A↔P est déjà plus petite que A↔N de "margin"
+        </span>
+      </div>
+
+      <h3>Multiple Negatives Ranking Loss — Le standard actuel</h3>
+      <p>La Triplet Loss est efficace mais lente — elle ne traite que 3 exemples à la fois. Le <strong>Multiple Negatives Ranking Loss</strong> (MNR Loss) exploite tout un batch comme négatifs :</p>
+
+      <div class="ascii-box">MULTIPLE NEGATIVES RANKING LOSS (MNR Loss)
+══════════════════════════════════════════
+
+BATCH de N paires (Qi, Di) :
+  (Q1, D1) : "Combien de congés ?"          → "25 jours par an"
+  (Q2, D2) : "Quel est le salaire ?"        → "Grille salariale..."
+  (Q3, D3) : "Comment poser des RTT ?"      → "Formulaire intranet..."
+  ...
+  (QN, DN)
+
+OBJECTIF :
+  Pour chaque Qi, maximiser sim(Qi, Di) par rapport à
+  tous les autres Dj (j≠i) — qui servent de négatifs.
+
+  sim(Q1, D1) >> sim(Q1, D2)
+  sim(Q1, D1) >> sim(Q1, D3)
+  ...
+
+FONCTION DE PERTE :
+  L = -log [ exp(sim(Qi,Di)/τ) / Σⱼ exp(sim(Qi,Dj)/τ) ]
+  
+  τ = température (ex: 0.05)
+
+AVANTAGE : N²  paires effectives par batch !
+  100 paires → 10 000 exemples d'entraînement effectifs.
+  Beaucoup plus efficace que la Triplet Loss.</div>
+
+      <h3>Les 3 sources de données d'entraînement</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">📚</div>
+          <div class="card-title">Natural Language Inference (NLI)</div>
+          <div class="card-desc">Paires (prémisse, hypothèse) étiquetées entailment/contradiction. Ex : SNLI, MultiNLI. Apprend les relations logiques entre phrases.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">❓</div>
+          <div class="card-title">Questions-Réponses (QA)</div>
+          <div class="card-desc">Paires (question, passage pertinent). Ex : MS-MARCO, Natural Questions. Directement applicable au RAG — entraîne exactement la tâche de retrieval.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <div class="card-title">Web Mining (Paraphrase)</div>
+          <div class="card-desc">Paires de phrases paraphrasées extraites du web. Ex : Quora Question Pairs, Reddit. Apprend la robustesse aux reformulations.</div>
+        </div>
+      </div>
+
+      <h3>In-Batch Hard Negatives — La clé de la qualité</h3>
+      <p>Un problème du MNR Loss naïf : les <em>négatifs aléatoires</em> sont trop faciles. Le modèle apprend vite à les distinguer, mais échoue sur les <strong>Hard Negatives</strong> — des textes sémantiquement proches mais pas la bonne réponse.</p>
+
+      <div class="callout warn">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">L'importance des Hard Negatives</div>
+          <p class="callout-text">
+            <strong>Question :</strong> "Combien de jours de congés après 3 ans ?"<br>
+            <strong>Positive :</strong> "Après 3 ans d'ancienneté, 28 jours sont accordés."<br>
+            <strong>Easy Negative :</strong> "Le budget marketing est de 5M€." ← trivial à distinguer<br>
+            <strong>Hard Negative :</strong> "Après 5 ans d'ancienneté, 30 jours sont accordés." ← difficile !<br><br>
+            Sans Hard Negatives dans l'entraînement, le modèle va retourner "après 5 ans" quand on cherche "après 3 ans". C'est le problème le plus courant dans les systèmes RAG mal calibrés.
+          </p>
+        </div>
+      </div>
+
+      <h3>Matryoshka Representation Learning (MRL)</h3>
+      <p>Une innovation récente (Kusupati et al., 2022) — adoptée par OpenAI dans ses derniers modèles : entraîner un seul modèle à produire des embeddings de <em>différentes dimensions</em>, toutes utiles.</p>
+
+      <div class="ascii-box">MATRYOSHKA EMBEDDINGS — POUPÉES RUSSES VECTORIELLES
+═════════════════════════════════════════════════════
+
+Un seul modèle, plusieurs granularités :
+
+  Embedding complet (3072 dim) : [v₁, v₂, ..., v₃₀₇₂]  ← meilleure qualité
+  Troncature 1536 dim           : [v₁, v₂, ..., v₁₅₃₆]  ← bon compromis
+  Troncature 768 dim            : [v₁, v₂, ...,  v₇₆₈]  ← économique
+  Troncature 256 dim            : [v₁, v₂, ...,  v₂₅₆]  ← cache L1, ultra-rapide
+
+→ Plus besoin de choisir entre qualité et vitesse !
+→ On peut faire un pre-filtering rapide sur 256D,
+  puis un re-ranking précis sur 3072D.
+
+ADOPTÉ PAR :
+  OpenAI text-embedding-3-large et text-embedding-3-small
+  Cohere embed-v3
+  BGE-M3</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 6 : BI vs CROSS -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2 class="section-title">Bi-Encoder vs Cross-Encoder</h2>
+      </div>
+
+      <p>C'est la distinction architecturale la plus importante pour comprendre le pipeline de retrieval en deux étapes (retrieve + rerank).</p>
+
+      <div class="svg-wrap">
+        <svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+          <rect width="740" height="380" fill="#161923" rx="12"/>
+          <text x="370" y="32" text-anchor="middle" font-family="Fraunces,serif" font-size="17" font-weight="900" fill="#e8eaf2">Bi-Encoder vs Cross-Encoder</text>
+
+          <!-- BI-ENCODER -->
+          <rect x="20" y="50" width="340" height="300" rx="10" fill="rgba(251,146,60,0.05)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,2"/>
+          <text x="190" y="74" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#fb923c">BI-ENCODER (SIAMESE)</text>
+          <text x="190" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">Rapide — pour le retrieval initial</text>
+
+          <!-- Query branch -->
+          <rect x="34" y="108" width="130" height="40" rx="6" fill="#1a1e2a" stroke="#252a38"/>
+          <text x="99" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Question</text>
+
+          <rect x="34" y="166" width="130" height="44" rx="6" fill="#1a1e2a" stroke="#fb923c" stroke-opacity=".6"/>
+          <text x="99" y="186" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#fb923c">Encoder</text>
+          <text x="99" y="200" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#5c6480">(partagé)</text>
+
+          <rect x="34" y="228" width="130" height="36" rx="6" fill="#1a1e2a" stroke="#252a38"/>
+          <text x="99" y="250" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#9ba3bf">[0.2,-0.7,0.9…]</text>
+          <text x="99" y="263" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#5c6480">vQ (768D)</text>
+
+          <!-- Doc branch -->
+          <rect x="196" y="108" width="130" height="40" rx="6" fill="#1a1e2a" stroke="#252a38"/>
+          <text x="261" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Chunk/Document</text>
+
+          <rect x="196" y="166" width="130" height="44" rx="6" fill="#1a1e2a" stroke="#fb923c" stroke-opacity=".6"/>
+          <text x="261" y="186" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#fb923c">Encoder</text>
+          <text x="261" y="200" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#5c6480">(partagé)</text>
+
+          <rect x="196" y="228" width="130" height="36" rx="6" fill="#1a1e2a" stroke="#252a38"/>
+          <text x="261" y="250" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#9ba3bf">[0.3,-0.6,0.8…]</text>
+          <text x="261" y="263" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#5c6480">vD (768D)</text>
+
+          <!-- Arrows -->
+          <line x1="99" y1="148" x2="99" y2="164" stroke="#5c6480" stroke-width="1.5"/>
+          <line x1="261" y1="148" x2="261" y2="164" stroke="#5c6480" stroke-width="1.5"/>
+          <line x1="99" y1="210" x2="99" y2="226" stroke="#5c6480" stroke-width="1.5"/>
+          <line x1="261" y1="210" x2="261" y2="226" stroke="#5c6480" stroke-width="1.5"/>
+
+          <!-- Cosine -->
+          <rect x="90" y="284" width="180" height="36" rx="6" fill="rgba(251,146,60,.15)" stroke="#fb923c"/>
+          <text x="180" y="305" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#fb923c">cos(vQ, vD) = 0.87</text>
+
+          <line x1="99" y1="264" x2="150" y2="282" stroke="#5c6480" stroke-width="1"/>
+          <line x1="261" y1="264" x2="210" y2="282" stroke="#5c6480" stroke-width="1"/>
+
+          <text x="190" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#fb923c">⚡ ~5ms / requête</text>
+          <text x="190" y="360" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">✓ Les docs peuvent être pré-indexés</text>
+
+          <!-- CROSS-ENCODER -->
+          <rect x="380" y="50" width="340" height="300" rx="10" fill="rgba(167,153,255,0.05)" stroke="#a799ff" stroke-width="1" stroke-dasharray="4,2"/>
+          <text x="550" y="74" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#a799ff">CROSS-ENCODER</text>
+          <text x="550" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">Précis — pour le re-ranking</text>
+
+          <!-- Concat input -->
+          <rect x="394" y="108" width="312" height="40" rx="6" fill="#1a1e2a" stroke="#252a38"/>
+          <text x="550" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">[CLS] Question [SEP] Chunk [SEP]</text>
+
+          <line x1="550" y1="148" x2="550" y2="164" stroke="#5c6480" stroke-width="1.5"/>
+
+          <!-- Single encoder -->
+          <rect x="440" y="166" width="220" height="60" rx="6" fill="#1a1e2a" stroke="#a799ff" stroke-opacity=".6"/>
+          <text x="550" y="190" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#a799ff">Transformer Encoder</text>
+          <text x="550" y="208" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#5c6480">(traite la PAIRE conjointement)</text>
+
+          <line x1="550" y1="226" x2="550" y2="242" stroke="#5c6480" stroke-width="1.5"/>
+
+          <!-- Score -->
+          <rect x="450" y="244" width="200" height="36" rx="6" fill="rgba(167,153,255,.15)" stroke="#a799ff"/>
+          <text x="550" y="267" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#a799ff">Score = 0.94</text>
+
+          <text x="550" y="310" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a799ff">🎯 Très précis</text>
+          <text x="550" y="328" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">⚠️ ~200ms — Ne peut pas pré-indexer</text>
+          <text x="550" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">→ Utilisé seulement sur Top-20 candidats</text>
+        </svg>
+      </div>
+
+      <h3>Le pipeline en deux étapes : retrieve + rerank</h3>
+      <div class="ascii-box">PIPELINE OPTIMISÉ : BI-ENCODER + CROSS-ENCODER
+════════════════════════════════════════════════
+
+BASE : 100 000 chunks
+
+ÉTAPE 1 — Bi-Encoder (rapide) :
+  vecteur_question → ANN Search → Top-100 candidats
+  Temps : ~10ms
+
+ÉTAPE 2 — Cross-Encoder (précis) :
+  Pour chacun des 100 candidats :
+    Cross-Encoder(question, candidat_i) → score_i
+  Trier par score → Top-5
+  Temps : ~200ms (100 × 2ms)
+
+RÉSULTAT FINAL :
+  5 chunks extrêmement pertinents injectés dans le prompt
+  Temps total retrieval : ~210ms
+
+POURQUOI CETTE COMBINAISON EST OPTIMALE :
+  Bi-Encoder seul     : rapide mais parfois imprécis
+  Cross-Encoder seul  : précis mais trop lent (100K × 200ms = 5h30 !)
+  Bi + Cross          : ✅ rapide ET précis</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Critère</th><th>Bi-Encoder</th><th>Cross-Encoder</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Architecture</strong></td><td>Deux encoders siamois séparés</td><td>Un seul encoder sur la paire</td></tr>
+            <tr><td><strong>Entrée</strong></td><td>Question ET document séparément</td><td>Question + Document concaténés</td></tr>
+            <tr><td><strong>Vitesse</strong></td><td class="td-good">~5ms (pré-calcul possible)</td><td class="td-bad">~200ms par paire</td></tr>
+            <tr><td><strong>Précision</strong></td><td class="td-mid">Bonne (NDCG@10 ~0.70)</td><td class="td-good">Excellente (NDCG@10 ~0.85)</td></tr>
+            <tr><td><strong>Scalabilité</strong></td><td class="td-good">Illimitée (indexation)</td><td class="td-bad">Limité (quelques centaines max)</td></tr>
+            <tr><td><strong>Usage RAG</strong></td><td class="td-good">Retrieval initial</td><td class="td-good">Re-ranking des Top-K</td></tr>
+            <tr><td><strong>Modèles populaires</strong></td><td>BGE-M3, E5, GTE</td><td>ms-marco-MiniLM, BGE-reranker</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 7 : MESURES -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <h2 class="section-title">Mesures de similarité vectorielle</h2>
+      </div>
+
+      <h3>Les trois mesures principales</h3>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📐 Similarité Cosinus — La mesure standard en NLP</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="formula-box" style="font-size:13px">
+            <div class="formula-label">Similarité cosinus</div>
+            cos(θ) = (a · b) / (‖a‖ × ‖b‖) = Σᵢ(aᵢ × bᵢ) / (√Σaᵢ² × √Σbᵢ²)<br><br>
+            Plage : [-1, +1]  |  +1 = identiques  |  0 = orthogonaux  |  -1 = opposés
+          </div>
+          <p><strong>Avantage :</strong> Insensible à la norme du vecteur (longueur du texte n'influence pas le score). C'est la mesure de référence pour les embeddings normalisés.</p>
+          <p><strong>Cas d'usage :</strong> Recherche sémantique, clustering de documents, détection de duplicats.</p>
+          <div class="ascii-box" style="font-size:11px">EXEMPLE NUMÉRIQUE :
+  a = [1, 0, 1]   (vecteur "chat")
+  b = [0.9, 0.1, 0.9]  (vecteur "félin")
+
+  a · b = 1×0.9 + 0×0.1 + 1×0.9 = 1.8
+  ‖a‖ = √(1+0+1) = √2 ≈ 1.414
+  ‖b‖ = √(0.81+0.01+0.81) ≈ 1.281
+
+  cos(θ) = 1.8 / (1.414 × 1.281) ≈ 0.994  ← très similaires !</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📏 Distance L2 (Euclidienne) — La distance "à vol d'oiseau"</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="formula-box" style="font-size:13px">
+            <div class="formula-label">Distance L2 (Euclidienne)</div>
+            d(a, b) = ‖a - b‖ = √(Σᵢ(aᵢ - bᵢ)²)<br><br>
+            Plage : [0, +∞)  |  0 = identiques  |  Plus grand = plus différents
+          </div>
+          <p><strong>Avantage :</strong> Intuitive géométriquement. Nécessaire pour certains algorithmes de clustering (k-means).</p>
+          <p><strong>Important :</strong> Pour des vecteurs normalisés (‖v‖=1), la distance L2 et la similarité cosinus sont <em>mathématiquement équivalentes</em> (d²(a,b) = 2 - 2cos(a,b)). Préférer le produit scalaire (dot product) dans ce cas, car plus rapide à calculer.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>⚡ Produit Scalaire (Dot Product) — Le plus rapide</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="formula-box" style="font-size:13px">
+            <div class="formula-label">Produit scalaire (inner product)</div>
+            a · b = Σᵢ(aᵢ × bᵢ)<br><br>
+            Pour vecteurs normalisés (‖a‖=‖b‖=1) : a · b = cos(θ) exactement
+          </div>
+          <p><strong>Avantage :</strong> Très rapide à calculer (une multiplication matricielle). FAISS et la plupart des bases vectorielles l'optimisent massivement via SIMD/GPU.</p>
+          <p><strong>Recommandation :</strong> Normaliser les vecteurs à norme 1 et utiliser le produit scalaire. Vous obtenez la similarité cosinus à la vitesse du produit scalaire.</p>
+        </div>
+      </div>
+
+      <h3>Quand utiliser quelle mesure ?</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mesure</th><th>Normalisé requis ?</th><th>Vitesse</th><th>Recommandée pour</th></tr></thead>
+          <tbody>
+            <tr><td>Cosinus</td><td class="td-mid">Non (calcule la norme)</td><td class="td-mid">Modérée</td><td>Référence, comparaisons hétérogènes</td></tr>
+            <tr><td>Dot Product</td><td class="td-good">Oui (‖v‖=1)</td><td class="td-good">La plus rapide</td><td>Production avec vecteurs normalisés</td></tr>
+            <tr><td>L2</td><td>Non</td><td class="td-mid">Modérée</td><td>Clustering k-means</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 8 : MTEB -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2 class="section-title">Le Benchmark MTEB — Évaluer les modèles d'embedding</h2>
+      </div>
+
+      <p>Le <strong>MTEB</strong> (Massive Text Embedding Benchmark, Muennighoff et al., 2022) est devenu le standard de référence pour évaluer les modèles d'embedding. Il couvre 8 tâches et 58 datasets en plusieurs langues.</p>
+
+      <h3>Les 8 tâches évaluées</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <div class="card-title">Retrieval</div>
+          <div class="card-desc">Retrouver les passages pertinents pour une question. Directement lié au RAG. Datasets: MS-MARCO, BEIR.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <div class="card-title">Reranking</div>
+          <div class="card-desc">Classer les passages candidats par pertinence. Évalue la qualité du re-ranking Cross-Encoder.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <div class="card-title">STS (Semantic Textual Similarity)</div>
+          <div class="card-desc">Mesurer la similarité entre deux phrases. Corrélation avec le jugement humain.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🗂️</div>
+          <div class="card-title">Clustering</div>
+          <div class="card-desc">Regrouper les textes par thème. Mesure la séparabilité des clusters dans l'espace vectoriel.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">Classification</div>
+          <div class="card-desc">Classifier des textes en catégories à partir des embeddings. Évalue la représentativité sémantique.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🏷️</div>
+          <div class="card-title">Pair Classification</div>
+          <div class="card-desc">Prédire si deux textes sont similaires/dissimilaires, paraphrase, contradiction.</div>
+        </div>
+      </div>
+
+      <h3>Classement MTEB — Top modèles (2024-2025)</h3>
+      <div style="margin:24px 0">
+        <div class="model-card">
+          <span class="model-badge api">API</span>
+          <div class="model-info">
+            <div class="model-name">text-embedding-3-large</div>
+            <div class="model-meta">OpenAI | 3072 dim | 8192 tokens max | $0.13/M tokens</div>
+            <div class="model-desc">Modèle phare d'OpenAI. Support Matryoshka (réduction de dimension sans perte). Excellent multilingue.</div>
+          </div>
+          <div class="model-score">MTEB: 64.6</div>
+        </div>
+        <div class="model-card">
+          <span class="model-badge open">Open</span>
+          <div class="model-info">
+            <div class="model-name">BGE-M3</div>
+            <div class="model-meta">BAAI | 1024 dim | 8192 tokens max | Gratuit</div>
+            <div class="model-desc">SOTA open source. Triple fonctionnalité : Dense + Sparse + ColBERT. 100+ langues. Le choix de référence pour les projets sans budget API.</div>
+          </div>
+          <div class="model-score">MTEB: 62.8</div>
+        </div>
+        <div class="model-card">
+          <span class="model-badge open">Open</span>
+          <div class="model-info">
+            <div class="model-name">E5-Mistral-7B-Instruct</div>
+            <div class="model-meta">Microsoft | 4096 dim | 32768 tokens max | Gratuit</div>
+            <div class="model-desc">Basé sur Mistral-7B. Très longue fenêtre de contexte. Excellent pour les documents longs. Nécessite GPU.</div>
+          </div>
+          <div class="model-score">MTEB: 66.6</div>
+        </div>
+        <div class="model-card">
+          <span class="model-badge api">API</span>
+          <div class="model-info">
+            <div class="model-name">embed-multilingual-v3.0</div>
+            <div class="model-meta">Cohere | 1024 dim | 512 tokens max | $0.10/M tokens</div>
+            <div class="model-desc">Spécialisé multilingue. Excellent pour les applications nécessitant une haute qualité sur des langues non-anglaises (arabe, chinois, français…).</div>
+          </div>
+          <div class="model-score">MTEB: 62.2</div>
+        </div>
+        <div class="model-card">
+          <span class="model-badge open">Open</span>
+          <div class="model-info">
+            <div class="model-name">nomic-embed-text-v1.5</div>
+            <div class="model-meta">Nomic AI | 768 dim | 8192 tokens max | Gratuit</div>
+            <div class="model-desc">Excellent rapport performance/taille. Entièrement open source (poids + données d'entraînement). Support Matryoshka. Idéal pour les environnements contraints.</div>
+          </div>
+          <div class="model-score">MTEB: 62.3</div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Comment choisir son modèle d'embedding</div>
+          <p class="callout-text">
+            <strong>Démarrage rapide / prototypage :</strong> text-embedding-3-small (OpenAI) — simple, bonne qualité, faible coût.<br>
+            <strong>Production sans API externe :</strong> BGE-M3 — SOTA open source, multilingue, triple retrieval.<br>
+            <strong>Documents très longs (&gt;512 tokens) :</strong> E5-Mistral-7B — fenêtre 32K tokens.<br>
+            <strong>Application multilingue critique :</strong> Cohere embed-multilingual-v3 ou BGE-M3.<br>
+            <strong>Contrainte de performance/mémoire :</strong> nomic-embed-text ou BGE-small-en.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 9 : MODÈLES -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2 class="section-title">BGE-M3 en profondeur : l'architecture triple retrieval</h2>
+      </div>
+
+      <p>BGE-M3 (BAAI, 2024) est particulièrement remarquable car il unifie <strong>trois paradigmes de retrieval</strong> dans un seul modèle :</p>
+
+      <div class="ascii-box">BGE-M3 — TRIPLE FONCTIONNALITÉ
+═══════════════════════════════
+
+MÊME MODÈLE, TROIS MODES DE RETRIEVAL :
+
+┌──────────────────────────────────────────────────────────────────┐
+│  MODE 1 : Dense Retrieval (Bi-Encoder classique)                │
+│  ────────────────────────────────────────────────               │
+│  Output : 1 vecteur de 1024 dims par texte                     │
+│  Calcul : cos(vQ, vD)                                           │
+│  Avantage : rapide, indexable                                   │
+│                                                                  │
+│  MODE 2 : Sparse Retrieval (BM25-like neuronal)                 │
+│  ──────────────────────────────────────────────                 │
+│  Output : vecteur sparse (scores d'importance par token)        │
+│  Calcul : Σ (wQᵢ × wDᵢ) sur les tokens en commun               │
+│  Avantage : précision sur les termes exacts                     │
+│                                                                  │
+│  MODE 3 : ColBERT (Multi-Vector / Late Interaction)             │
+│  ──────────────────────────────────────────────────             │
+│  Output : 1 vecteur PAR TOKEN (n × 1024 dims)                  │
+│  Calcul : Σⱼ max_i (vQᵢ · vDⱼ) — MaxSim score                  │
+│  Avantage : capture les interactions token-à-token              │
+└──────────────────────────────────────────────────────────────────┘
+
+FUSION HYBRIDE (RRF ou linéaire) :
+  score_final = α × dense + β × sparse + γ × colbert
+
+→ BGE-M3 Hybrid ≈ +10-15% vs Dense seul sur BEIR benchmark</div>
+
+      <div class="callout concept">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a799ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">ColBERT : la révolution du Late Interaction</div>
+          <p class="callout-text">Le ColBERT (Contextualized Late Interaction over BERT) représente chaque token de la requête et du document par son propre vecteur. Le score de pertinence est calculé comme la somme des similarités maximales — chaque token de la requête trouve son meilleur correspondant dans le document. Plus précis qu'un seul vecteur, plus rapide qu'un Cross-Encoder. BGE-M3 l'intègre nativement.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 10 : MULTIMODAL -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <h2 class="section-title">Embeddings multimodaux : au-delà du texte</h2>
+      </div>
+
+      <p>Les embeddings ne se limitent pas au texte. Les modèles multimodaux créent des espaces vectoriels <strong>partagés entre texte et images</strong>, ouvrant la voie au RAG multimodal.</p>
+
+      <h3>CLIP : le pionnier multimodal (OpenAI, 2021)</h3>
+      <div class="ascii-box">CLIP — CONTRASTIVE LANGUAGE-IMAGE PRE-TRAINING
+═══════════════════════════════════════════════
+
+PRINCIPE :
+  Entraîné sur 400M paires (image, texte alternatif) du web.
+  Objectif : rapprocher chaque image de son texte descriptif.
+
+ARCHITECTURE :
+  ┌──────────────┐     ┌──────────────┐
+  │ Image Encoder│     │ Text Encoder │
+  │ (ViT ou CNN) │     │ (Transformer)│
+  └──────┬───────┘     └──────┬───────┘
+         │                    │
+         ▼                    ▼
+    vImage (512D)        vText (512D)
+         │                    │
+         └────── ESPACE PARTAGÉ ─────┘
+                  cos(vImage, vText)
+
+PROPRIÉTÉ REMARQUABLE :
+  "un chat roux sur un canapé"
+        ↕ cos sim = 0.89
+  [Photo d'un chat roux sur un canapé]
+
+  → La recherche d'image par texte fonctionne !
+  → La recherche de texte par image fonctionne !
+
+USAGE RAG MULTIMODAL :
+  Indexer images ET textes dans le MÊME espace vectoriel.
+  Question texte → retrouver des images ET des textes pertinents.</div>
+
+      <h3>Applications RAG multimodal</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">📸</div>
+          <div class="card-title">Product Search visuel</div>
+          <div class="card-desc">Amazon, Alibaba — "Photo d'un vêtement" → retrouver les produits similaires en base.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🏥</div>
+          <div class="card-title">RAG médical multimodal</div>
+          <div class="card-desc">Retrieval de cas similaires par image médicale (scanner, IRM) + texte symptômes.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📄</div>
+          <div class="card-title">Documents visuels</div>
+          <div class="card-desc">Indexer des PDF avec figures, graphiques et textes — retrouver les bons graphiques pour une question.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎥</div>
+          <div class="card-title">Vidéo Search</div>
+          <div class="card-desc">Retrouver le bon segment de vidéo par description textuelle — CLIP + frames vidéo.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 11 : CAS INDUSTRIELS -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <span class="section-num">11</span>
+        <h2 class="section-title">Cas industriels</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Entreprise</th><th>Modèle d'embedding</th><th>Application</th><th>Insight technique</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>OpenAI</strong></td>
+              <td>text-embedding-3-large</td>
+              <td>ChatGPT retrieval, API</td>
+              <td>Matryoshka : un modèle, plusieurs dimensions selon le budget</td>
+            </tr>
+            <tr>
+              <td><strong>Meta (FAISS)</strong></td>
+              <td>Modèles internes + FAISS</td>
+              <td>Search Facebook/Instagram, recommandations</td>
+              <td>Milliards de vecteurs avec HNSW + quantification pour compression</td>
+            </tr>
+            <tr>
+              <td><strong>Google</strong></td>
+              <td>Gecko (propriétaire)</td>
+              <td>Search neural, Vertex AI</td>
+              <td>Fine-tuning distillation : modèle 4B → petit modèle efficace</td>
+            </tr>
+            <tr>
+              <td><strong>Spotify</strong></td>
+              <td>Audio + texte embeddings</td>
+              <td>Recommandation musicale</td>
+              <td>Espace vectoriel partagé audio/texte pour recommandation cross-modal</td>
+            </tr>
+            <tr>
+              <td><strong>Airbnb</strong></td>
+              <td>Embeddings logement propriétaires</td>
+              <td>Search et recommandation</td>
+              <td>Fine-tuning sur données comportement utilisateur (click-through)</td>
+            </tr>
+            <tr>
+              <td><strong>GitHub Copilot</strong></td>
+              <td>Code embeddings</td>
+              <td>Recherche de code pertinent</td>
+              <td>Embeddings spécialisés code : comprend syntaxe ET sémantique</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Fine-Tuning d'un modèle d'embedding sur vos données</h3>
+      <p>Dans de nombreux cas industriels, on fine-tune un modèle d'embedding général sur des données spécifiques au domaine pour gagner 5-20% de performance.</p>
+
+      <div class="ascii-box">PIPELINE DE FINE-TUNING D'EMBEDDING — DOMAINE MÉDICAL
+═══════════════════════════════════════════════════════
+
+DONNÉES D'ENTRAÎNEMENT :
+  {
+    "query": "Effets indésirables métformine chez insuffisant rénal",
+    "positive": "La metformine est contre-indiquée en cas d'IRC sévère
+                 (DFG < 30 mL/min)...",
+    "negative_hard": "La metformine est prescrite en première intention
+                      dans le diabète de type 2..."
+  }
+
+GÉNÉRATION AUTOMATIQUE DE HARD NEGATIVES (approche LLM-Mining) :
+  1. Indexer tous les documents médicaux avec le modèle de base
+  2. Pour chaque query, récupérer Top-20 candidats
+  3. Exclure le vrai positif → les 19 restants = Hard Negatives
+  4. Filtrage manuel ou par LLM pour supprimer les faux négatifs
+
+FINE-TUNING :
+  Modèle base : BGE-M3
+  Perte : MNR Loss
+  Batch size : 512 (avec in-batch hard negatives)
+  Epochs : 3-5
+  LR : 2e-5 avec warmup
+
+GAIN TYPIQUE : +8-15% NDCG@10 sur domaine médical
+               vs modèle généraliste</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 12 : ERREURS -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <span class="section-num">12</span>
+        <h2 class="section-title">Erreurs fréquentes</h2>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 1 — Utiliser un modèle entraîné en anglais pour le français</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Mauvais retrieval pour des textes en français, arabe, japonais, etc.</p>
+          <p><strong>Cause :</strong> Beaucoup de modèles populaires (comme text-embedding-ada-002 de 2022) ont été entraînés majoritairement sur des données anglaises. Leurs espaces vectoriels sont peu structurés pour les autres langues.</p>
+          <p><strong>Solution :</strong> BGE-M3 (100+ langues), Cohere embed-multilingual-v3, ou multilingual-e5-large pour des applications multilingues. Vérifiez toujours la distribution linguistique des données d'entraînement.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 2 — Ignorer la limite de tokens du modèle d'embedding</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Les chunks longs sont mal représentés, qualité du retrieval dégradée.</p>
+          <p><strong>Cause :</strong> La plupart des modèles d'embedding ont une limite de 512 tokens (ou 256 tokens pour certains). Au-delà, le texte est tronqué silencieusement.</p>
+          <p><strong>Solution :</strong> Vérifier la limite du modèle choisi. Si vos chunks font 1024 tokens, soit réduire la taille de chunk, soit utiliser un modèle à longue fenêtre (E5-Mistral: 32K, nomic-embed: 8K).</p>
+          <div class="ascii-box" style="font-size:11px">Modèle          | Max tokens | Impact chunking
+────────────────────────────────────────────────
+all-MiniLM-L6   |    256     | Chunks max ~200 tokens
+sentence-t5-base|    512     | Chunks max ~400 tokens  
+text-embed-3-sm |   8191     | Chunks jusqu'à 6000 tokens
+nomic-embed-v1.5|   8192     | Idéal pour docs longs
+BGE-M3          |   8192     | Équilibre qualité/taille
+E5-Mistral-7B   |  32768     | Documents entiers possibles</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 3 — Embedder questions et documents sans asymétrie</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> La similarité entre une question courte et un long document est artificielle.</p>
+          <p><strong>Cause :</strong> Une question ("Quels sont les jours de congés ?") et son document réponse ("Article 12 — Les salariés bénéficient de...") ont des structures très différentes. Un modèle symétrique n'est pas optimal pour cette asymétrie.</p>
+          <p><strong>Solution :</strong> Utiliser des modèles entraînés avec un objectif asymétrique Query-Document. Les modèles E5 et BGE proposent des préfixes : <code>query: [votre question]</code> et <code>passage: [votre document]</code> pour signaler l'asymétrie au modèle.</p>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — E5 avec préfixes asymétriques</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="cm"># E5 recommande les préfixes query: / passage:</span>
+queries  = [<span class="str">"query: Combien de jours de congés après 3 ans ?"</span>]
+passages = [<span class="str">"passage: Après 3 ans d'ancienneté, 28 jours sont accordés..."</span>]
+
+<span class="cm"># BGE recommande un format d'instruction</span>
+instruction = <span class="str">"Represent this sentence for searching relevant passages:"</span>
+query_with_instruction = instruction + <span class="str">" Combien de jours après 3 ans ?"</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 4 — Confondre MTEB global et performance sur sa tâche</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> On choisit le modèle avec le meilleur score MTEB global, mais il sous-performe sur son cas d'usage.</p>
+          <p><strong>Cause :</strong> MTEB est une moyenne sur 58 datasets et 8 tâches. Un modèle excellent en STS peut être moyen en Retrieval. Le classement global masque des différences par tâche.</p>
+          <p><strong>Solution :</strong> Regarder le score MTEB <em>spécifique à la tâche Retrieval</em> (ou à votre tâche). Encore mieux : évaluer sur votre propre dataset en calculant Recall@K et NDCG@K sur vos propres paires (question, document pertinent).</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 5 — Ne pas adapter le modèle à son domaine spécialisé</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Symptôme :</strong> Un modèle généraliste performe mal sur des textes très spécialisés (juridique, médical, industriel, financier).</p>
+          <p><strong>Cause :</strong> Le vocabulaire et les concepts de certains domaines sont rares dans les corpus généralistes. L'espace vectoriel n'est pas bien structuré pour ces domaines.</p>
+          <p><strong>Solution :</strong> Fine-tuner un modèle existant sur des paires (question, document pertinent) de votre domaine. Même 500-1000 paires de qualité peuvent significativement améliorer les performances. Utiliser des outils comme Sentence Transformers Trainer ou la bibliothèque MTEB pour évaluer.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 13 : EXERCICES -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <span class="section-num">13</span>
+        <h2 class="section-title">Exercices</h2>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 1 — Calcul de similarité cosinus</span>
+        </div>
+        <div class="ex-body">
+          Soient trois vecteurs (en 3D pour simplifier) :<br><br>
+          <code>v_chat   = [1, 0, 1]</code><br>
+          <code>v_chien  = [0.9, 0.1, 0.8]</code><br>
+          <code>v_voiture = [0, 1, 0]</code><br><br>
+          <strong>a)</strong> Calculez la similarité cosinus entre v_chat et v_chien.<br>
+          <strong>b)</strong> Calculez la similarité cosinus entre v_chat et v_voiture.<br>
+          <strong>c)</strong> Ces résultats sont-ils cohérents avec votre intuition sémantique ? Pourquoi ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) cos(v_chat, v_chien) :</strong><br>
+          Produit scalaire : 1×0.9 + 0×0.1 + 1×0.8 = 1.7<br>
+          ‖v_chat‖ = √(1+0+1) = √2 ≈ 1.414<br>
+          ‖v_chien‖ = √(0.81+0.01+0.64) = √1.46 ≈ 1.208<br>
+          cos = 1.7 / (1.414 × 1.208) ≈ <strong>0.995</strong> — très similaires !<br><br>
+          <strong>b) cos(v_chat, v_voiture) :</strong><br>
+          Produit scalaire : 1×0 + 0×1 + 1×0 = 0<br>
+          cos = 0 / (1.414 × 1.0) = <strong>0.000</strong> — orthogonaux.<br><br>
+          <strong>c)</strong> Oui, très cohérent ! Chat et chien (deux animaux domestiques) ont une très haute similarité cosinus (0.995). Chat et voiture (catégories sans rapport) ont une similarité de 0 — vecteurs orthogonaux. La géométrie encode correctement la sémantique.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 2 — Choisir le bon modèle d'embedding</span>
+        </div>
+        <div class="ex-body">
+          Pour chacun des cas suivants, quel modèle d'embedding recommanderiez-vous et pourquoi ?<br><br>
+          <strong>a)</strong> Startup avec budget limité, application de recherche dans une base documentaire française de 10 000 documents, déploiement sur serveur sans GPU puissant.<br>
+          <strong>b)</strong> Grande banque européenne, documents juridiques en anglais, français et allemand, contrainte de souveraineté des données (pas d'API externe possible).<br>
+          <strong>c)</strong> Application de recherche de produits e-commerce avec images et descriptions textuelles.<br>
+          <strong>d)</strong> Rapide prototype RAG en anglais pour démonstration client, budget API disponible.
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a)</strong> <strong>BGE-M3 ou nomic-embed-text</strong> — Open source (pas de coût par requête), bon support français, taille raisonnable pour CPU. Alternative : multilingual-e5-base.<br><br>
+          <strong>b)</strong> <strong>BGE-M3</strong> — 100+ langues, open source (déployable on-premise, souveraineté), triple retrieval pour une meilleure précision. E5-multilingual-large en alternative.<br><br>
+          <strong>c)</strong> <strong>CLIP (OpenAI) ou ALIGN (Google)</strong> — Embeddings multimodaux dans un espace partagé texte/image. Permettent la recherche croisée texte→image.<br><br>
+          <strong>d)</strong> <strong>text-embedding-3-small (OpenAI)</strong> — Simple à appeler via API, excellente qualité, faible coût ($0.02/M tokens), documentation complète. Parfait pour prototypage rapide.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header medium">
+          <span class="ex-badge">Moyen</span>
+          <span class="ex-title">Exercice 3 — Analyser le Contrastive Learning</span>
+        </div>
+        <div class="ex-body">
+          Vous entraînez un modèle d'embedding pour un système RAG de support client. Voici un batch de 3 paires :<br><br>
+          Paire 1 : Q="Comment retourner un article ?" → D="La politique de retour permet 30 jours..."<br>
+          Paire 2 : Q="Délai de livraison express ?" → D="La livraison express est disponible en 24h..."<br>
+          Paire 3 : Q="Modes de paiement acceptés ?" → D="Nous acceptons CB, PayPal et virement..."<br><br>
+          <strong>a)</strong> Dans le MNR Loss, quels sont les négatifs pour la Paire 1 ?<br>
+          <strong>b)</strong> Pourquoi D2 ("livraison express en 24h") serait-il un <em>Hard Negative</em> plus difficile que D3 ("CB, PayPal") pour la question Q1 ("retourner un article") ?<br>
+          <strong>c)</strong> Proposez un Hard Negative encore plus difficile pour Q1.
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a)</strong> Dans MNR Loss, pour la Paire 1 (Q1, D1), les négatifs in-batch sont D2 et D3 — les documents des autres paires du même batch. Le modèle doit apprendre que sim(Q1, D1) >> sim(Q1, D2) et sim(Q1, D1) >> sim(Q1, D3).<br><br>
+          <strong>b)</strong> D2 ("livraison") traite d'une procédure logistique liée à la commande — même domaine que les retours. D3 ("paiement") est un sujet plus éloigné. Donc Q1 vs D2 est plus ambigu sémantiquement que Q1 vs D3 → D2 est un Hard Negative plus difficile.<br><br>
+          <strong>c)</strong> Hard Negative encore plus difficile pour Q1 : <em>"Les échanges d'articles sont possibles dans les 30 jours avec justificatif d'achat."</em> — parle de retours/échanges, même durée (30 jours), mais ne répond pas exactement à la question de procédure de retour. C'est un exemple que le modèle aura du mal à distinguer.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header hard">
+          <span class="ex-badge">Difficile</span>
+          <span class="ex-title">Exercice 4 — Concevoir une évaluation d'embedding</span>
+        </div>
+        <div class="ex-body">
+          Vous avez développé un système RAG pour une compagnie d'assurance. Vous voulez comparer deux modèles : <strong>Modèle A</strong> (BGE-M3) et <strong>Modèle B</strong> (text-embedding-3-small).<br><br>
+          <strong>a)</strong> Décrivez comment construire un dataset d'évaluation Gold Standard pour votre domaine (assurance).<br>
+          <strong>b)</strong> Définissez les métriques Recall@3, Precision@3 et NDCG@3 en langage simple, puis donnez leur formule.<br>
+          <strong>c)</strong> Avec les résultats fictifs suivants, quelle est votre conclusion ?<br><br>
+          <em>Modèle A (BGE-M3) : Recall@3=0.82, Precision@3=0.61, NDCG@3=0.79<br>
+          Modèle B (text-embed-3-small) : Recall@3=0.78, Precision@3=0.59, NDCG@3=0.76</em>
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Construction du Gold Standard :</strong><br>
+          1. Sélectionner 200-500 questions représentatives du domaine assurance.<br>
+          2. Pour chaque question, faire annoter manuellement les passages pertinents dans la base (1-3 annotateurs experts assurance).<br>
+          3. Inter-annotator agreement pour valider la qualité.<br>
+          Format : {query: "...", relevant_docs: ["id1", "id2"], irrelevant_docs: ["id3"...]}<br><br>
+          <strong>b) Métriques :</strong><br>
+          <strong>Recall@3</strong> = Parmi tous les documents pertinents qui existent, combien en a-t-on retrouvé dans les Top-3 ?, soit : |Pertinents retrouvés dans Top-3| / |Total pertinents|.<br>
+          <strong>Precision@3</strong> = Parmi les 3 documents retournés, combien sont pertinents ?, soit : |Pertinents dans Top-3| / 3.<br>
+          <strong>NDCG@3</strong> = Discounted Cumulative Gain normalisé — tient compte de la <em>position</em> des documents pertinents (un pertinent en rank 1 vaut plus qu'en rank 3). NDCG = DCG@K / IDCG@K où DCG = Σ rel_i / log2(i+1).<br><br>
+          <strong>c) Conclusion :</strong> BGE-M3 surpasse sur toutes les métriques, mais modestement (3-4% d'écart). Le choix dépend du contexte : si on peut héberger BGE-M3 en local → l'adopter (gratuit + meilleur). Si on préfère la simplicité API et que le delta est acceptable → text-embedding-3-small. Faire tourner aussi une évaluation de la latence — BGE-M3 est plus lent sur CPU.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 14 : QUIZ -->
+    <div class="section" id="s14">
+      <div class="section-header">
+        <span class="section-num">14</span>
+        <h2 class="section-title">Quiz d'auto-évaluation</h2>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q1. Quel est l'objectif d'entraînement d'un modèle d'embedding (Contrastive Learning) ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Prédire le prochain token dans une séquence</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Rapprocher les paires similaires et éloigner les paires dissimilaires dans l'espace vectoriel</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Minimiser la distance L2 entre tous les vecteurs</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Maximiser la dimension de l'espace vectoriel</div>
+        </div>
+        <div class="quiz-reveal">Le Contrastive Learning apprend une fonction d'embedding f(·) telle que f(texte_similaire_A) est proche de f(texte_similaire_B), mais loin de f(texte_dissimilaire_C). C'est radicalement différent de l'objectif des LLMs génératifs (prédiction du prochain token).</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q2. Quelle est la principale différence entre un Bi-Encoder et un Cross-Encoder ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Le Bi-Encoder est plus précis mais plus lent</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Le Bi-Encoder encode question et document séparément ; le Cross-Encoder les traite conjointement</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Le Cross-Encoder ne peut traiter que des textes courts</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Le Bi-Encoder utilise deux modèles différents</div>
+        </div>
+        <div class="quiz-reveal">Le Bi-Encoder produit des vecteurs indépendants pour la question et le document — permet l'indexation préalable des documents. Le Cross-Encoder traite la paire (question, document) conjointement — plus précis car capture les interactions, mais ne peut pas pré-calculer les représentations des documents.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q3. Pourquoi les Matryoshka Embeddings sont-ils intéressants en production ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Ils permettent d'encoder des images et du texte</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Ils réduisent le temps d'entraînement du modèle</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) Un seul modèle peut produire des embeddings de différentes dimensions selon le compromis qualité/vitesse souhaité</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Ils éliminent le besoin de normalisation des vecteurs</div>
+        </div>
+        <div class="quiz-reveal">Les Matryoshka Embeddings (MRL) permettent de tronquer les vecteurs à différentes dimensions (3072 → 1536 → 768 → 256) tout en conservant une bonne qualité. On peut faire un first-pass rapide sur 256D et un reranking précis sur 3072D avec le même modèle.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q4. Quel est le principal avantage du Mean Pooling sur le CLS Pooling ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Il est plus rapide à calculer</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Il agrège l'information de tous les tokens, pas seulement le premier</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Il ne nécessite pas de modèle Transformer</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Il produit des vecteurs de plus grande dimension</div>
+        </div>
+        <div class="quiz-reveal">Le Mean Pooling fait la moyenne de tous les vecteurs de tokens (pondérée par le masque d'attention pour ignorer le padding). Il utilise l'information de toute la séquence. Le CLS Pooling utilise uniquement le vecteur du token [CLS] — pertinent quand le modèle est spécifiquement entraîné pour cela, mais inférieur en général.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q5. Qu'est-ce qu'un "Hard Negative" dans l'entraînement d'embeddings ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Un exemple d'entraînement avec une étiquette incorrecte</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Un document très long et difficile à encoder</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) Un exemple négatif (non pertinent) mais sémantiquement proche de la requête</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Un exemple avec beaucoup de bruit ou de caractères spéciaux</div>
+        </div>
+        <div class="quiz-reveal">Un Hard Negative est un document qui semble pertinent à première vue (même domaine, vocabulaire similaire) mais qui ne répond pas à la requête. Ex: Q="congés après 3 ans" → Hard Negative="congés après 5 ans". Sans Hard Negatives dans l'entraînement, le modèle ne saura pas distinguer ces cas similaires.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 15 : RÉSUMÉ -->
+    <div class="section" id="s15">
+      <div class="section-header">
+        <span class="section-num">15</span>
+        <h2 class="section-title">Résumé du chapitre</h2>
+      </div>
+
+      <div class="summary-box">
+        <h3>🎯 Ce qu'il faut absolument retenir</h3>
+        <div class="summary-item"><div class="summary-num">1</div><div>Un <strong>embedding</strong> est une fonction f : texte → ℝᵈ telle que la distance géométrique entre vecteurs reflète la distance sémantique. Propriété apprise, pas donnée.</div></div>
+        <div class="summary-item"><div class="summary-num">2</div><div>Les embeddings encodent des <strong>relations algébriques</strong> : addition et soustraction vectorielle correspondent à des opérations sémantiques (roi - homme + femme ≈ reine).</div></div>
+        <div class="summary-item"><div class="summary-num">3</div><div>L'architecture standard est le <strong>Sentence Transformer</strong> : Transformer Encoder + Mean Pooling + Normalisation L2.</div></div>
+        <div class="summary-item"><div class="summary-num">4</div><div>L'entraînement utilise le <strong>Contrastive Learning</strong> (MNR Loss) : rapprocher les paires similaires, éloigner les dissimilaires. Les Hard Negatives sont critiques pour la qualité.</div></div>
+        <div class="summary-item"><div class="summary-num">5</div><div><strong>Bi-Encoder</strong> (rapide, indexable) pour le retrieval initial → <strong>Cross-Encoder</strong> (précis, lent) pour le re-ranking sur Top-K. Ces deux étapes se complètent.</div></div>
+        <div class="summary-item"><div class="summary-num">6</div><div>La <strong>similarité cosinus</strong> (ou dot product sur vecteurs normalisés) est la mesure standard. Toujours normaliser les vecteurs à norme 1.</div></div>
+        <div class="summary-item"><div class="summary-num">7</div><div>Le <strong>MTEB</strong> est le benchmark de référence. Regarder les scores Retrieval, pas le score global. Évaluer sur ses propres données de domaine.</div></div>
+        <div class="summary-item"><div class="summary-num">8</div><div><strong>BGE-M3</strong> est le SOTA open source (triple retrieval, 100+ langues). Pour les projets avec budget API, <strong>text-embedding-3-large</strong> d'OpenAI (Matryoshka) est excellent.</div></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="tag">Embedding</span><span class="tag">Sentence Transformer</span><span class="tag">Contrastive Learning</span><span class="tag">MNR Loss</span><span class="tag">Hard Negatives</span><span class="tag">Bi-Encoder</span><span class="tag">Cross-Encoder</span><span class="tag">Mean Pooling</span><span class="tag">Similarité Cosinus</span><span class="tag">BGE-M3</span><span class="tag">MTEB</span><span class="tag">Matryoshka</span><span class="tag">CLIP</span><span class="tag">ColBERT</span><span class="tag">Normalisation L2</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 16 : RESSOURCES -->
+    <div class="section" id="s16">
+      <div class="section-header">
+        <span class="section-num">16</span>
+        <h2 class="section-title">Ressources pour aller plus loin</h2>
+      </div>
+
+      <h3>📄 Articles fondateurs</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://arxiv.org/abs/1908.10084" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">Sentence-BERT</div><div class="res-sub">Reimers & Gurevych, 2019 — Architecture Sentence Transformer</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2004.12832" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">ColBERT</div><div class="res-sub">Khattab & Zaharia, 2020 — Late Interaction</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2103.00020" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">CLIP</div><div class="res-sub">Radford et al., OpenAI 2021 — Embeddings multimodaux</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2210.07316" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">MTEB</div><div class="res-sub">Muennighoff et al., 2022 — Le benchmark de référence</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2402.03216" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">BGE-M3</div><div class="res-sub">BAAI, 2024 — Triple retrieval, SOTA open source</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2205.13147" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">Matryoshka Representation Learning</div><div class="res-sub">Kusupati et al., 2022 — Embeddings multi-granularité</div></div>
+        </a>
+      </div>
+
+      <h3>💻 Outils et bibliothèques</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://www.sbert.net/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">Sentence Transformers</div><div class="res-sub">Bibliothèque Python de référence pour les embeddings</div></div>
+        </a>
+        <a class="res-item" href="https://huggingface.co/spaces/mteb/leaderboard" target="_blank">
+          <span class="res-type doc">Outil</span>
+          <div><div class="res-title">MTEB Leaderboard</div><div class="res-sub">Classement en temps réel des modèles d'embedding</div></div>
+        </a>
+        <a class="res-item" href="https://github.com/UKPLab/sentence-transformers" target="_blank">
+          <span class="res-type code">GitHub</span>
+          <div><div class="res-title">Sentence Transformers GitHub</div><div class="res-sub">Code source + exemples d'entraînement</div></div>
+        </a>
+      </div>
+
+      <h3>🎥 Vidéos recommandées</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://www.youtube.com/watch?v=viZrOnJclY0" target="_blank">
+          <span class="res-type video">Vidéo</span>
+          <div><div class="res-title">Sentence Transformers Explained</div><div class="res-sub">Explication visuelle des Sentence BERT</div></div>
+        </a>
+        <a class="res-item" href="https://www.deeplearning.ai/short-courses/large-language-models-semantic-search/" target="_blank">
+          <span class="res-type video">Cours</span>
+          <div><div class="res-title">LLMs for Semantic Search</div><div class="res-sub">DeepLearning.AI × Cohere — Embeddings + RAG</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="chapter-footer">
+      <div class="footer-cards">
+        <div class="footer-card">
+          <div class="label">✅ Ce que nous avons appris</div>
+          <div class="value">Les Embeddings en profondeur</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Géométrie sémantique, Sentence Transformers, Contrastive Learning, MNR Loss, Hard Negatives, Bi-Encoder vs Cross-Encoder, similarité cosinus, benchmark MTEB, modèles populaires, embeddings multimodaux.</div>
+        </div>
+        <div class="footer-card">
+          <div class="label">👉 Chapitre suivant</div>
+          <div class="value">Les Bases de Données Vectorielles</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Nous allons plonger dans FAISS, ChromaDB, Qdrant, pgvector — leurs algorithmes d'indexation (HNSW, IVF, PQ), la quantification vectorielle, et comment choisir et configurer la bonne base pour son use case.</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:32px 0">
+        <div style="display:inline-flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 28px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-size:14px;color:var(--text-2)">Écrivez <strong style="color:var(--orange)">"Suivant"</strong> pour le Chapitre 4 — Bases de Données Vectorielles</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding-bottom:16px;font-size:12px;color:var(--text-3)">
+        RAG Masterclass · Chapitre 3 sur 12 · Cours universitaire interactif
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+mermaid.initialize({
+  theme:'dark',
+  themeVariables:{primaryColor:'#1a1e2a',primaryTextColor:'#e8eaf2',primaryBorderColor:'#fb923c',lineColor:'#5c6480',secondaryColor:'#13161e',fontFamily:'Inter,sans-serif',fontSize:'13px'},
+  flowchart:{curve:'basis'}
+});
+
+/* PROGRESS */
+window.addEventListener('scroll',()=>{
+  const st=window.scrollY,dh=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progress-bar').style.width=(dh>0?(st/dh)*100:0)+'%';
+  document.getElementById('back-top').classList.toggle('show',st>400);
+  const sections=document.querySelectorAll('.section');
+  let current='';
+  sections.forEach(s=>{if(s.offsetTop-100<=st)current=s.id});
+  document.querySelectorAll('.sidebar-item').forEach(item=>{
+    item.classList.remove('active');
+    if(item.getAttribute('onclick')?.includes(current))item.classList.add('active');
+  });
+});
+
+function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='light'?'dark':'light')}
+function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleAcc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open')}
+function answerQuiz(opt,correct){
+  opt.closest('.quiz-opts').querySelectorAll('.quiz-opt').forEach(o=>{o.style.pointerEvents='none';if(o===opt)o.classList.add(correct?'correct':'wrong')});
+  const r=opt.closest('.quiz-card').querySelector('.quiz-reveal');if(r)r.classList.add('show');
+}
+function toggleSolution(btn){
+  const s=btn.nextElementSibling;s.classList.toggle('show');
+  btn.textContent=s.classList.contains('show')?'🙈 Masquer la correction':'📖 Voir la correction';
+}
+document.querySelectorAll('.copy-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    navigator.clipboard.writeText(btn.closest('.code-block').querySelector('pre').textContent)
+      .then(()=>{btn.textContent='✓ Copié';setTimeout(()=>btn.textContent='Copier',2000)});
+  });
+});
+
+/* SEARCH */
+const searchInput=document.getElementById('search-input');
+let st2;
+searchInput.addEventListener('input',()=>{
+  clearTimeout(st2);
+  st2=setTimeout(()=>{
+    const q=searchInput.value.trim();
+    document.querySelectorAll('.search-highlight').forEach(el=>{el.outerHTML=el.textContent});
+    if(q.length<2)return;
+    const rx=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    const walker=document.createTreeWalker(document.querySelector('.main'),NodeFilter.SHOW_TEXT,null);
+    const nodes=[];let node;
+    while((node=walker.nextNode())){if(node.parentElement.closest('script,style')===null&&rx.test(node.textContent))nodes.push(node);}
+    nodes.forEach(n=>{const sp=document.createElement('span');sp.innerHTML=n.textContent.replace(rx,'<mark class="search-highlight">$1</mark>');n.parentNode.replaceChild(sp,n);});
+    const first=document.querySelector('.search-highlight');
+    if(first)first.scrollIntoView({behavior:'smooth',block:'center'});
+  },300);
+});
+
+/* CANVAS EMBEDDING VISUALIZATION */
+const canvas = document.getElementById('embedCanvas');
+if(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  
+  const clusters = [
+    { label:'Animaux', color:'#fb923c', points:[
+      {x:0.15,y:0.25,w:'chat'},{x:0.22,y:0.30,w:'chien'},{x:0.10,y:0.35,w:'lapin'},
+      {x:0.28,y:0.20,w:'lion'},{x:0.18,y:0.42,w:'oiseau'},{x:0.32,y:0.33,w:'tigre'}
+    ]},
+    { label:'Technologies', color:'#a799ff', points:[
+      {x:0.72,y:0.20,w:'GPU'},{x:0.80,y:0.25,w:'CPU'},{x:0.68,y:0.32,w:'RAM'},
+      {x:0.78,y:0.35,w:'IA'},{x:0.85,y:0.18,w:'Python'},{x:0.74,y:0.42,w:'réseau'}
+    ]},
+    { label:'Géographie', color:'#60a5fa', points:[
+      {x:0.45,y:0.15,w:'Paris'},{x:0.52,y:0.22,w:'France'},{x:0.40,y:0.28,w:'capitale'},
+      {x:0.58,y:0.18,w:'Berlin'},{x:0.48,y:0.35,w:'Europe'}
+    ]},
+    { label:'Émotions', color:'#22c55e', points:[
+      {x:0.20,y:0.72,w:'joie'},{x:0.28,y:0.65,w:'bonheur'},{x:0.15,y:0.80,w:'amour'},
+      {x:0.35,y:0.72,w:'espoir'},{x:0.10,y:0.65,w:'paix'}
+    ]},
+    { label:'Nourriture', color:'#f43f5e', points:[
+      {x:0.65,y:0.72,w:'pain'},{x:0.72,y:0.65,w:'fromage'},{x:0.60,y:0.80,w:'vin'},
+      {x:0.78,y:0.75,w:'pizza'},{x:0.68,y:0.58,w:'café'}
+    ]}
+  ];
+
+  let hoveredPoint = null;
+
+  function drawEmbedSpace() {
+    ctx.clearRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle = 'rgba(37,42,56,0.5)';
+    ctx.lineWidth = 1;
+    for(let x=0;x<=W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<=H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    
+    // Axes labels
+    ctx.fillStyle = '#5c6480';
+    ctx.font = '11px Inter';
+    ctx.fillText('Dimension 1 (abstrait ↔ concret)', W-240, H-8);
+    ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);
+    ctx.fillText('Dimension 2 (inerte ↔ vivant)', -80, 0);ctx.restore();
+
+    // Draw clusters with convex hull approximation (ellipses)
+    clusters.forEach(cluster => {
+      const pts = cluster.points.map(p=>({x:p.x*W,y:p.y*H}));
+      const cx = pts.reduce((s,p)=>s+p.x,0)/pts.length;
+      const cy = pts.reduce((s,p)=>s+p.y,0)/pts.length;
+      const rx = Math.max(...pts.map(p=>Math.abs(p.x-cx))) + 28;
+      const ry = Math.max(...pts.map(p=>Math.abs(p.y-cy))) + 28;
+      
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      ctx.fillStyle = cluster.color + '15';
+      ctx.fill();
+      ctx.strokeStyle = cluster.color + '50';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4,3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // Draw lines between similar points
+    clusters.forEach(cluster => {
+      cluster.points.forEach((p,i) => {
+        cluster.points.forEach((q,j) => {
+          if(j<=i) return;
+          ctx.beginPath();
+          ctx.moveTo(p.x*W, p.y*H);
+          ctx.lineTo(q.x*W, q.y*H);
+          ctx.strokeStyle = cluster.color + '25';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+      });
+    });
+
+    // Draw points and labels
+    clusters.forEach(cluster => {
+      cluster.points.forEach(p => {
+        const px = p.x*W, py = p.y*H;
+        const isHovered = hoveredPoint === p;
+        
+        ctx.beginPath();
+        ctx.arc(px, py, isHovered ? 8 : 6, 0, Math.PI*2);
+        ctx.fillStyle = cluster.color;
+        ctx.fill();
+        if(isHovered){
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Glow
+          ctx.shadowColor = cluster.color;
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(px, py, 8, 0, Math.PI*2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.fillStyle = isHovered ? 'white' : 'rgba(232,234,242,0.85)';
+        ctx.font = isHovered ? 'bold 12px Inter' : '11px Inter';
+        ctx.fillText(p.w, px+9, py+4);
+      });
+    });
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    const my = (e.clientY - rect.top) * (H / rect.height);
+    hoveredPoint = null;
+    clusters.forEach(cluster => {
+      cluster.points.forEach(p => {
+        const dx = p.x*W - mx, dy = p.y*H - my;
+        if(Math.sqrt(dx*dx+dy*dy) < 14) hoveredPoint = p;
+      });
+    });
+    canvas.style.cursor = hoveredPoint ? 'pointer' : 'crosshair';
+    drawEmbedSpace();
+  });
+
+  canvas.addEventListener('mouseleave', () => { hoveredPoint=null; drawEmbedSpace(); });
+  drawEmbedSpace();
+}
+
+/* VECTOR BARS */
+function renderVectorBars() {
+  const vectors = {
+    'v-chat':   [0.82,-0.71, 0.91,-0.12, 0.55, 0.34,-0.68, 0.79, 0.23,-0.45, 0.61,-0.88],
+    'v-chien':  [0.79,-0.68, 0.88,-0.10, 0.52, 0.31,-0.65, 0.77, 0.20,-0.42, 0.58,-0.85],
+    'v-felin':  [0.80,-0.70, 0.89,-0.11, 0.53, 0.32,-0.66, 0.78, 0.21,-0.43, 0.59,-0.86],
+    'v-ia':     [-0.32, 0.88,-0.45, 0.71,-0.23, 0.91, 0.12,-0.54, 0.88,-0.11, 0.34,-0.72]
+  };
+  
+  Object.entries(vectors).forEach(([id, vals]) => {
+    const container = document.getElementById(id);
+    if(!container) return;
+    container.innerHTML = '';
+    vals.forEach(v => {
+      const cell = document.createElement('div');
+      cell.className = 'vector-cell';
+      const intensity = Math.abs(v);
+      if(v > 0) cell.style.background = `rgba(251,146,60,${intensity})`;
+      else cell.style.background = `rgba(167,153,255,${intensity})`;
+      cell.title = v.toFixed(2);
+      container.appendChild(cell);
+    });
+  });
+}
+renderVectorBars();
+</script>
+</body>
+</html>
