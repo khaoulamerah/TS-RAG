@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Chunking Avancé | Cours RAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f14;--bg-2:#13161e;--bg-3:#1a1e2a;--bg-card:#161923;
+  --border:#252a38;--border-2:#2e3547;
+  --text-1:#e8eaf2;--text-2:#9ba3bf;--text-3:#5c6480;
+  --accent:#7c6af7;--accent-2:#a799ff;--accent-glow:rgba(124,106,247,.18);
+  --teal:#2dd4bf;--teal-soft:rgba(45,212,191,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --rose:#f43f5e;--rose-soft:rgba(244,63,94,.12);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --blue:#3b82f6;--blue-soft:rgba(59,130,246,.12);
+  --violet:#8b5cf6;--violet-soft:rgba(139,92,246,.12);
+  --sidebar-w:280px;--radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --font-display:'Fraunces',serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#f8f9fc;--bg-2:#f0f2f8;--bg-3:#e8ebf5;--bg-card:#ffffff;
+  --border:#dde1f0;--border-2:#c8ceea;--text-1:#111827;--text-2:#4b5563;--text-3:#9ca3af;
+  --accent-glow:rgba(124,106,247,.10);--shadow:0 4px 24px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text-1);line-height:1.7;font-size:16px;overflow-x:hidden}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--violet),var(--accent));width:0%;z-index:1000;box-shadow:0 0 10px var(--violet)}
+.topnav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(13,15,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:900}
+[data-theme="light"] .topnav{background:rgba(248,249,252,.85)}
+.topnav-brand{font-family:var(--font-display);font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--violet),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex:1}
+.topnav-search{display:flex;align-items:center;gap:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;flex:0 0 220px}
+.topnav-search input{background:none;border:none;outline:none;color:var(--text-1);font-size:13px;width:100%;font-family:var(--font-body)}
+.topnav-search input::placeholder{color:var(--text-3)}
+.btn-theme{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all .2s}
+.btn-theme:hover{border-color:var(--violet);color:var(--violet)}
+.layout{display:flex;padding-top:56px;min-height:100vh}
+.sidebar{position:fixed;top:56px;left:0;bottom:0;width:var(--sidebar-w);background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;padding:24px 0;z-index:800}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);padding:12px 24px 6px}
+.sidebar-item{display:block;padding:7px 24px;color:var(--text-2);font-size:13.5px;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg-3);color:var(--text-1)}
+.sidebar-item.active{background:var(--violet-soft);color:var(--violet);font-weight:500}
+.sidebar-sub{font-size:12.5px;padding-left:36px;color:var(--text-3)}
+.sidebar-chapter{font-size:12px;color:var(--text-3);padding:4px 24px;display:flex;align-items:center;gap:8px}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 64px 120px;max-width:calc(var(--sidebar-w) + 860px)}
+@media(max-width:900px){.sidebar{transform:translateX(-100%)}.main{margin-left:0;padding:32px 24px 100px}}
+.hero{margin-bottom:64px;padding:56px 0 0}
+.hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.hero-eyebrow::before{content:'';width:24px;height:2px;background:linear-gradient(90deg,var(--violet),var(--accent-2));display:block}
+.hero-title{font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:24px}
+.hero-title .hl{background:linear-gradient(135deg,var(--violet) 0%,var(--accent-2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:18px;color:var(--text-2);line-height:1.75;max-width:640px;margin-bottom:36px}
+.hero-meta{display:flex;gap:24px;flex-wrap:wrap}
+.hero-badge{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--text-2)}
+.objectives{background:linear-gradient(135deg,var(--violet-soft),var(--accent-glow));border:1px solid var(--violet);border-radius:var(--radius);padding:32px;margin:48px 0}
+.objectives h3{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.obj-item{display:flex;align-items:flex-start;gap:10px;background:var(--violet-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;color:var(--text-1)}
+.obj-dot{width:6px;height:6px;background:var(--violet);border-radius:50%;margin-top:7px;flex-shrink:0}
+.section{margin:80px 0}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.section-num{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--violet);background:var(--violet-soft);border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:4px 10px}
+.section-title{font-family:var(--font-display);font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:600;margin:32px 0 14px;color:var(--text-1)}
+h4{font-size:15px;font-weight:600;color:var(--violet);margin:24px 0 10px}
+p{color:var(--text-2);margin-bottom:16px;line-height:1.8}
+strong{color:var(--text-1);font-weight:600}
+.callout{border-radius:var(--radius);padding:20px 24px;margin:24px 0;display:flex;gap:16px;align-items:flex-start}
+.callout-icon{flex-shrink:0;margin-top:2px}
+.callout-body{flex:1}
+.callout-title{font-weight:600;font-size:14px;margin-bottom:6px}
+.callout-text{font-size:14px;color:var(--text-2);line-height:1.7;margin:0}
+.callout.info{background:var(--blue-soft);border:1px solid rgba(59,130,246,.3)}.callout.info .callout-title{color:#60a5fa}
+.callout.warn{background:var(--amber-soft);border:1px solid rgba(245,158,11,.3)}.callout.warn .callout-title{color:var(--amber)}
+.callout.tip{background:var(--green-soft);border:1px solid rgba(34,197,94,.3)}.callout.tip .callout-title{color:var(--green)}
+.callout.danger{background:var(--rose-soft);border:1px solid rgba(244,63,94,.3)}.callout.danger .callout-title{color:var(--rose)}
+.callout.concept{background:var(--accent-glow);border:1px solid rgba(124,106,247,.3)}.callout.concept .callout-title{color:var(--accent-2)}
+.callout.violet{background:var(--violet-soft);border:1px solid rgba(139,92,246,.3)}.callout.violet .callout-title{color:var(--violet)}
+.callout.teal{background:var(--teal-soft);border:1px solid rgba(45,212,191,.3)}.callout.teal .callout-title{color:var(--teal)}
+.code-block{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:20px 0;box-shadow:var(--shadow)}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-3);border-bottom:1px solid var(--border)}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:var(--text-3);font-weight:500}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-3);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.copy-btn:hover{border-color:var(--violet);color:var(--violet)}
+pre{padding:20px 24px;overflow-x:auto;font-size:13px;font-family:var(--font-mono);line-height:1.8;color:#c9d1d9}
+.kw{color:#ff7b72}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.fn{color:#d2a8ff}.num{color:#79c0ff}.var{color:#ffa657}
+.ascii-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#a8b5d0;overflow-x:auto;margin:24px 0;white-space:pre}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin:28px 0}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--violet),var(--accent-2));opacity:0;transition:opacity .25s}
+.card:hover{border-color:var(--border-2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:28px;margin-bottom:14px}
+.card-title{font-weight:600;font-size:15px;margin-bottom:8px;color:var(--text-1)}
+.card-desc{font-size:13.5px;color:var(--text-2);line-height:1.7}
+.table-wrap{overflow-x:auto;margin:24px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg-3);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 16px;font-size:14px;color:var(--text-2);border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg-2)}
+.td-good{color:var(--green);font-weight:600}.td-bad{color:var(--rose)}.td-mid{color:var(--amber)}
+.accordion{margin:16px 0}
+.acc-header{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;font-size:15px;transition:all .2s;user-select:none}
+.acc-header:hover{border-color:var(--border-2)}
+.acc-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;background:var(--bg-3)}
+.acc-arrow{transition:transform .25s;color:var(--text-3)}
+.acc-header.open .acc-arrow{transform:rotate(180deg)}
+.acc-body{display:none;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-bottom-left-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.acc-body.open{display:block}
+.quiz-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:20px 0}
+.quiz-q{font-weight:600;font-size:16px;margin-bottom:16px}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text-2);transition:all .2s}
+.quiz-opt:hover{border-color:var(--violet);color:var(--text-1)}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.quiz-reveal{display:none;margin-top:16px;padding:16px;background:var(--bg-3);border-radius:var(--radius-sm);font-size:14px;color:var(--text-2)}
+.quiz-reveal.show{display:block}
+.ex-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0}
+.ex-header{padding:14px 20px;display:flex;gap:12px;align-items:center}
+.ex-header.easy{background:rgba(34,197,94,.08);border-bottom:1px solid rgba(34,197,94,.2)}
+.ex-header.medium{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2)}
+.ex-header.hard{background:rgba(244,63,94,.08);border-bottom:1px solid rgba(244,63,94,.2)}
+.ex-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+.easy .ex-badge{background:var(--green-soft);color:var(--green)}
+.medium .ex-badge{background:var(--amber-soft);color:var(--amber)}
+.hard .ex-badge{background:var(--rose-soft);color:var(--rose)}
+.ex-title{font-weight:600;font-size:14px}
+.ex-body{padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.ex-solution{background:var(--bg-2);border-top:1px solid var(--border);padding:16px 24px;display:none}
+.ex-solution.show{display:block}
+.btn-solution{background:none;border:1px solid var(--border);color:var(--text-3);padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;margin:8px 24px 16px;transition:all .2s;font-family:var(--font-body)}
+.btn-solution:hover{border-color:var(--violet);color:var(--violet)}
+#back-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:linear-gradient(135deg,var(--violet),var(--accent));border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(139,92,246,.4);opacity:0;transform:translateY(16px);transition:all .3s;z-index:800}
+#back-top.show{opacity:1;transform:translateY(0)}
+#back-top:hover{transform:translateY(-2px)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:64px 0}
+.svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;overflow-x:auto}
+.mermaid-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;text-align:center;overflow-x:auto}
+.formula-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;margin:24px 0;font-family:var(--font-mono);font-size:14px;color:#c9d1d9;line-height:2.2}
+.formula-label{font-size:12px;color:var(--text-3);margin-bottom:8px;font-family:var(--font-body)}
+.tag{display:inline-block;background:var(--violet-soft);border:1px solid rgba(139,92,246,.3);color:var(--violet);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;margin:2px}
+.summary-box{background:linear-gradient(135deg,var(--violet-soft),var(--accent-glow));border:1px solid var(--violet);border-radius:var(--radius);padding:32px;margin:48px 0}
+.summary-box h3{color:var(--violet);margin-top:0;margin-bottom:20px}
+.summary-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;color:var(--text-2)}
+.summary-num{width:24px;height:24px;background:var(--violet-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--violet);flex-shrink:0}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:24px 0}
+.res-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;text-decoration:none;transition:all .2s}
+.res-item:hover{border-color:var(--border-2);transform:translateY(-1px)}
+.res-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 8px;flex-shrink:0}
+.res-type.paper{background:var(--blue-soft);color:#60a5fa}
+.res-type.video{background:var(--rose-soft);color:#fb7185}
+.res-type.book{background:var(--amber-soft);color:var(--amber)}
+.res-type.code{background:var(--green-soft);color:var(--green)}
+.res-type.doc{background:var(--violet-soft);color:var(--violet)}
+.res-title{font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:3px}
+.res-sub{font-size:12px;color:var(--text-3)}
+.chapter-footer{border-top:1px solid var(--border);margin-top:80px;padding-top:48px}
+.footer-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px}
+.footer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.footer-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px}
+.footer-card .value{font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.search-highlight{background:rgba(245,158,11,.3);border-radius:2px}
+@media(max-width:600px){.footer-cards{grid-template-columns:1fr}}
+
+/* Chunking strategy cards */
+.strategy-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;transition:all .2s}
+.strategy-card:hover{border-color:var(--border-2)}
+.strategy-header{padding:18px 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
+.strategy-icon{font-size:24px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;flex-shrink:0}
+.strategy-meta{flex:1}
+.strategy-name{font-weight:700;font-size:16px;color:var(--text-1);margin-bottom:3px}
+.strategy-tags{display:flex;gap:6px;flex-wrap:wrap}
+.stag{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:2px 8px}
+.stag.complexity-low{background:var(--green-soft);color:var(--green)}
+.stag.complexity-med{background:var(--amber-soft);color:var(--amber)}
+.stag.complexity-high{background:var(--rose-soft);color:var(--rose)}
+.stag.quality-low{background:rgba(92,100,128,.2);color:var(--text-3)}
+.stag.quality-med{background:var(--teal-soft);color:var(--teal)}
+.stag.quality-high{background:var(--violet-soft);color:var(--violet)}
+.strategy-body{padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+
+/* Chunk highlight demo */
+.chunk-demo{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:24px 0;font-family:var(--font-mono);font-size:13px;line-height:1.9}
+.c-a{background:rgba(139,92,246,.2);border-bottom:2px solid var(--violet);padding:1px 3px;border-radius:3px 3px 0 0}
+.c-b{background:rgba(45,212,191,.15);border-bottom:2px solid var(--teal);padding:1px 3px;border-radius:3px 3px 0 0}
+.c-c{background:rgba(245,158,11,.15);border-bottom:2px solid var(--amber);padding:1px 3px;border-radius:3px 3px 0 0}
+.c-d{background:rgba(34,197,94,.15);border-bottom:2px solid var(--green);padding:1px 3px;border-radius:3px 3px 0 0}
+.chunk-legend{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.chunk-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}
+.chunk-dot{width:10px;height:10px;border-radius:2px}
+
+/* Parent-child hierarchy visual */
+.hierarchy{display:flex;flex-direction:column;gap:16px;margin:28px 0}
+.h-level{display:flex;align-items:flex-start;gap:12px}
+.h-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px}
+.h-content{flex:1}
+.h-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.h-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:var(--text-2);line-height:1.6}
+
+/* Semantic chunking graph */
+.sim-graph{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:24px 0}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<nav class="topnav">
+  <div class="topnav-brand">🧠 RAG Masterclass</div>
+  <div class="topnav-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Rechercher dans ce chapitre…">
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">☀️ / 🌙</button>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-chapter">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <a href="chapitre-04-bases-vectorielles.html" style="color:var(--text-3);text-decoration:none;font-size:12px">Ch.4 — Bases Vectorielles</a>
+    </div>
+    <div class="sidebar-label">✂️ Chapitre 5</div>
+    <button class="sidebar-item active" onclick="scrollTo(0,0)">Chunking Avancé</button>
+    <div class="sidebar-label">Contenu</div>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s1')">1. Objectifs</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s2')">2. Pourquoi le chunking est critique</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s3')">3. Stratégies fondamentales</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s4')">4. Semantic Chunking</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s5')">5. Parent-Document Retrieval</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s6')">6. Hierarchical Chunking</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s7')">7. Late Chunking</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s8')">8. Proposition Chunking</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s9')">9. Document-spécifique</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s10')">10. Évaluer sa stratégie</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s11')">11. Comparatif</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s12')">12. Erreurs fréquentes</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s13')">13. Exercices</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s14')">14. Quiz</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s15')">15. Résumé</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s16')">16. Ressources</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-eyebrow">Chapitre 5 sur 12</div>
+      <h1 class="hero-title">
+        Le <span class="hl">Chunking Avancé</span>
+      </h1>
+      <p class="hero-desc">
+        Le chunking est le facteur n°1 sous-estimé de la qualité RAG. Ce chapitre couvre toutes les stratégies avancées — du Semantic Chunking au Parent-Document Retrieval — et vous apprend à évaluer rigoureusement votre propre stratégie.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ~65 min de lecture
+        </div>
+        <div class="hero-badge">✂️ Ingénierie RAG</div>
+        <div class="hero-badge">🔬 Le détail qui change tout</div>
+      </div>
+    </div>
+
+    <!-- OBJECTIFS -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Objectifs d'apprentissage</h2>
+      </div>
+      <div class="objectives">
+        <h3>À la fin de ce chapitre, vous serez capables de…</h3>
+        <div class="obj-grid">
+          <div class="obj-item"><div class="obj-dot"></div>Expliquer pourquoi le chunking est le facteur critique n°1</div>
+          <div class="obj-item"><div class="obj-dot"></div>Implémenter le Semantic Chunking avec détection de ruptures</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre et appliquer le Parent-Document Retrieval</div>
+          <div class="obj-item"><div class="obj-dot"></div>Concevoir un Hierarchical Chunking pour documents complexes</div>
+          <div class="obj-item"><div class="obj-dot"></div>Appliquer le Late Chunking avec des modèles récents</div>
+          <div class="obj-item"><div class="obj-dot"></div>Utiliser le Proposition Chunking (niveau phrase assertive)</div>
+          <div class="obj-item"><div class="obj-dot"></div>Adapter la stratégie au type de document (PDF, HTML, SQL…)</div>
+          <div class="obj-item"><div class="obj-dot"></div>Évaluer et benchmarker une stratégie de chunking</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 2 : POURQUOI CRITIQUE -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Pourquoi le chunking est le facteur critique n°1</h2>
+      </div>
+
+      <p>Dans la communauté RAG, il existe une tendance naturelle à se concentrer sur le modèle LLM ("quel GPT utiliser ?") ou le modèle d'embedding ("BGE-M3 ou text-embedding-3 ?"). Ces choix sont importants, mais ils sont tous <strong>conditionnés par la qualité du chunking</strong>.</p>
+
+      <div class="callout violet">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">La loi fondamentale du RAG</div>
+          <p class="callout-text">Un mauvais chunking ne peut pas être compensé par un meilleur LLM, un meilleur modèle d'embedding, ou une meilleure base vectorielle. Si le retrieval retourne les mauvais chunks, la chaîne entière échoue — indépendamment de la qualité des autres composants. Garbage chunking → garbage retrieval → garbage answer.</p>
+        </div>
+      </div>
+
+      <h3>Les deux tensions fondamentales du chunking</h3>
+      <div class="svg-wrap">
+        <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px">
+          <rect width="700" height="260" fill="#161923" rx="12"/>
+          <text x="350" y="32" text-anchor="middle" font-family="Fraunces,serif" font-size="16" font-weight="900" fill="#e8eaf2">Le Dilemme du Chunking : Granularité vs Contexte</text>
+
+          <!-- Axis -->
+          <line x1="60" y1="160" x2="640" y2="160" stroke="#252a38" stroke-width="2"/>
+          <polygon points="640,155 650,160 640,165" fill="#5c6480"/>
+          <text x="655" y="164" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">Taille</text>
+
+          <!-- Small chunk zone -->
+          <rect x="60" y="80" width="160" height="75" rx="8" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.4)" stroke-width="1"/>
+          <text x="140" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#f43f5e">Trop petit</text>
+          <text x="140" y="122" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Perd le contexte</text>
+          <text x="140" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Références coupées</text>
+          <text x="140" y="154" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Bruit de retrieval</text>
+
+          <!-- Optimal zone -->
+          <rect x="260" y="60" width="180" height="95" rx="8" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.5)" stroke-width="1.5"/>
+          <text x="350" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#8b5cf6">✓ Zone optimale</text>
+          <text x="350" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Cohérence sémantique</text>
+          <text x="350" y="120" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Contexte suffisant</text>
+          <text x="350" y="136" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Signal vectoriel précis</text>
+          <text x="350" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#8b5cf6">~256-512 tokens</text>
+
+          <!-- Large chunk zone -->
+          <rect x="480" y="80" width="160" height="75" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.4)" stroke-width="1"/>
+          <text x="560" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#f59e0b">Trop grand</text>
+          <text x="560" y="122" text-anchor="middle" font-family="Inter,sans,sans-serif" font-size="11" fill="#9ba3bf">Signal dilué</text>
+          <text x="560" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Coût contexte élevé</text>
+          <text x="560" y="154" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#9ba3bf">Lost in the middle</text>
+
+          <!-- Sizes labels on axis -->
+          <text x="140" y="178" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#5c6480">&lt;64 tokens</text>
+          <text x="350" y="178" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#8b5cf6">256-512 tokens</text>
+          <text x="560" y="178" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#5c6480">&gt;1024 tokens</text>
+
+          <!-- Second tension -->
+          <text x="350" y="215" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#e8eaf2">2ème tension : Précision vs Contexte</text>
+          <text x="350" y="235" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5c6480">Petit chunk = retrieval précis mais contexte limité | Grand chunk = contexte riche mais retrieval imprécis</text>
+          <text x="350" y="252" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">→ Solution avancée : Parent-Document Retrieval (chercher petit, lire grand)</text>
+        </svg>
+      </div>
+
+      <h3>Pourquoi "ça dépend" est une vraie réponse</h3>
+      <p>Il n'existe pas de taille de chunk universellement optimale. La stratégie idéale dépend de :</p>
+      <div class="card-grid">
+        <div class="card"><div class="card-icon">📄</div><div class="card-title">Le type de document</div><div class="card-desc">Articles journalistiques vs documentation technique vs transcriptions audio vs données tabulaires — chacun a une structure différente.</div></div>
+        <div class="card"><div class="card-icon">❓</div><div class="card-title">Le type de questions</div><div class="card-desc">Questions factuelles précises (date, chiffre) vs questions analytiques (comparer, expliquer) ne nécessitent pas la même granularité.</div></div>
+        <div class="card"><div class="card-icon">🔢</div><div class="card-title">Le modèle d'embedding</div><div class="card-desc">Un modèle limité à 256 tokens ne peut pas traiter des chunks plus longs sans troncature silencieuse.</div></div>
+        <div class="card"><div class="card-icon">💰</div><div class="card-title">Les contraintes de contexte</div><div class="card-desc">La fenêtre de contexte du LLM et le budget API limitent la taille et le nombre de chunks injectés.</div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 3 : STRATÉGIES FONDAMENTALES -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">Rappel des stratégies fondamentales</h2>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-icon" style="background:rgba(92,100,128,.15)">📏</div>
+          <div class="strategy-meta">
+            <div class="strategy-name">Fixed-Size Chunking</div>
+            <div class="strategy-tags">
+              <span class="stag complexity-low">Complexité : Faible</span>
+              <span class="stag quality-low">Qualité : Basique</span>
+            </div>
+          </div>
+        </div>
+        <div class="strategy-body">
+          Découpage tous les N tokens, avec overlap. Simple mais ignore la structure logique du texte. Peut couper des phrases, des listes, des paragraphes en plein milieu. À utiliser uniquement pour le prototypage rapide ou les textes très uniformes (ex: flux de données IoT).
+          <div class="code-block" style="margin-top:12px">
+            <div class="code-header"><span class="code-lang">Python — LangChain RecursiveCharacterTextSplitter</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> langchain.text_splitter <span class="kw">import</span> RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=<span class="num">512</span>,      <span class="cm"># tokens cibles par chunk</span>
+    chunk_overlap=<span class="num">64</span>,    <span class="cm"># overlap pour éviter les coupures brutales</span>
+    separators=[<span class="str">"\n\n"</span>, <span class="str">"\n"</span>, <span class="str">". "</span>, <span class="str">" "</span>, <span class="str">""</span>]
+)
+chunks = splitter.split_text(document_text)</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-icon" style="background:rgba(45,212,191,.12)">📝</div>
+          <div class="strategy-meta">
+            <div class="strategy-name">Sentence / Paragraph Chunking</div>
+            <div class="strategy-tags">
+              <span class="stag complexity-low">Complexité : Faible</span>
+              <span class="stag quality-med">Qualité : Bonne</span>
+            </div>
+          </div>
+        </div>
+        <div class="strategy-body">
+          Découpages par phrases complètes (via spaCy ou NLTK) ou par paragraphes naturels (séparateurs \n\n). Meilleure cohérence sémantique que le Fixed-Size. À préférer au Fixed-Size dès que le texte a une structure naturelle (ce qui est presque toujours le cas).
+        </div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-icon" style="background:rgba(34,197,94,.12)">🏗️</div>
+          <div class="strategy-meta">
+            <div class="strategy-name">Structure-Based Chunking</div>
+            <div class="strategy-tags">
+              <span class="stag complexity-med">Complexité : Modérée</span>
+              <span class="stag quality-med">Qualité : Très bonne</span>
+            </div>
+          </div>
+        </div>
+        <div class="strategy-body">
+          Découpage par éléments structurels du document : H1, H2, H3 en HTML/Markdown ; articles et paragraphes dans les règlements ; fonctions et classes dans le code. La bibliothèque <code>unstructured</code> détecte automatiquement ces éléments dans les PDF, Word et HTML.
+          <div class="code-block" style="margin-top:12px">
+            <div class="code-header"><span class="code-lang">Python — Unstructured pour chunking structuré</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> unstructured.partition.pdf <span class="kw">import</span> partition_pdf
+<span class="kw">from</span> unstructured.chunking.title <span class="kw">import</span> chunk_by_title
+
+elements = partition_pdf(<span class="str">"document.pdf"</span>)
+chunks = chunk_by_title(
+    elements,
+    max_characters=<span class="num">1000</span>,
+    new_after_n_chars=<span class="num">500</span>
+)
+<span class="cm"># Chaque chunk inclut le titre de section comme métadonnée</span>
+<span class="kw">for</span> chunk <span class="kw">in</span> chunks:
+    <span class="fn">print</span>(chunk.metadata.section, chunk.text[:100])</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 4 : SEMANTIC CHUNKING -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">Semantic Chunking — Le plus intelligent</h2>
+      </div>
+
+      <p>Le <strong>Semantic Chunking</strong> est la stratégie la plus sophistiquée de la famille "basée sur le sens". Au lieu de se fier à la structure du texte, il utilise les <strong>embeddings</strong> pour détecter quand le sens change significativement entre phrases consécutives.</p>
+
+      <h3>Le principe : détecter les ruptures sémantiques</h3>
+      <div class="ascii-box">ALGORITHME DE SEMANTIC CHUNKING
+═════════════════════════════════
+
+ÉTAPE 1 — Découper en phrases
+  "Article 12 - Congés annuels." → phrase 1
+  "Tout salarié bénéficie de 25 jours." → phrase 2
+  "Après 3 ans, ce droit est porté à 28 jours." → phrase 3
+  "La demande se fait sur l'intranet." → phrase 4
+  "Le budget marketing est de 5M€." → phrase 5  ← RUPTURE !
+  "Les dépenses sont contrôlées mensuellement." → phrase 6
+
+ÉTAPE 2 — Calculer la similarité entre phrases consécutives
+
+  Embedding(phrase_1) [768D]
+  Embedding(phrase_2) [768D]
+  sim(1,2) = 0.91  ← même sujet (congés)
+  
+  sim(2,3) = 0.88  ← même sujet (ancienneté/congés)
+  
+  sim(3,4) = 0.76  ← lié (procédure congés)
+  
+  sim(4,5) = 0.12  ← RUPTURE SÉMANTIQUE MAJEURE !
+  
+  sim(5,6) = 0.87  ← même sujet (budget)
+
+ÉTAPE 3 — Détecter les seuils de rupture
+  Seuil θ = percentile_95(scores) = 0.40
+  
+  Quand sim(i, i+1) < θ → nouvelle frontière de chunk
+
+ÉTAPE 4 — Créer les chunks
+  Chunk A = [phrase_1, phrase_2, phrase_3, phrase_4]  (Congés)
+  Chunk B = [phrase_5, phrase_6]                      (Budget)</div>
+
+      <div class="sim-graph">
+        <canvas id="simGraph" width="720" height="180" style="width:100%"></canvas>
+        <p style="font-size:12px;color:var(--text-3);text-align:center;margin-top:8px">Visualisation des scores de similarité entre phrases consécutives — les creux indiquent les frontières de chunks</p>
+      </div>
+
+      <h3>Implémentation détaillée avec LangChain</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — SemanticChunker LangChain</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> langchain_experimental.text_splitter <span class="kw">import</span> SemanticChunker
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> OpenAIEmbeddings
+
+embeddings = OpenAIEmbeddings(model=<span class="str">"text-embedding-3-small"</span>)
+
+<span class="cm"># breakpoint_threshold_type peut être :</span>
+<span class="cm"># "percentile" — seuil basé sur le percentile des distances</span>
+<span class="cm"># "standard_deviation" — seuil = moyenne + N * std</span>
+<span class="cm"># "interquartile" — méthode IQR pour la détection d'outliers</span>
+
+chunker = SemanticChunker(
+    embeddings=embeddings,
+    breakpoint_threshold_type=<span class="str">"percentile"</span>,
+    breakpoint_threshold_amount=<span class="num">95</span>  <span class="cm"># rupture si dans le top 5% des distances</span>
+)
+
+chunks = chunker.create_documents([long_document])
+<span class="fn">print</span>(<span class="str">f"{len(chunks)} chunks créés sémantiquement"</span>)
+<span class="kw">for</span> i, chunk <span class="kw">in</span> <span class="fn">enumerate</span>(chunks[:3]):
+    <span class="fn">print</span>(<span class="str">f"Chunk {i+1} ({len(chunk.page_content.split())} mots): {chunk.page_content[:100]}..."</span>)</pre>
+      </div>
+
+      <h3>Variante avancée : fenêtre glissante (Rolling Window)</h3>
+      <p>Au lieu de comparer seulement la phrase i à la phrase i+1, on compare la <em>phrase i</em> à une <em>fenêtre moyenne</em> des phrases autour d'elle. Cela rend la détection plus robuste aux petites variations de style.</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Semantic Chunking avec fenêtre glissante (custom)</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> sklearn.metrics.pairwise <span class="kw">import</span> cosine_similarity
+
+<span class="kw">def</span> <span class="fn">semantic_chunking_with_window</span>(sentences, embedder, window=<span class="num">2</span>, threshold_pct=<span class="num">90</span>):
+    <span class="cm">"""Semantic chunking avec fenêtre glissante pour plus de robustesse."""</span>
+    embeddings = embedder.embed_documents(sentences)
+    embeddings = np.array(embeddings)
+    
+    <span class="cm"># Calculer la similarité entre groupes de phrases voisins</span>
+    similarities = []
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(window, <span class="fn">len</span>(sentences) - window):
+        left = np.mean(embeddings[i-window:i], axis=<span class="num">0</span>)
+        right = np.mean(embeddings[i:i+window], axis=<span class="num">0</span>)
+        sim = cosine_similarity([left], [right])[<span class="num">0</span>][<span class="num">0</span>]
+        similarities.append((<span class="num">1</span> - sim))  <span class="cm"># distance (pas similarité)</span>
+    
+    <span class="cm"># Threshold adaptatif au percentile</span>
+    threshold = np.percentile(similarities, threshold_pct)
+    
+    <span class="cm"># Créer les chunks aux ruptures</span>
+    chunks, current_chunk = [], [sentences[<span class="num">0</span>]]
+    <span class="kw">for</span> i, dist <span class="kw">in</span> <span class="fn">enumerate</span>(similarities):
+        idx = i + window
+        <span class="kw">if</span> dist > threshold:
+            chunks.append(<span class="str">" "</span>.join(current_chunk))
+            current_chunk = [sentences[idx]]
+        <span class="kw">else</span>:
+            current_chunk.append(sentences[idx])
+    chunks.append(<span class="str">" "</span>.join(current_chunk))
+    <span class="kw">return</span> chunks</pre>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Coût vs bénéfice du Semantic Chunking</div>
+          <p class="callout-text">Le Semantic Chunking nécessite d'<strong>encoder toutes les phrases deux fois</strong> — une fois pour la détection des ruptures, une fois pour l'indexation finale. C'est deux fois plus coûteux en appels d'embedding. Ce coût est acceptable pour des corpus de taille modérée (jusqu'à quelques millions de documents), mais peut devenir significatif à très grande échelle. Dans ce cas, un hybride Semantic + Structure-Based peut être préférable.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 5 : PARENT-DOCUMENT RETRIEVAL -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2 class="section-title">Parent-Document Retrieval — La solution aux deux tensions</h2>
+      </div>
+
+      <p>Le <strong>Parent-Document Retrieval</strong> est l'une des innovations les plus importantes dans le design des systèmes RAG. Il résout élégamment le dilemme précision vs contexte en <strong>séparant ce qu'on indexe de ce qu'on retourne</strong>.</p>
+
+      <h3>L'insight clé</h3>
+      <div class="callout violet">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Chercher petit, retourner grand</div>
+          <p class="callout-text">On indexe des <strong>petits chunks</strong> (haute précision vectorielle) pour le retrieval. Mais quand un chunk est trouvé, on retourne son <strong>document parent</strong> (grand chunk avec contexte complet) au LLM. Ainsi, la recherche est précise ET le LLM reçoit assez de contexte.</p>
+        </div>
+      </div>
+
+      <h3>Architecture Parent-Document</h3>
+      <div class="hierarchy">
+        <div class="h-level">
+          <div class="h-icon" style="background:rgba(139,92,246,.15)">🗂️</div>
+          <div class="h-content">
+            <div class="h-label" style="color:var(--violet)">Documents Parents (grands) — stockés séparément</div>
+            <div class="h-box">
+              <strong>Parent_001</strong> : "Article 12 — Congés annuels. Tout salarié bénéficie de 25 jours ouvrés de congés payés par an. Après 3 ans d'ancienneté, ce droit est porté à 28 jours. Après 5 ans, 30 jours. Les congés non pris au 31 décembre sont reportés dans la limite de 10 jours. Les demandes se font sur l'intranet au moins 15 jours à l'avance..." <em>(500 tokens)</em>
+            </div>
+          </div>
+        </div>
+        <div style="margin-left:22px;border-left:2px solid var(--border);padding-left:20px">
+          <div class="h-level" style="margin-top:8px">
+            <div class="h-icon" style="background:rgba(45,212,191,.12)">📎</div>
+            <div class="h-content">
+              <div class="h-label" style="color:var(--teal)">Chunks Enfants (petits) — indexés dans la Vector DB</div>
+              <div class="h-box" style="display:flex;gap:12px;flex-wrap:wrap">
+                <div style="flex:1;min-width:180px">
+                  <strong>Child_001a</strong> (parent_id: 001) :<br>
+                  "Tout salarié bénéficie de 25 jours ouvrés de congés payés par an." <em>(~15 tokens)</em>
+                </div>
+                <div style="flex:1;min-width:180px">
+                  <strong>Child_001b</strong> (parent_id: 001) :<br>
+                  "Après 3 ans d'ancienneté, ce droit est porté à 28 jours." <em>(~14 tokens)</em>
+                </div>
+                <div style="flex:1;min-width:180px">
+                  <strong>Child_001c</strong> (parent_id: 001) :<br>
+                  "Les demandes se font sur l'intranet au moins 15 jours à l'avance." <em>(~14 tokens)</em>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Workflow complet du Parent-Document Retrieval</h3>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart TD
+    A["❓ Question : 'Combien de jours après 3 ans ?'"] --> B["Embedding de la question"]
+    B --> C["Recherche ANN dans la Vector DB\n(petits chunks)"]
+    C --> D["Top match : Child_001b\n'Après 3 ans → 28 jours'\nsim=0.96"]
+    D --> E["Récupérer parent_id = 001\ndans le Document Store"]
+    E --> F["Retourner Parent_001 complet\n(500 tokens avec tout le contexte)"]
+    F --> G["LLM génère une réponse\ncomplète et contextualisée"]
+    style C fill:#1a1e2a,stroke:#8b5cf6,color:#a799ff
+    style D fill:#1a1e2a,stroke:#22c55e,color:#22c55e
+    style G fill:rgba(139,92,246,.1),stroke:#8b5cf6,color:#e8eaf2
+        </div>
+      </div>
+
+      <h3>Implémentation avec LangChain</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — ParentDocumentRetriever LangChain</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> langchain.retrievers <span class="kw">import</span> ParentDocumentRetriever
+<span class="kw">from</span> langchain.storage <span class="kw">import</span> InMemoryStore
+<span class="kw">from</span> langchain.text_splitter <span class="kw">import</span> RecursiveCharacterTextSplitter
+<span class="kw">from</span> langchain_community.vectorstores <span class="kw">import</span> Chroma
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> OpenAIEmbeddings
+
+<span class="cm"># Deux niveaux de splitting</span>
+parent_splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="num">1000</span>)  <span class="cm"># grands chunks</span>
+child_splitter  = RecursiveCharacterTextSplitter(chunk_size=<span class="num">200</span>)   <span class="cm"># petits chunks</span>
+
+vectorstore = Chroma(embedding_function=OpenAIEmbeddings())
+docstore = InMemoryStore()  <span class="cm"># stockage des parents (ex: Redis en prod)</span>
+
+retriever = ParentDocumentRetriever(
+    vectorstore=vectorstore,
+    docstore=docstore,
+    child_splitter=child_splitter,
+    parent_splitter=parent_splitter
+)
+
+<span class="cm"># Indexation : les enfants vont dans la vectorstore,</span>
+<span class="cm"># les parents vont dans le docstore</span>
+retriever.add_documents(documents)
+
+<span class="cm"># Retrieval : cherche les enfants, retourne les parents</span>
+relevant_docs = retriever.get_relevant_documents(
+    <span class="str">"Combien de jours après 3 ans d'ancienneté ?"</span>
+)
+<span class="fn">print</span>(<span class="str">f"Docs retournés: {len(relevant_docs)}, taille: {len(relevant_docs[0].page_content)} chars"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 6 : HIERARCHICAL -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2 class="section-title">Hierarchical Chunking — Plusieurs niveaux de granularité</h2>
+      </div>
+
+      <p>Le <strong>Hierarchical Chunking</strong> généralise le Parent-Document Retrieval en créant une <strong>hiérarchie à plusieurs niveaux</strong> correspondant à la structure naturelle du document : document entier → sections → sous-sections → paragraphes → phrases.</p>
+
+      <h3>Structure hiérarchique type</h3>
+      <div class="ascii-box">HIERARCHICAL CHUNKING — EXEMPLE : DOCUMENTATION MÉDICALE
+═════════════════════════════════════════════════════════
+
+Niveau 0 — Document complet
+  "Protocole de traitement du diabète de type 2 — CHU Lyon 2024"
+  (~5000 tokens)
+
+Niveau 1 — Sections principales
+  Section A : "1. Diagnostic et Bilan Initial" (~800 tokens)
+  Section B : "2. Traitement Médicamenteux" (~1200 tokens)
+  Section C : "3. Surveillance et Suivi" (~900 tokens)
+
+Niveau 2 — Sous-sections
+  B.1 : "2.1 Première Ligne — Metformine" (~300 tokens)
+  B.2 : "2.2 Bithérapie" (~250 tokens)
+  B.3 : "2.3 Insulinothérapie" (~350 tokens)
+
+Niveau 3 — Paragraphes (indexés en vectorDB)
+  B.1.a : "La metformine est le traitement de 1ère ligne..." (~80 tokens)
+  B.1.b : "Contre-indications : IRC sévère (DFG < 30)..." (~60 tokens)
+  B.1.c : "Posologie initiale : 500mg par jour..." (~50 tokens)
+
+STRATÉGIE DE RETRIEVAL :
+  Question : "Quelle est la posologie initiale de la metformine ?"
+  → Vector search sur Niveau 3 → trouve B.1.c (PRÉCIS)
+  → Enrichit avec contexte B.1 (sous-section, ~300 tokens) → LLM
+  
+  Question : "Quels sont les traitements du diabète ?"
+  → Vector search sur Niveau 1 → trouve Section B (GLOBAL)
+  → Retourne Section B directement → LLM</div>
+
+      <div class="callout teal">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Quand utiliser Hierarchical Chunking ?</div>
+          <p class="callout-text">Idéal pour les documents longs et bien structurés (règlements, manuels techniques, documentation médicale, contrats complexes). Permet une adaptabilité selon la granularité de la question. Coût : complexité d'implémentation et de maintenance de l'index hiérarchique.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 7 : LATE CHUNKING -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <h2 class="section-title">Late Chunking — L'embedding contextuel</h2>
+      </div>
+
+      <p>Le <strong>Late Chunking</strong> (Günther et al., 2024) est une innovation récente qui résout un problème fondamental : quand on encode un chunk isolément, il perd le contexte du document environnant. Un chunk commençant par "il" ou "ce dernier" ne peut pas être décodé sans le contexte qui précède.</p>
+
+      <h3>Le problème que Late Chunking résout</h3>
+      <div class="ascii-box">LE PROBLÈME DE LA PERTE DE CONTEXTE
+══════════════════════════════════════
+
+Document :
+  "La BCE a annoncé une hausse des taux de 0.5%.
+   Cette décision a provoqué une chute des marchés.
+   Elle était attendue par les économistes depuis janvier."
+
+Chunking classique → 3 chunks :
+  Chunk 1 : "La BCE a annoncé une hausse des taux de 0.5%."
+  Chunk 2 : "Cette décision a provoqué une chute des marchés."
+  Chunk 3 : "Elle était attendue par les économistes depuis janvier."
+
+Problème : 
+  Chunk 2 contient "Cette décision" → lequel ? ← AMBIGU seul !
+  Chunk 3 contient "Elle" → qui ? ← IMPOSSIBLE à résoudre !
+
+Sans contexte, ces chunks sont désambiguïsables par l'embedding
+uniquement si le modèle peut les mettre en contexte.</div>
+
+      <h3>La solution Late Chunking</h3>
+      <div class="ascii-box">LATE CHUNKING — COMMENT ÇA MARCHE
+══════════════════════════════════
+
+ÉTAPE 1 — Encoder le DOCUMENT ENTIER (pas les chunks !)
+  Input : "La BCE a annoncé... Cette décision... Elle était attendue..."
+  Output : [token_embedding_1, token_embedding_2, ..., token_embedding_N]
+  
+  → Chaque token est encodé AVEC le contexte complet du document
+  → "Cette décision" reçoit un embedding qui "sait" qu'il réfère à la BCE
+
+ÉTAPE 2 — Chunker APRÈS l'encoding (d'où "Late")
+  Les token embeddings sont agrégés (mean pooling) par groupe
+  correspondant aux frontières de chunks désirées :
+  
+  Chunk_1_embedding = mean(token_emb[0:12])   ← "La BCE... 0.5%."
+  Chunk_2_embedding = mean(token_emb[12:25])  ← "Cette décision... marchés."
+  Chunk_3_embedding = mean(token_emb[25:38])  ← "Elle était attendue..."
+
+  RÉSULTAT : Les embeddings des chunks INCLUENT le contexte du document !
+  
+  Chunk_2 "comprend" désormais qu'il s'agit de la décision BCE.
+  Chunk_3 "sait" que "elle" réfère à la décision annoncée.
+
+COMPARAISON :
+  Classique : Chunk_2 (isolé) ≈ decision générale quelconque
+  Late      : Chunk_2 (contextualisé) ≈ décision BCE sur les taux</div>
+
+      <div class="callout warn">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Contrainte majeure du Late Chunking</div>
+          <p class="callout-text">Le Late Chunking nécessite de passer <strong>le document entier</strong> dans le modèle d'embedding d'un seul coup. Cela implique que le document doit tenir dans la fenêtre de contexte du modèle d'embedding (8192 tokens pour BGE-M3, 32768 pour E5-Mistral). Les documents plus longs doivent d'abord être découpés en sections avant d'appliquer Late Chunking section par section.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Late Chunking avec Jina Embeddings v3</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoModel, AutoTokenizer
+<span class="kw">import</span> torch
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+model_name = <span class="str">"jinaai/jina-embeddings-v3"</span>  <span class="cm"># supporte le late chunking</span>
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModel.from_pretrained(model_name, trust_remote_code=<span class="kw">True</span>)
+
+<span class="kw">def</span> <span class="fn">late_chunking</span>(document, chunk_boundaries):
+    <span class="cm">"""
+    document : texte complet
+    chunk_boundaries : liste de (start_char, end_char)
+    """</span>
+    <span class="cm"># Tokeniser le document entier</span>
+    inputs = tokenizer(document, return_tensors=<span class="str">"pt"</span>, return_offsets_mapping=<span class="kw">True</span>)
+    offset_mapping = inputs.pop(<span class="str">"offset_mapping"</span>)
+    
+    <span class="cm"># Forward pass : obtenir les token embeddings contextualisés</span>
+    <span class="kw">with</span> torch.no_grad():
+        outputs = model(**inputs)
+    token_embeddings = outputs.last_hidden_state[<span class="num">0</span>]  <span class="cm"># (seq_len, hidden_dim)</span>
+    
+    <span class="cm"># Mapper les token embeddings sur les chunks</span>
+    chunk_embeddings = []
+    <span class="kw">for</span> start_char, end_char <span class="kw">in</span> chunk_boundaries:
+        <span class="cm"># Trouver les indices de tokens correspondant à ce chunk</span>
+        token_mask = [
+            start_char <= s and e <= end_char
+            <span class="kw">for</span> s, e <span class="kw">in</span> offset_mapping[<span class="num">0</span>].tolist()
+        ]
+        chunk_token_embs = token_embeddings[torch.tensor(token_mask)]
+        <span class="cm"># Mean pooling sur les tokens du chunk</span>
+        chunk_emb = chunk_token_embs.mean(dim=<span class="num">0</span>).numpy()
+        chunk_embeddings.append(chunk_emb)
+    
+    <span class="kw">return</span> np.array(chunk_embeddings)</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 8 : PROPOSITION CHUNKING -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2 class="section-title">Proposition Chunking — Le niveau atomique</h2>
+      </div>
+
+      <p>Le <strong>Proposition Chunking</strong> (Chen et al., 2023) pousse la granularité à son maximum : chaque chunk est une <strong>proposition factuelle atomique</strong> — une seule assertion, autosuffisante, sans ambiguïté référentielle.</p>
+
+      <h3>Qu'est-ce qu'une proposition ?</h3>
+      <div class="ascii-box">PROPOSITION CHUNKING — TRANSFORMATION
+══════════════════════════════════════
+
+TEXTE SOURCE :
+  "Marie Curie (1867-1934) était une physicienne et chimiste
+   polonaise naturalisée française. Elle fut la première femme
+   à obtenir un prix Nobel (physique, 1903, partagé avec Pierre
+   Curie et Henri Becquerel pour leurs recherches sur les
+   rayonnements). Elle obtint un second prix Nobel en 1911
+   (chimie) pour la découverte du polonium et du radium."
+
+DÉCOUPAGE EN PROPOSITIONS ATOMIQUES :
+  P1 : "Marie Curie était une physicienne et chimiste."
+  P2 : "Marie Curie était d'origine polonaise."
+  P3 : "Marie Curie fut naturalisée française."
+  P4 : "Marie Curie naquit en 1867."
+  P5 : "Marie Curie décéda en 1934."
+  P6 : "Marie Curie fut la première femme à obtenir un prix Nobel."
+  P7 : "Marie Curie reçut le prix Nobel de physique en 1903."
+  P8 : "Le prix Nobel de physique de 1903 fut partagé avec Pierre Curie."
+  P9 : "Le prix Nobel de physique de 1903 fut partagé avec Henri Becquerel."
+  P10: "Ce prix récompensait leurs recherches sur les rayonnements."
+  P11: "Marie Curie reçut le prix Nobel de chimie en 1911."
+  P12: "Marie Curie découvrit le polonium."
+  P13: "Marie Curie découvrit le radium."
+
+AVANTAGES :
+  → Question "Quelle année Marie Curie obtint-elle son 2e Nobel ?"
+    → P11 correspondance parfaite (sim ~0.98)
+    → Aucun "bruit" d'autres informations
+
+  → Question "Quels éléments chimiques Marie Curie a-t-elle découverts ?"
+    → P12 et P13 retournés
+    → Réponse complète et précise</div>
+
+      <h3>Générer des propositions avec un LLM</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Génération de propositions atomiques via LLM</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+
+client = OpenAI()
+
+<span class="kw">def</span> <span class="fn">extract_propositions</span>(text: str) -> <span class="fn">list</span>[str]:
+    prompt = <span class="str">"""Décompose le texte suivant en propositions atomiques.
+Chaque proposition doit :
+- Être une seule assertion factuelle complète
+- Être autosuffisante (pas de pronoms ambigus)
+- Remplacer les pronoms par leurs référents explicites
+- Être la plus courte possible tout en restant complète
+
+Retourne une liste JSON de chaînes.
+
+Texte :
+{text}
+
+Propositions (JSON uniquement) :"""</span>
+
+    response = client.chat.completions.create(
+        model=<span class="str">"gpt-4o-mini"</span>,
+        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt.<span class="fn">format</span>(text=text)}],
+        response_format={<span class="str">"type"</span>: <span class="str">"json_object"</span>}
+    )
+    <span class="kw">import</span> json
+    result = json.loads(response.choices[<span class="num">0</span>].message.content)
+    <span class="kw">return</span> result.get(<span class="str">"propositions"</span>, [])</pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Coût élevé du Proposition Chunking</div>
+          <p class="callout-text">Générer des propositions via LLM coûte cher : 1 page de texte (~500 tokens) peut générer 20-30 propositions, nécessitant ~1000 tokens en input LLM. Pour un corpus de 10 000 pages, le coût d'indexation peut dépasser plusieurs centaines de dollars. Réservé aux cas où la précision est critique (médecine, droit) et où le corpus est stable.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 9 : DOC SPÉCIFIQUE -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2 class="section-title">Stratégies par type de document</h2>
+      </div>
+
+      <h3>Chaque type de document a ses défis propres</h3>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📄 PDF (surtout les documents scannés ou multi-colonnes)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Défis :</strong> L'extraction du texte brut d'un PDF multi-colonnes peut mélanger les colonnes et produire du texte incohérent. Les PDF scannés nécessitent OCR. Les tableaux et figures sont mal extraits.</p>
+          <p><strong>Stratégie recommandée :</strong> Utiliser <code>unstructured</code> avec <code>strategy="hi_res"</code> pour une extraction de qualité (utilise un modèle de détection de layout). Combiner avec <code>chunk_by_title</code> pour respecter la structure.</p>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — PDF haute qualité avec unstructured</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> unstructured.partition.pdf <span class="kw">import</span> partition_pdf
+
+elements = partition_pdf(
+    filename=<span class="str">"rapport.pdf"</span>,
+    strategy=<span class="str">"hi_res"</span>,         <span class="cm"># détection layout par modèle vision</span>
+    infer_table_structure=<span class="kw">True</span>, <span class="cm"># convertit tableaux en HTML</span>
+    extract_images_in_pdf=<span class="kw">False</span>
+)</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>💻 Code source (Python, JavaScript, SQL…)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Défis :</strong> Le code ne peut pas être découpé comme du texte — couper une fonction en plein milieu la rend inutilisable. La sémantique est différente : une classe est une unité, pas un paragraphe.</p>
+          <p><strong>Stratégie recommandée :</strong> Utiliser des parsers AST (Abstract Syntax Tree) pour découper par unités logiques : fonctions, classes, méthodes. LangChain propose <code>LanguageParser</code> qui gère 15+ langages.</p>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — CodeSplitter pour le code source</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> langchain.text_splitter <span class="kw">import</span> Language, RecursiveCharacterTextSplitter
+
+python_splitter = RecursiveCharacterTextSplitter.from_language(
+    language=Language.PYTHON,
+    chunk_size=<span class="num">1000</span>,
+    chunk_overlap=<span class="num">100</span>
+)
+<span class="cm"># Séparateurs Python dans l'ordre : class, def, if, for, return, etc.</span>
+<span class="cm"># → Préserve les blocs logiques complets</span>
+
+python_docs = python_splitter.create_documents([python_code])</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📊 Données tabulaires (CSV, Excel, bases de données)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Défis :</strong> Les données tabulaires ont une structure très différente du texte. Indexer les cellules individuelles est trop granulaire ; indexer les tableaux entiers est trop large.</p>
+          <p><strong>Stratégie recommandée :</strong></p>
+          <ul style="margin-left:20px;margin-top:8px;color:var(--text-2)">
+            <li style="margin-bottom:8px"><strong>Option 1 — Texte généré :</strong> Convertir chaque ligne en phrase naturelle ("Le produit X200 coûte 149€, disponible en rouge, bleu, noir.") → très bon pour les requêtes en langage naturel.</li>
+            <li style="margin-bottom:8px"><strong>Option 2 — Métadonnées filtrables :</strong> Stocker les colonnes structurées comme métadonnées (catégorie, prix_min, prix_max) et utiliser le filtrage combiné.</li>
+            <li style="margin-bottom:8px"><strong>Option 3 — Text-to-SQL :</strong> Pour des requêtes analytiques complexes, convertir la question en SQL via LLM plutôt que faire du RAG classique.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🎙️ Transcriptions audio et dialogues</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Défis :</strong> Les transcriptions ont peu de ponctuation naturelle et beaucoup de redondance orale. Les changements de locuteur sont des frontières naturelles de sens.</p>
+          <p><strong>Stratégie recommandée :</strong> Utiliser les changements de locuteur (diarization) comme frontières primaires, puis appliquer un Semantic Chunking à l'intérieur de chaque tour de parole pour les transcriptions longues. Inclure le nom du locuteur dans les métadonnées.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📧 Emails et conversations (threading)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Défis :</strong> Un fil d'emails inclut les citations imbriquées, ce qui crée du texte dupliqué à chaque réponse. Le contexte d'une réponse dépend des emails précédents.</p>
+          <p><strong>Stratégie recommandée :</strong> Supprimer les citations répétées (ne garder que le message le plus récent de chaque répondant). Indexer le thread complet comme unité avec les métadonnées (expéditeur, date, objet). Ne pas découper en sous-chunks sauf si le thread est très long.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 10 : ÉVALUATION -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <h2 class="section-title">Évaluer et benchmarker sa stratégie de chunking</h2>
+      </div>
+
+      <p>Comment savoir si votre stratégie de chunking est bonne ? Il faut des <strong>métriques objectives</strong>, pas seulement une impression qualitative.</p>
+
+      <h3>Les métriques de qualité du chunking</h3>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📊 Cohérence intra-chunk (Intra-Chunk Coherence)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Mesure à quel point les phrases d'un même chunk sont sémantiquement proches entre elles.</p>
+          <div class="formula-box" style="font-size:13px">
+            <div class="formula-label">Cohérence intra-chunk</div>
+            ICC = (1/n²) × ΣᵢΣⱼ cos(eᵢ, eⱼ)  pour toutes les paires de phrases dans le chunk
+          </div>
+          <p>Un ICC élevé (proche de 1) indique que le chunk est thématiquement cohérent. Un ICC bas indique qu'il mélange plusieurs sujets → mauvaise frontière de chunk.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🎯 Recall@K sur jeu de test annoté</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>La métrique la plus directement liée à la performance RAG finale. Créer 50-200 paires (question, chunk_pertinent) manuellement annotées, puis mesurer combien de fois le bon chunk apparaît dans le Top-K retourné.</p>
+          <div class="formula-box" style="font-size:13px">
+            <div class="formula-label">Recall@K</div>
+            Recall@K = |{requêtes où le chunk pertinent ∈ Top-K résultats}| / |{total de requêtes}|
+          </div>
+          <p>C'est le gold standard. Différentes stratégies de chunking produisent souvent des Recall@3 très différents sur le même corpus.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📏 Distribution de la taille des chunks</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Analyser la distribution de la taille des chunks produits. Un bon chunking doit :</p>
+          <ul style="margin-left:20px;color:var(--text-2)">
+            <li>Avoir une distribution relativement concentrée (pas trop de variance)</li>
+            <li>Éviter les chunks trop petits (&lt;50 tokens — trop peu de contenu)</li>
+            <li>Éviter les chunks trop grands (&gt;1000 tokens — risque de dépasser la limite d'embedding)</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Pipeline d'évaluation automatisé</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Évaluation comparative de stratégies de chunking</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> ragas.metrics <span class="kw">import</span> ContextRecall, ContextPrecision
+<span class="kw">from</span> ragas <span class="kw">import</span> evaluate
+<span class="kw">from</span> datasets <span class="kw">import</span> Dataset
+
+<span class="cm"># Dataset d'évaluation Gold Standard</span>
+eval_data = {
+    <span class="str">"question"</span>: [<span class="str">"Combien de jours après 3 ans ?"</span>, <span class="str">"Comment poser des RTT ?"</span>, ...],
+    <span class="str">"ground_truth"</span>: [<span class="str">"Après 3 ans, 28 jours sont accordés."</span>, <span class="str">"Via l'intranet, 15 jours à l'avance."</span>, ...],
+    <span class="str">"contexts"</span>: [<span class="cm"># Les chunks retournés par votre système</span>
+        [<span class="str">"Après 3 ans d'ancienneté, ce droit est porté à 28 jours..."</span>],
+        [<span class="str">"Les demandes de RTT se font sur l'intranet..."</span>],
+        ...
+    ]
+}
+
+dataset = Dataset.from_dict(eval_data)
+results = evaluate(dataset, metrics=[ContextRecall(), ContextPrecision()])
+<span class="fn">print</span>(results)
+<span class="cm"># → ContextRecall: 0.87  ContextPrecision: 0.79</span>
+
+<span class="cm"># Comparer deux stratégies</span>
+<span class="kw">for</span> strategy_name, chunks <span class="kw">in</span> {<span class="str">"fixed_512"</span>: chunks_v1, <span class="str">"semantic"</span>: chunks_v2}.items():
+    <span class="fn">print</span>(<span class="str">f"\n=== {strategy_name} ==="</span>)
+    <span class="cm"># Indexer les chunks et évaluer Recall@3</span>
+    recall = <span class="fn">evaluate_recall</span>(chunks, eval_questions, k=<span class="num">3</span>)
+    <span class="fn">print</span>(<span class="str">f"Recall@3: {recall:.3f}"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 11 : COMPARATIF -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <span class="section-num">11</span>
+        <h2 class="section-title">Comparatif complet des stratégies</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Stratégie</th><th>Qualité retrieval</th><th>Complexité</th><th>Coût indexation</th><th>Cas d'usage idéal</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Fixed-Size</strong></td><td class="td-bad">Basique</td><td class="td-good">Très faible</td><td class="td-good">Très faible</td><td>Prototype, texte homogène</td></tr>
+            <tr><td><strong>Sentence-Based</strong></td><td class="td-mid">Bonne</td><td class="td-good">Faible</td><td class="td-good">Faible</td><td>Articles, news</td></tr>
+            <tr><td><strong>Structure-Based</strong></td><td class="td-good">Très bonne</td><td class="td-mid">Modérée</td><td class="td-good">Faible</td><td>Règlements, wikis, HTML</td></tr>
+            <tr><td><strong>Semantic Chunking</strong></td><td class="td-good">Excellente</td><td class="td-mid">Modérée</td><td class="td-mid">Modéré (2x embed)</td><td>Textes non structurés</td></tr>
+            <tr><td><strong>Parent-Document</strong></td><td class="td-good">Excellente</td><td class="td-mid">Modérée</td><td class="td-good">Faible</td><td>Besoin de contexte étendu</td></tr>
+            <tr><td><strong>Hierarchical</strong></td><td class="td-good">Excellente</td><td class="td-bad">Élevée</td><td class="td-mid">Modéré</td><td>Docs structurés complexes</td></tr>
+            <tr><td><strong>Late Chunking</strong></td><td class="td-good">Excellente</td><td class="td-bad">Élevée</td><td class="td-mid">Modéré</td><td>Textes avec pronoms/références</td></tr>
+            <tr><td><strong>Proposition</strong></td><td class="td-good">Maximale</td><td class="td-bad">Très élevée</td><td class="td-bad">Très élevé (LLM)</td><td>Médecine, droit, faits critiques</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Recommandation pour démarrer</h3>
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Parcours recommandé</div>
+          <p class="callout-text">
+            <strong>Étape 1 :</strong> Commencer avec RecursiveCharacterTextSplitter (chunk_size=512, overlap=64). Mesurer le Recall@3 sur 50 questions test.<br>
+            <strong>Étape 2 :</strong> Si possible, passer à Structure-Based (unstructured chunk_by_title). Remesurer.<br>
+            <strong>Étape 3 :</strong> Si le recall est toujours insuffisant, ajouter Parent-Document Retrieval. Simple à implémenter, gain souvent de 10-20%.<br>
+            <strong>Étape 4 :</strong> Pour des besoins de précision maximale sur corpus stable, envisager Proposition ou Late Chunking.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 12 : ERREURS -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <span class="section-num">12</span>
+        <h2 class="section-title">Erreurs fréquentes</h2>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 1 — Utiliser les mêmes paramètres pour tous les types de documents</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Un seul pipeline de chunking ne convient pas à tous les documents. Du code source, une fiche produit, un article scientifique et un règlement intérieur ont des structures et des besoins radicalement différents. La solution : avoir des pipelines de chunking différenciés selon le type de document, détecté automatiquement ou fourni comme métadonnée.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 2 — Chunks avec références non résolues ("il", "ce document", "comme mentionné précédemment")</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Un chunk autosuffisant ne doit pas contenir de références qui nécessitent le contexte extérieur pour être comprises. Tester chaque chunk avec la question : "Si ce chunk était la seule information disponible, l'utilisateur pourrait-il comprendre la réponse sans contexte supplémentaire ?" Si non, élargir le chunk ou appliquer Late Chunking.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 3 — Ne pas inclure le titre de section dans le chunk</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Un chunk extrait d'une section "Article 12 — Congés" mais qui ne contient pas ce titre devient ambigu s'il parle de "25 jours" — 25 jours de quoi ? Toujours inclure le titre de section parent dans le chunk ou dans ses métadonnées explicites. La technique "chunk-context enrichment" préfixe chaque chunk avec son chemin hiérarchique.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 4 — Chunks trop petits pour le modèle d'embedding</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Des chunks de 20-30 tokens ne fournissent pas assez de contexte pour que le modèle d'embedding les représente correctement. Le vecteur résultant encode peu de sémantique — trop de dimensions sont "nulles" ou bruitées. Minimum recommandé : 50-80 tokens par chunk. En dessous, envisager de regrouper des phrases consécutives.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 5 — Ne jamais mesurer le recall du retrieval</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>La plus grande erreur : optimiser le chunking "à l'aveugle", sans mesure objective. Si vous ne mesurez pas le Recall@3 ou le NDCG@5 avec un jeu de test annoté, vous ne pouvez pas savoir si votre chunking est bon ou mauvais. Créer 50 paires de test prend 2-3 heures et peut économiser des semaines de débogage.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 13 : EXERCICES -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <span class="section-num">13</span>
+        <h2 class="section-title">Exercices</h2>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 1 — Identifier la stratégie optimale</span>
+        </div>
+        <div class="ex-body">
+          Pour chacun des corpus suivants, quelle stratégie de chunking recommandez-vous et pourquoi ?<br><br>
+          <strong>a)</strong> 500 articles de presse en français, chacun de 300-800 mots.<br>
+          <strong>b)</strong> La documentation technique de Python (15 000 pages HTML).<br>
+          <strong>c)</strong> Des transcriptions de 200 réunions d'entreprise (45 min chacune).<br>
+          <strong>d)</strong> Un code source Python de 10 000 lignes (plusieurs modules).
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Articles de presse :</strong> Sentence-Based ou Semantic Chunking. Les articles ont peu de structure formelle (pas de titres H2, H3) mais un flux narratif naturel que le Semantic Chunking capturera bien. Taille cible ~250-400 tokens (environ 2-3 paragraphes).<br><br>
+          <strong>b) Documentation Python :</strong> Structure-Based (chunk_by_title) en priorité car la doc Python est très bien structurée (modules, fonctions, paramètres clairement délimités). Combiner avec Parent-Document pour retourner la section entière quand un sous-élément est trouvé.<br><br>
+          <strong>c) Transcriptions de réunions :</strong> Découpage par locuteur (diarization) comme frontières primaires. Pour les longues interventions (>2 minutes de parole), appliquer un Semantic Chunking secondaire. Les métadonnées doivent inclure le nom du locuteur, le timestamp, et le sujet de réunion.<br><br>
+          <strong>d) Code Python :</strong> RecursiveCharacterTextSplitter avec Language.PYTHON (AST-aware). Découper par fonctions et classes comme unités logiques. Inclure la docstring et la signature dans chaque chunk, ainsi que le nom du module parent en métadonnée.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 2 — Évaluer des chunks manuellement</span>
+        </div>
+        <div class="ex-body">
+          Analysez les 4 chunks suivants issus d'un règlement intérieur et notez chacun de 1 à 5 (1 = très mauvais, 5 = excellent) en justifiant votre note :<br><br>
+          <strong>Chunk A :</strong> "25 jours. Après 3 ans, ce droit est porté à 28."<br>
+          <strong>Chunk B :</strong> "Les congés annuels sont encadrés par la loi du 20 juin 1936. Tout salarié bénéficie de 25 jours ouvrés de congés payés par an."<br>
+          <strong>Chunk C :</strong> "Tout salarié bénéficie de 25 jours ouvrés de congés payés par an. Après 3 ans d'ancienneté, ce droit est porté à 28 jours. Après 5 ans, le salarié bénéficie de 30 jours."<br>
+          <strong>Chunk D :</strong> "Article 12 — Congés. Tout salarié bénéficie de 25 jours ouvrés de congés payés par an. Après 3 ans d'ancienneté, ce droit est porté à 28 jours. Après 5 ans d'ancienneté, 30 jours. Les congés non pris au 31 décembre sont reportés sur l'année suivante dans la limite de 10 jours. Les demandes doivent être soumises 15 jours à l'avance via l'intranet."
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Chunk A : 1/5</strong> — Commence au milieu d'une phrase ("25 jours."), manque complètement de contexte. "25 jours de quoi ?" est impossible à déterminer. Coupure brutale typique du Fixed-Size mal paramétré.<br><br>
+          <strong>Chunk B : 3/5</strong> — Mélange deux sujets : référence légale historique + règle actuelle. Pas terrible, mais au moins complet. La référence à 1936 peut parasiter le retrieval pour des questions sur le nombre de jours actuels.<br><br>
+          <strong>Chunk C : 4/5</strong> — Très bon : cohérent (tout sur les durées de congé selon ancienneté), complet, autosuffisant. Seul bémol : manque le titre "Article 12 — Congés" pour contextualiser si le chunk est retourné isolément.<br><br>
+          <strong>Chunk D : 5/5</strong> — Excellent : inclut le titre de section, couvre un sujet cohérent (la politique de congés complète), autosuffisant, bien structuré. Un utilisateur comprend immédiatement de quoi il s'agit sans contexte externe.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header medium">
+          <span class="ex-badge">Moyen</span>
+          <span class="ex-title">Exercice 3 — Concevoir un Semantic Chunking</span>
+        </div>
+        <div class="ex-body">
+          Voici 6 phrases extraites d'un rapport d'entreprise. Les scores de similarité cosinus entre phrases consécutives sont indiqués :<br><br>
+          P1 → P2 : 0.88 &nbsp;|&nbsp; P2 → P3 : 0.91 &nbsp;|&nbsp; P3 → P4 : 0.14 &nbsp;|&nbsp; P4 → P5 : 0.85 &nbsp;|&nbsp; P5 → P6 : 0.79<br><br>
+          <strong>a)</strong> Si le seuil θ est le 80ème percentile des distances (1 - similarité), quelles sont les frontières de chunks ?<br>
+          <strong>b)</strong> Quel serait le découpage final ?<br>
+          <strong>c)</strong> Pourquoi le score de 0.14 entre P3 et P4 est-il un signal clair de rupture sémantique ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Calcul du seuil :</strong><br>
+          Distances (1 - similarité) : [0.12, 0.09, 0.86, 0.15, 0.21]<br>
+          Triées : [0.09, 0.12, 0.15, 0.21, 0.86]<br>
+          80ème percentile = 0.86 × 0.8 position ≈ ~0.40 (interpolation approximative)<br>
+          Alternative simple : θ = max(distances) × 0.5 = 0.43<br>
+          La distance de 0.86 (entre P3 et P4) est clairement la seule à dépasser tout seuil raisonnable.<br><br>
+          <strong>b) Découpage :</strong><br>
+          Chunk 1 = [P1, P2, P3] — similarités élevées entre elles<br>
+          Chunk 2 = [P4, P5, P6] — nouveau sujet<br><br>
+          <strong>c)</strong> Un score de 0.14 indique que P3 et P4 sont presque orthogonaux dans l'espace vectoriel — leurs sujets n'ont presque rien en commun. C'est une rupture sémantique majeure et non ambiguë, bien au-dessus du bruit normal (les autres écarts sont entre 0.09 et 0.21). Dans un rapport d'entreprise, cela correspondrait typiquement à un changement de section (ex: de "résultats financiers" à "stratégie RH").
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header hard">
+          <span class="ex-badge">Difficile</span>
+          <span class="ex-title">Exercice 4 — Architecture de chunking pour corpus hétérogène</span>
+        </div>
+        <div class="ex-body">
+          Vous concevez le pipeline RAG d'un assistant juridique intelligent pour un cabinet d'avocats. Le corpus comprend :<br><br>
+          • 50 000 décisions de justice (PDF scannés, 5-30 pages chacune)<br>
+          • 200 codes législatifs (HTML bien structuré, articles numérotés)<br>
+          • 10 000 contrats d'entreprises (Word, structure variable)<br>
+          • 500 mémos juridiques internes (texte libre, 1-5 pages)<br><br>
+          <strong>a)</strong> Proposez une stratégie de chunking différenciée pour chaque type.<br>
+          <strong>b)</strong> Comment structurez-vous les métadonnées pour permettre le filtrage (ex: droit civil vs commercial, date de décision, parties concernées) ?<br>
+          <strong>c)</strong> Quelle métrique utiliserez-vous pour valider votre stratégie et comment créez-vous votre jeu de test ?<br>
+          <strong>d)</strong> Quel est le risque principal du Proposition Chunking pour les décisions de justice ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Stratégies différenciées :</strong><br>
+          <em>Décisions de justice (PDF scannés) :</em> unstructured + strategy="hi_res" pour OCR et détection de layout. Structure-Based sur les sections identifiées (attendu, dispositif, motivation). Parent-Document : chunk par paragraphe de raisonnement, parent = décision complète.<br>
+          <em>Codes législatifs (HTML) :</em> Structure-Based par article (H2/H3). Chaque article = un chunk autonome avec son numéro et le code parent en métadonnée. Hierarchical pour retourner le chapitre complet si besoin.<br>
+          <em>Contrats (Word) :</em> unstructured chunk_by_title. Overlap important (10%) pour les clauses qui s'enchaînent. Parent = article de contrat, enfant = sous-clause.<br>
+          <em>Mémos (texte libre) :</em> Semantic Chunking pour détecter les ruptures logiques naturelles.<br><br>
+          <strong>b) Métadonnées structurées :</strong><br>
+          {source_type: "decision", domaine: "civil/commercial/penal", juridiction: "TGI Paris", date: "2024-03-15", numero_affaire: "...", parties: ["SAS ABC", "M. Dupont"], matiere: "contrat-bail", confidentialite: "public"}<br><br>
+          <strong>c) Validation :</strong> Constituer 200 questions annotées par des avocats du cabinet (questions factuelles + analytiques). Mesurer Recall@3, Precision@3, MRR. Benchmark comparatif entre les 4 stratégies par type. Seuil acceptable : Recall@3 ≥ 0.85 pour les questions factuelles.<br><br>
+          <strong>d) Risque du Proposition Chunking pour les décisions :</strong> Une décision de justice contient des nuances juridiques critiques liées au contexte (jurisprudence citée, faits de l'espèce). Décomposer en propositions atomiques peut <em>décontextualiser</em> une conclusion juridique de ses conditions d'application. Une proposition "Le locataire doit payer sous 8 jours" sans le contexte "en cas de mise en demeure préalable" peut induire en erreur. Le risque de mauvaise interprétation est réel et potentiellement lourd de conséquences.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 14 : QUIZ -->
+    <div class="section" id="s14">
+      <div class="section-header">
+        <span class="section-num">14</span>
+        <h2 class="section-title">Quiz d'auto-évaluation</h2>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q1. Quel est le principal avantage du Parent-Document Retrieval par rapport au chunking simple ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Il réduit le coût des embeddings</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Il combine la précision de petits chunks pour le retrieval et le contexte de grands chunks pour la génération</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Il élimine le besoin d'un modèle d'embedding</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Il permet d'indexer des images</div>
+        </div>
+        <div class="quiz-reveal">Le Parent-Document Retrieval sépare "ce qu'on indexe" (petits chunks précis, pour un retrieval vectoriel de haute qualité) de "ce qu'on retourne" (le document parent grand, pour donner assez de contexte au LLM). C'est l'une des techniques les plus impactantes pour améliorer la qualité RAG.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q2. Dans le Semantic Chunking, sur quoi se base-t-on pour détecter les frontières entre chunks ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Le nombre de tokens dans chaque phrase</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) La présence de titrages (H1, H2) dans le texte</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) La chute de la similarité cosinus entre phrases consécutives</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) La présence de pronoms dans le texte</div>
+        </div>
+        <div class="quiz-reveal">Le Semantic Chunking encode chaque phrase en vecteur et calcule la similarité cosinus entre phrases voisines. Quand cette similarité chute brusquement (dépasse un seuil basé sur le percentile), cela indique un changement de sujet — c'est une frontière naturelle entre chunks.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q3. Qu'est-ce qui distingue le Late Chunking du chunking classique ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Le Late Chunking encode d'abord le document entier puis agrège les token embeddings contextualisés</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Le Late Chunking effectue le découpage après l'inférence du LLM</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Le Late Chunking utilise uniquement des modèles non-neuronaux</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Le Late Chunking ne nécessite pas de modèle d'embedding</div>
+        </div>
+        <div class="quiz-reveal">Le Late Chunking inverse l'ordre habituel : au lieu d'encoder des chunks isolément, il encode le document complet en une seule passe pour obtenir des token embeddings contextualisés, puis agrège ces embeddings par fenêtres correspondant aux frontières de chunks. Les embeddings résultants "savent" ce qui précède et ce qui suit chaque chunk.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q4. Une proposition (Proposition Chunking) est…</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Un synonyme de chunk de taille fixe</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Un titre de section de document</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) Une assertion factuelle atomique et autosuffisante, sans pronoms ambigus</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Une question généré par le LLM sur le document</div>
+        </div>
+        <div class="quiz-reveal">Une proposition est la plus petite unité d'information qui soit autosuffisante. Elle contient exactement un fait, sans ambiguïté référentielle (pronoms remplacés par leurs référents). C'est la granularité maximale pour un retrieval précis, au prix d'un coût d'indexation élevé (génération via LLM).</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q5. Comment évalue-t-on objectivement la qualité d'une stratégie de chunking ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) En comptant le nombre de chunks produits</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) En vérifiant que tous les chunks font la même taille</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) En mesurant le Recall@K sur un jeu de test annoté de paires (question, chunk pertinent)</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) En minimisant le nombre de tokens total indexés</div>
+        </div>
+        <div class="quiz-reveal">Le Recall@K sur un jeu de test annoté est la métrique gold standard. On crée manuellement des paires (question, chunk pertinent), puis on mesure combien de fois le bon chunk apparaît dans les Top-K résultats de la recherche vectorielle. C'est la seule façon de savoir objectivement si votre chunking améliore le retrieval.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 15 : RÉSUMÉ -->
+    <div class="section" id="s15">
+      <div class="section-header">
+        <span class="section-num">15</span>
+        <h2 class="section-title">Résumé du chapitre</h2>
+      </div>
+
+      <div class="summary-box">
+        <h3>🎯 Ce qu'il faut absolument retenir</h3>
+        <div class="summary-item"><div class="summary-num">1</div><div>Le chunking est le <strong>facteur n°1</strong> de la qualité RAG. Un mauvais chunking ne peut pas être compensé par un meilleur modèle.</div></div>
+        <div class="summary-item"><div class="summary-num">2</div><div>Les deux tensions fondamentales : granularité (précision) vs contexte (complétude). Le <strong>Parent-Document Retrieval</strong> résout ce dilemme : chercher petit, retourner grand.</div></div>
+        <div class="summary-item"><div class="summary-num">3</div><div>Le <strong>Semantic Chunking</strong> détecte les ruptures sémantiques via la chute de similarité cosinus entre phrases consécutives. Qualité supérieure, coût x2 en embeddings.</div></div>
+        <div class="summary-item"><div class="summary-num">4</div><div>Le <strong>Hierarchical Chunking</strong> crée une hiérarchie documentaire correspondant à la structure naturelle (document → section → paragraphe). Adapte la granularité au type de question.</div></div>
+        <div class="summary-item"><div class="summary-num">5</div><div>Le <strong>Late Chunking</strong> encode le document entier avant de chunker, préservant le contexte global dans chaque embedding. Résout les problèmes de pronoms et références.</div></div>
+        <div class="summary-item"><div class="summary-num">6</div><div>Le <strong>Proposition Chunking</strong> décompose le texte en assertions atomiques autosuffisantes via LLM. Qualité maximale, coût très élevé — réservé aux domaines critiques.</div></div>
+        <div class="summary-item"><div class="summary-num">7</div><div>Chaque type de document nécessite sa propre stratégie (PDF, code, tableau, transcription). Utiliser <code>unstructured</code> pour les PDFs, <code>LanguageParser</code> pour le code.</div></div>
+        <div class="summary-item"><div class="summary-num">8</div><div>Toujours évaluer avec <strong>Recall@K</strong> sur un jeu de test annoté de 50-200 paires. C'est la seule mesure qui compte vraiment.</div></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="tag">Chunking</span><span class="tag">Semantic Chunking</span><span class="tag">Parent-Document</span><span class="tag">Hierarchical Chunking</span><span class="tag">Late Chunking</span><span class="tag">Proposition Chunking</span><span class="tag">Recall@K</span><span class="tag">Intra-Chunk Coherence</span><span class="tag">Structure-Based</span><span class="tag">unstructured.io</span><span class="tag">RAGAS</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 16 : RESSOURCES -->
+    <div class="section" id="s16">
+      <div class="section-header">
+        <span class="section-num">16</span>
+        <h2 class="section-title">Ressources pour aller plus loin</h2>
+      </div>
+
+      <h3>📄 Articles fondateurs</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://arxiv.org/abs/2312.06648" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">Propositions as Retrieval Units</div><div class="res-sub">Chen et al., 2023 — Proposition Chunking</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2409.04701" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">Late Chunking</div><div class="res-sub">Günther et al., 2024 — Contextual Chunk Embeddings</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2312.10997" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">RAG Survey — Advanced RAG</div><div class="res-sub">Gao et al., 2023 — Section sur les stratégies de chunking</div></div>
+        </a>
+      </div>
+
+      <h3>💻 Outils</h3>
+      <div class="res-grid">
+        <a class="res-item" href="https://docs.unstructured.io/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">Unstructured.io</div><div class="res-sub">Extraction et chunking de tout type de document</div></div>
+        </a>
+        <a class="res-item" href="https://python.langchain.com/docs/modules/data_connection/document_transformers/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">LangChain Text Splitters</div><div class="res-sub">Documentation des splitters LangChain</div></div>
+        </a>
+        <a class="res-item" href="https://docs.ragas.io/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">RAGAS</div><div class="res-sub">Framework d'évaluation RAG (Context Recall, Precision)</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="chapter-footer">
+      <div class="footer-cards">
+        <div class="footer-card">
+          <div class="label">✅ Ce que nous avons appris</div>
+          <div class="value">Chunking Avancé</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Les tensions fondamentales du chunking, Semantic Chunking avec détection de ruptures, Parent-Document Retrieval, Hierarchical Chunking, Late Chunking, Proposition Chunking, stratégies par type de document, et méthodes d'évaluation rigoureuse.</div>
+        </div>
+        <div class="footer-card">
+          <div class="label">👉 Chapitre suivant</div>
+          <div class="value">Advanced Retrieval Techniques</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Nous allons explorer les techniques avancées de retrieval : HyDE, Multi-Query Retrieval, Step-Back Prompting, RAG-Fusion, et les stratégies de re-ranking pour maximiser la qualité des documents récupérés.</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:32px 0">
+        <div style="display:inline-flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 28px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-size:14px;color:var(--text-2)">Écrivez <strong style="color:var(--violet)">"Suivant"</strong> pour le Chapitre 6 — Advanced Retrieval Techniques</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding-bottom:16px;font-size:12px;color:var(--text-3)">
+        RAG Masterclass · Chapitre 5 sur 12 · Cours universitaire interactif
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+mermaid.initialize({theme:'dark',themeVariables:{primaryColor:'#1a1e2a',primaryTextColor:'#e8eaf2',primaryBorderColor:'#8b5cf6',lineColor:'#5c6480',fontFamily:'Inter,sans-serif',fontSize:'13px'},flowchart:{curve:'basis'}});
+
+window.addEventListener('scroll',()=>{
+  const st=window.scrollY,dh=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progress-bar').style.width=(dh>0?(st/dh)*100:0)+'%';
+  document.getElementById('back-top').classList.toggle('show',st>400);
+  const sections=document.querySelectorAll('.section');
+  let current='';
+  sections.forEach(s=>{if(s.offsetTop-100<=st)current=s.id});
+  document.querySelectorAll('.sidebar-item').forEach(item=>{
+    item.classList.remove('active');
+    if(item.getAttribute('onclick')?.includes(current))item.classList.add('active');
+  });
+});
+
+function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='light'?'dark':'light')}
+function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleAcc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open')}
+function answerQuiz(opt,correct){
+  opt.closest('.quiz-opts').querySelectorAll('.quiz-opt').forEach(o=>{o.style.pointerEvents='none';if(o===opt)o.classList.add(correct?'correct':'wrong')});
+  const r=opt.closest('.quiz-card').querySelector('.quiz-reveal');if(r)r.classList.add('show');
+}
+function toggleSolution(btn){
+  const s=btn.nextElementSibling;s.classList.toggle('show');
+  btn.textContent=s.classList.contains('show')?'🙈 Masquer la correction':'📖 Voir la correction';
+}
+document.querySelectorAll('.copy-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    navigator.clipboard.writeText(btn.closest('.code-block').querySelector('pre').textContent)
+      .then(()=>{btn.textContent='✓ Copié';setTimeout(()=>btn.textContent='Copier',2000)});
+  });
+});
+const searchInput=document.getElementById('search-input');
+let st2;
+searchInput.addEventListener('input',()=>{
+  clearTimeout(st2);
+  st2=setTimeout(()=>{
+    const q=searchInput.value.trim();
+    document.querySelectorAll('.search-highlight').forEach(el=>{el.outerHTML=el.textContent});
+    if(q.length<2)return;
+    const rx=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    const walker=document.createTreeWalker(document.querySelector('.main'),NodeFilter.SHOW_TEXT,null);
+    const nodes=[];let node;
+    while((node=walker.nextNode())){if(node.parentElement.closest('script,style')===null&&rx.test(node.textContent))nodes.push(node);}
+    nodes.forEach(n=>{const sp=document.createElement('span');sp.innerHTML=n.textContent.replace(rx,'<mark class="search-highlight">$1</mark>');n.parentNode.replaceChild(sp,n);});
+    const first=document.querySelector('.search-highlight');
+    if(first)first.scrollIntoView({behavior:'smooth',block:'center'});
+  },300);
+});
+
+/* Similarity graph visualization */
+const simCanvas = document.getElementById('simGraph');
+if(simCanvas){
+  const ctx = simCanvas.getContext('2d');
+  const W = simCanvas.width, H = simCanvas.height;
+  
+  const similarities = [0.91, 0.88, 0.14, 0.85, 0.79, 0.87, 0.82, 0.09, 0.91, 0.76, 0.83];
+  const labels = ['P1-P2','P2-P3','P3-P4','P4-P5','P5-P6','P6-P7','P7-P8','P8-P9','P9-P10','P10-P11','P11-P12'];
+  const THRESHOLD = 0.40;
+  
+  const padL=60, padR=20, padT=20, padB=40;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  
+  function xPos(i){ return padL + (i / (similarities.length - 1)) * chartW; }
+  function yPos(v){ return padT + (1 - v) * chartH; }
+  
+  // Background
+  ctx.fillStyle = '#0a0c12';
+  ctx.fillRect(0, 0, W, H);
+  
+  // Grid
+  [0.2, 0.4, 0.6, 0.8, 1.0].forEach(v => {
+    ctx.strokeStyle = v === THRESHOLD ? 'rgba(244,63,94,0.3)' : 'rgba(37,42,56,0.6)';
+    ctx.lineWidth = v === THRESHOLD ? 2 : 1;
+    ctx.setLineDash(v === THRESHOLD ? [4,3] : []);
+    ctx.beginPath();
+    ctx.moveTo(padL, yPos(v));
+    ctx.lineTo(W - padR, yPos(v));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = v === THRESHOLD ? '#f43f5e' : '#5c6480';
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillText(v.toFixed(1), 4, yPos(v) + 4);
+  });
+  
+  // Threshold label
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 10px Inter';
+  ctx.fillText('θ (seuil)', W - 70, yPos(THRESHOLD) - 6);
+  
+  // Fill areas
+  similarities.forEach((sim, i) => {
+    const x = xPos(i);
+    const y = yPos(sim);
+    const isBreakpoint = sim < THRESHOLD;
+    
+    ctx.beginPath();
+    ctx.rect(x - 15, y, 30, yPos(0) - y);
+    ctx.fillStyle = isBreakpoint ? 'rgba(244,63,94,0.15)' : 'rgba(139,92,246,0.1)';
+    ctx.fill();
+  });
+  
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(similarities[0]));
+  similarities.forEach((sim, i) => { ctx.lineTo(xPos(i), yPos(sim)); });
+  ctx.strokeStyle = '#8b5cf6';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Points
+  similarities.forEach((sim, i) => {
+    const x = xPos(i), y = yPos(sim);
+    const isBreakpoint = sim < THRESHOLD;
+    ctx.beginPath();
+    ctx.arc(x, y, isBreakpoint ? 7 : 5, 0, Math.PI * 2);
+    ctx.fillStyle = isBreakpoint ? '#f43f5e' : '#8b5cf6';
+    ctx.fill();
+    if(isBreakpoint){
+      ctx.strokeStyle = 'rgba(244,63,94,0.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    // Labels
+    ctx.fillStyle = '#5c6480';
+    ctx.font = '9px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x, H - 8);
+    ctx.fillStyle = isBreakpoint ? '#f43f5e' : '#a8b5d0';
+    ctx.fillText(sim.toFixed(2), x, y - 10);
+    ctx.textAlign = 'left';
+  });
+  
+  // Legend
+  ctx.fillStyle = '#8b5cf6';
+  ctx.fillRect(padL, H - 35, 12, 12);
+  ctx.fillStyle = '#9ba3bf';
+  ctx.font = '11px Inter';
+  ctx.fillText('Similarité cosinus', padL + 16, H - 26);
+  ctx.fillStyle = '#f43f5e';
+  ctx.fillRect(padL + 160, H - 35, 12, 12);
+  ctx.fillText('Rupture sémantique', padL + 176, H - 26);
+}
+</script>
+</body>
+</html>
