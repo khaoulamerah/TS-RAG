@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Advanced Retrieval | Cours RAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f14;--bg-2:#13161e;--bg-3:#1a1e2a;--bg-card:#161923;
+  --border:#252a38;--border-2:#2e3547;
+  --text-1:#e8eaf2;--text-2:#9ba3bf;--text-3:#5c6480;
+  --accent:#7c6af7;--accent-2:#a799ff;--accent-glow:rgba(124,106,247,.18);
+  --teal:#2dd4bf;--teal-soft:rgba(45,212,191,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --rose:#f43f5e;--rose-soft:rgba(244,63,94,.12);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --blue:#3b82f6;--blue-soft:rgba(59,130,246,.12);
+  --emerald:#10b981;--emerald-soft:rgba(16,185,129,.12);
+  --sidebar-w:280px;--radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --font-display:'Fraunces',serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#f8f9fc;--bg-2:#f0f2f8;--bg-3:#e8ebf5;--bg-card:#ffffff;
+  --border:#dde1f0;--border-2:#c8ceea;--text-1:#111827;--text-2:#4b5563;--text-3:#9ca3af;
+  --accent-glow:rgba(124,106,247,.10);--shadow:0 4px 24px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text-1);line-height:1.7;font-size:16px;overflow-x:hidden}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--emerald),var(--teal));width:0%;z-index:1000;box-shadow:0 0 10px var(--emerald)}
+.topnav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(13,15,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:900}
+[data-theme="light"] .topnav{background:rgba(248,249,252,.85)}
+.topnav-brand{font-family:var(--font-display);font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--emerald),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex:1}
+.topnav-search{display:flex;align-items:center;gap:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;flex:0 0 220px}
+.topnav-search input{background:none;border:none;outline:none;color:var(--text-1);font-size:13px;width:100%;font-family:var(--font-body)}
+.topnav-search input::placeholder{color:var(--text-3)}
+.btn-theme{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all .2s}
+.btn-theme:hover{border-color:var(--emerald);color:var(--emerald)}
+.layout{display:flex;padding-top:56px;min-height:100vh}
+.sidebar{position:fixed;top:56px;left:0;bottom:0;width:var(--sidebar-w);background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;padding:24px 0;z-index:800}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);padding:12px 24px 6px}
+.sidebar-item{display:block;padding:7px 24px;color:var(--text-2);font-size:13.5px;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg-3);color:var(--text-1)}
+.sidebar-item.active{background:var(--emerald-soft);color:var(--emerald);font-weight:500}
+.sidebar-sub{font-size:12.5px;padding-left:36px;color:var(--text-3)}
+.sidebar-chapter{font-size:12px;color:var(--text-3);padding:4px 24px;display:flex;align-items:center;gap:8px}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 64px 120px;max-width:calc(var(--sidebar-w) + 860px)}
+@media(max-width:900px){.sidebar{transform:translateX(-100%)}.main{margin-left:0;padding:32px 24px 100px}}
+.hero{margin-bottom:64px;padding:56px 0 0}
+.hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--emerald);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.hero-eyebrow::before{content:'';width:24px;height:2px;background:linear-gradient(90deg,var(--emerald),var(--teal));display:block}
+.hero-title{font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:24px}
+.hero-title .hl{background:linear-gradient(135deg,var(--emerald) 0%,var(--teal) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:18px;color:var(--text-2);line-height:1.75;max-width:640px;margin-bottom:36px}
+.hero-meta{display:flex;gap:24px;flex-wrap:wrap}
+.hero-badge{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--text-2)}
+.objectives{background:linear-gradient(135deg,var(--emerald-soft),var(--teal-soft));border:1px solid var(--emerald);border-radius:var(--radius);padding:32px;margin:48px 0}
+.objectives h3{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.obj-item{display:flex;align-items:flex-start;gap:10px;background:var(--emerald-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;color:var(--text-1)}
+.obj-dot{width:6px;height:6px;background:var(--emerald);border-radius:50%;margin-top:7px;flex-shrink:0}
+.section{margin:80px 0}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.section-num{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--emerald);background:var(--emerald-soft);border:1px solid rgba(16,185,129,.3);border-radius:6px;padding:4px 10px}
+.section-title{font-family:var(--font-display);font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:600;margin:32px 0 14px;color:var(--text-1)}
+h4{font-size:15px;font-weight:600;color:var(--emerald);margin:24px 0 10px}
+p{color:var(--text-2);margin-bottom:16px;line-height:1.8}
+strong{color:var(--text-1);font-weight:600}
+.callout{border-radius:var(--radius);padding:20px 24px;margin:24px 0;display:flex;gap:16px;align-items:flex-start}
+.callout-icon{flex-shrink:0;margin-top:2px}
+.callout-body{flex:1}
+.callout-title{font-weight:600;font-size:14px;margin-bottom:6px}
+.callout-text{font-size:14px;color:var(--text-2);line-height:1.7;margin:0}
+.callout.info{background:var(--blue-soft);border:1px solid rgba(59,130,246,.3)}.callout.info .callout-title{color:#60a5fa}
+.callout.warn{background:var(--amber-soft);border:1px solid rgba(245,158,11,.3)}.callout.warn .callout-title{color:var(--amber)}
+.callout.tip{background:var(--green-soft);border:1px solid rgba(34,197,94,.3)}.callout.tip .callout-title{color:var(--green)}
+.callout.danger{background:var(--rose-soft);border:1px solid rgba(244,63,94,.3)}.callout.danger .callout-title{color:var(--rose)}
+.callout.concept{background:var(--accent-glow);border:1px solid rgba(124,106,247,.3)}.callout.concept .callout-title{color:var(--accent-2)}
+.callout.emerald{background:var(--emerald-soft);border:1px solid rgba(16,185,129,.3)}.callout.emerald .callout-title{color:var(--emerald)}
+.callout.teal{background:var(--teal-soft);border:1px solid rgba(45,212,191,.3)}.callout.teal .callout-title{color:var(--teal)}
+.code-block{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:20px 0;box-shadow:var(--shadow)}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-3);border-bottom:1px solid var(--border)}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:var(--text-3);font-weight:500}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-3);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.copy-btn:hover{border-color:var(--emerald);color:var(--emerald)}
+pre{padding:20px 24px;overflow-x:auto;font-size:13px;font-family:var(--font-mono);line-height:1.8;color:#c9d1d9}
+.kw{color:#ff7b72}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.fn{color:#d2a8ff}.num{color:#79c0ff}.var{color:#ffa657}
+.ascii-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#a8b5d0;overflow-x:auto;margin:24px 0;white-space:pre}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin:28px 0}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--emerald),var(--teal));opacity:0;transition:opacity .25s}
+.card:hover{border-color:var(--border-2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:28px;margin-bottom:14px}
+.card-title{font-weight:600;font-size:15px;margin-bottom:8px;color:var(--text-1)}
+.card-desc{font-size:13.5px;color:var(--text-2);line-height:1.7}
+.table-wrap{overflow-x:auto;margin:24px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg-3);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 16px;font-size:14px;color:var(--text-2);border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg-2)}
+.td-good{color:var(--green);font-weight:600}.td-bad{color:var(--rose)}.td-mid{color:var(--amber)}
+.accordion{margin:16px 0}
+.acc-header{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;font-size:15px;transition:all .2s;user-select:none}
+.acc-header:hover{border-color:var(--border-2)}
+.acc-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;background:var(--bg-3)}
+.acc-arrow{transition:transform .25s;color:var(--text-3)}
+.acc-header.open .acc-arrow{transform:rotate(180deg)}
+.acc-body{display:none;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-bottom-left-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.acc-body.open{display:block}
+.quiz-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:20px 0}
+.quiz-q{font-weight:600;font-size:16px;margin-bottom:16px}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text-2);transition:all .2s}
+.quiz-opt:hover{border-color:var(--emerald);color:var(--text-1)}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.quiz-reveal{display:none;margin-top:16px;padding:16px;background:var(--bg-3);border-radius:var(--radius-sm);font-size:14px;color:var(--text-2)}
+.quiz-reveal.show{display:block}
+.ex-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0}
+.ex-header{padding:14px 20px;display:flex;gap:12px;align-items:center}
+.ex-header.easy{background:rgba(34,197,94,.08);border-bottom:1px solid rgba(34,197,94,.2)}
+.ex-header.medium{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2)}
+.ex-header.hard{background:rgba(244,63,94,.08);border-bottom:1px solid rgba(244,63,94,.2)}
+.ex-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+.easy .ex-badge{background:var(--green-soft);color:var(--green)}
+.medium .ex-badge{background:var(--amber-soft);color:var(--amber)}
+.hard .ex-badge{background:var(--rose-soft);color:var(--rose)}
+.ex-title{font-weight:600;font-size:14px}
+.ex-body{padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.ex-solution{background:var(--bg-2);border-top:1px solid var(--border);padding:16px 24px;display:none}
+.ex-solution.show{display:block}
+.btn-solution{background:none;border:1px solid var(--border);color:var(--text-3);padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;margin:8px 24px 16px;transition:all .2s;font-family:var(--font-body)}
+.btn-solution:hover{border-color:var(--emerald);color:var(--emerald)}
+#back-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:linear-gradient(135deg,var(--emerald),var(--teal));border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(16,185,129,.4);opacity:0;transform:translateY(16px);transition:all .3s;z-index:800}
+#back-top.show{opacity:1;transform:translateY(0)}
+#back-top:hover{transform:translateY(-2px)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:64px 0}
+.svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;overflow-x:auto}
+.mermaid-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;text-align:center;overflow-x:auto}
+.formula-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;margin:24px 0;font-family:var(--font-mono);font-size:14px;color:#c9d1d9;line-height:2.2}
+.formula-label{font-size:12px;color:var(--text-3);margin-bottom:8px;font-family:var(--font-body)}
+.tag{display:inline-block;background:var(--emerald-soft);border:1px solid rgba(16,185,129,.3);color:var(--emerald);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;margin:2px}
+.summary-box{background:linear-gradient(135deg,var(--emerald-soft),var(--teal-soft));border:1px solid var(--emerald);border-radius:var(--radius);padding:32px;margin:48px 0}
+.summary-box h3{color:var(--emerald);margin-top:0;margin-bottom:20px}
+.summary-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;color:var(--text-2)}
+.summary-num{width:24px;height:24px;background:var(--emerald-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--emerald);flex-shrink:0}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:24px 0}
+.res-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;text-decoration:none;transition:all .2s}
+.res-item:hover{border-color:var(--border-2);transform:translateY(-1px)}
+.res-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 8px;flex-shrink:0}
+.res-type.paper{background:var(--blue-soft);color:#60a5fa}
+.res-type.video{background:var(--rose-soft);color:#fb7185}
+.res-type.code{background:var(--green-soft);color:var(--green)}
+.res-type.doc{background:var(--emerald-soft);color:var(--emerald)}
+.res-title{font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:3px}
+.res-sub{font-size:12px;color:var(--text-3)}
+.chapter-footer{border-top:1px solid var(--border);margin-top:80px;padding-top:48px}
+.footer-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px}
+.footer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.footer-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px}
+.footer-card .value{font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.search-highlight{background:rgba(245,158,11,.3);border-radius:2px}
+@media(max-width:600px){.footer-cards{grid-template-columns:1fr}}
+
+/* Technique cards */
+.technique-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:32px}
+.technique-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:16px}
+.technique-num{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--emerald);background:var(--emerald-soft);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:6px 12px;flex-shrink:0}
+.technique-meta{flex:1}
+.technique-name{font-weight:800;font-size:19px;font-family:var(--font-display);color:var(--text-1);margin-bottom:4px}
+.technique-tagline{font-size:14px;color:var(--text-2)}
+.technique-body{padding:24px}
+.technique-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.t-tag{font-size:11px;font-weight:600;letter-spacing:.06em;border-radius:999px;padding:3px 10px}
+.t-tag.gain{background:var(--green-soft);color:var(--green)}
+.t-tag.cost{background:var(--amber-soft);color:var(--amber)}
+.t-tag.tool{background:var(--accent-glow);color:var(--accent-2)}
+
+/* Flow diagram */
+.flow-steps{display:flex;flex-direction:column;gap:0}
+.flow-step{display:flex;gap:16px;position:relative}
+.flow-step:not(:last-child)::after{content:'';position:absolute;left:18px;top:44px;bottom:-8px;width:2px;background:linear-gradient(180deg,var(--emerald),rgba(16,185,129,.2));z-index:0}
+.flow-dot{width:36px;height:36px;background:linear-gradient(135deg,var(--emerald),var(--teal));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;font-weight:700;color:white;flex-shrink:0;z-index:1;box-shadow:0 0 14px rgba(16,185,129,.3)}
+.flow-content{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:8px}
+.flow-title{font-weight:600;font-size:14px;color:var(--text-1);margin-bottom:4px}
+.flow-desc{font-size:13px;color:var(--text-2);line-height:1.6;margin:0}
+
+/* Comparison boxes */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+@media(max-width:600px){.compare-grid{grid-template-columns:1fr}}
+.compare-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px}
+.compare-box h4{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;margin-top:0}
+.compare-box.before h4{color:var(--rose)}
+.compare-box.after h4{color:var(--emerald)}
+.compare-box p{font-size:13px;line-height:1.7;margin:0;font-family:var(--font-mono)}
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+
+<nav class="topnav">
+  <div class="topnav-brand">🧠 RAG Masterclass</div>
+  <div class="topnav-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Rechercher dans ce chapitre…">
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">☀️ / 🌙</button>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-chapter">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <a href="chapitre-05-chunking-avance.html" style="color:var(--text-3);text-decoration:none;font-size:12px">Ch.5 — Chunking Avancé</a>
+    </div>
+    <div class="sidebar-label">🔍 Chapitre 6</div>
+    <button class="sidebar-item active" onclick="scrollTo(0,0)">Advanced Retrieval</button>
+    <div class="sidebar-label">Contenu</div>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s1')">1. Objectifs</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s2')">2. Limites du retrieval naïf</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s3')">3. HyDE</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s4')">4. Multi-Query Retrieval</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s5')">5. RAG-Fusion</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s6')">6. Step-Back Prompting</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s7')">7. Query Decomposition</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s8')">8. Re-Ranking avancé</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s9')">9. Corrective RAG (CRAG)</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s10')">10. Self-RAG</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s11')">11. Comparatif</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s12')">12. Cas industriels</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s13')">13. Erreurs fréquentes</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s14')">14. Exercices</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s15')">15. Quiz</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s16')">16. Résumé</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s17')">17. Ressources</button>
+  </aside>
+
+  <main class="main">
+
+    <div class="hero">
+      <div class="hero-eyebrow">Chapitre 6 sur 12</div>
+      <h1 class="hero-title">
+        <span class="hl">Advanced Retrieval</span><br>Techniques
+      </h1>
+      <p class="hero-desc">
+        Le retrieval naïf — vectoriser la question, chercher dans la base — est souvent insuffisant. Ce chapitre couvre les techniques avancées : HyDE, Multi-Query, RAG-Fusion, Step-Back, Query Decomposition, et les architectures auto-correctrices CRAG et Self-RAG.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-badge">⏱️ ~70 min de lecture</div>
+        <div class="hero-badge">🔬 Techniques avancées</div>
+        <div class="hero-badge">🏭 Prêt pour la production</div>
+      </div>
+    </div>
+
+    <!-- OBJECTIFS -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Objectifs d'apprentissage</h2>
+      </div>
+      <div class="objectives">
+        <h3>À la fin de ce chapitre, vous serez capables de…</h3>
+        <div class="obj-grid">
+          <div class="obj-item"><div class="obj-dot"></div>Identifier les limites du retrieval vectoriel naïf</div>
+          <div class="obj-item"><div class="obj-dot"></div>Implémenter HyDE pour améliorer la qualité des queries</div>
+          <div class="obj-item"><div class="obj-dot"></div>Appliquer le Multi-Query Retrieval avec fusion RRF</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre RAG-Fusion et son apport en diversité</div>
+          <div class="obj-item"><div class="obj-dot"></div>Utiliser Step-Back Prompting pour les questions complexes</div>
+          <div class="obj-item"><div class="obj-dot"></div>Décomposer des questions complexes en sous-questions</div>
+          <div class="obj-item"><div class="obj-dot"></div>Implémenter le re-ranking Cross-Encoder en production</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre CRAG et Self-RAG — RAG auto-correcteur</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 2 : LIMITES DU RETRIEVAL NAÏF -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Limites du retrieval vectoriel naïf</h2>
+      </div>
+
+      <p>Le retrieval naïf consiste à vectoriser la question de l'utilisateur et à chercher directement les chunks les plus proches. Simple et rapide, mais il souffre de plusieurs failles structurelles.</p>
+
+      <h3>Les 5 problèmes du retrieval naïf</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <div class="card-title">Problème 1 — Asymétrie question/réponse</div>
+          <div class="card-desc">La question "Quelle est la capitale de la France ?" et sa réponse "Paris est la capitale..." sont dans des espaces vectoriels différents. Une question n'est pas un document.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔤</div>
+          <div class="card-title">Problème 2 — Questions vagues ou sous-spécifiées</div>
+          <div class="card-desc">"Parle-moi des congés" est trop vague pour un retrieval précis. Les bons chunks (28 jours après 3 ans) peuvent ne pas être retournés.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧩</div>
+          <div class="card-title">Problème 3 — Questions multi-aspects</div>
+          <div class="card-desc">"Compare les avantages de Redis vs PostgreSQL pour le cache" nécessite des informations sur Redis ET PostgreSQL — difficile à satisfaire avec une seule recherche.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🏗️</div>
+          <div class="card-title">Problème 4 — Questions abstraites</div>
+          <div class="card-desc">"Quelles sont les meilleures pratiques de sécurité ?" est trop abstraite pour matcher des chunks spécifiques sur les pratiques concrètes.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📉</div>
+          <div class="card-title">Problème 5 — Documents pertinents mal classés</div>
+          <div class="card-desc">Le Top-1 n'est pas toujours le plus pertinent. Un Cross-Encoder peut réordonner les candidats avec beaucoup plus de précision.</div>
+        </div>
+      </div>
+
+      <div class="callout emerald">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">La famille des techniques avancées</div>
+          <p class="callout-text">Les techniques de ce chapitre appartiennent à deux familles : (1) les <strong>transformations de requête</strong> (HyDE, Multi-Query, Step-Back, Decomposition) — qui améliorent la <em>qualité</em> des vecteurs de recherche avant d'interroger la base ; et (2) les <strong>améliorations de ranking</strong> (Re-ranking, RAG-Fusion, CRAG, Self-RAG) — qui améliorent la <em>sélection</em> des documents après retrieval.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 3 : HyDE -->
+    <div class="section" id="s3">
+
+      <div class="technique-card">
+        <div class="technique-header">
+          <div class="technique-num">T-01</div>
+          <div class="technique-meta">
+            <div class="technique-name">HyDE — Hypothetical Document Embedding</div>
+            <div class="technique-tagline">Générer une réponse hypothétique pour mieux chercher (Gao et al., 2022)</div>
+          </div>
+        </div>
+        <div class="technique-body">
+          <div class="section-header" style="margin-bottom:16px">
+            <span class="section-num">03</span>
+            <h2 class="section-title">HyDE</h2>
+          </div>
+          <div class="technique-tags">
+            <span class="t-tag gain">+10-20% Recall</span>
+            <span class="t-tag cost">+1 appel LLM</span>
+            <span class="t-tag tool">LangChain HyDERetriever</span>
+          </div>
+
+          <h3>L'insight fondamental</h3>
+          <p>Le problème de l'asymétrie question/document : un chunk qui dit "Paris est la capitale de la France" aura un vecteur très différent de la question "Quelle est la capitale de la France ?". Les embeddings de <em>documents</em> et de <em>questions</em> vivent dans des espaces légèrement différents.</p>
+
+          <p><strong>Solution HyDE</strong> : avant de chercher dans la base, demander au LLM de générer une <em>réponse hypothétique</em> — un document fictif qui "ressemble" à ce que serait la bonne réponse. Puis vectoriser ce document hypothétique et chercher les chunks réels similaires à ce document fictif.</p>
+
+          <div class="compare-grid">
+            <div class="compare-box before">
+              <h4>❌ Retrieval naïf</h4>
+              <p>Question → vecteur_question → cherche dans la base<br><br>
+              Problème : vecteur_question ≠ style des documents</p>
+            </div>
+            <div class="compare-box after">
+              <h4>✅ HyDE</h4>
+              <p>Question → LLM génère doc hypothétique → vecteur_doc_hypothétique → cherche dans la base<br><br>
+              Avantage : même style que les vrais documents</p>
+            </div>
+          </div>
+
+          <div class="ascii-box">HYDE — EXEMPLE CONCRET
+══════════════════════
+
+QUESTION : "Comment postuler pour les congés payés ?"
+
+ÉTAPE 1 — LLM génère un document hypothétique :
+  Prompt : "Écris un passage de règlement intérieur qui répondrait
+            à la question : 'Comment postuler pour les congés payés ?'"
+  
+  Document hypothétique généré :
+  "Pour soumettre une demande de congés payés, le salarié doit
+   se connecter à l'espace RH de l'intranet et remplir le formulaire
+   de demande de congés. La demande doit être effectuée au minimum
+   15 jours à l'avance. Le responsable hiérarchique reçoit une
+   notification et doit valider sous 5 jours ouvrés."
+
+ÉTAPE 2 — Vectoriser ce document hypothétique
+  vecteur_hypothetique = embed("Pour soumettre une demande de congés...")
+  
+ÉTAPE 3 — Chercher dans la vraie base vectorielle
+  → Trouve le chunk réel : "Les demandes de congés doivent être soumises
+    via l'intranet au moins 15 jours à l'avance..."
+  sim(vecteur_hypothetique, chunk_reel) = 0.95  ← haute similarité !
+  
+  Car les DEUX textes sont dans le STYLE d'un règlement intérieur.</div>
+
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — HyDE avec LangChain</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> langchain.retrievers <span class="kw">import</span> HyDERetriever
+<span class="kw">from</span> langchain.prompts <span class="kw">import</span> PromptTemplate
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI, OpenAIEmbeddings
+<span class="kw">from</span> langchain_community.vectorstores <span class="kw">import</span> Chroma
+
+<span class="cm"># Template pour la génération du document hypothétique</span>
+hyde_template = <span class="str">"""Écris un passage de règlement intérieur d'entreprise
+qui répondrait à la question suivante.
+Ne mentionner que des faits pertinents.
+Longueur : 2-3 phrases.
+
+Question: {question}
+
+Passage :"""</span>
+
+llm = ChatOpenAI(model=<span class="str">"gpt-4o-mini"</span>, temperature=<span class="num">0</span>)
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma(embedding_function=embeddings)
+
+hyde_retriever = HyDERetriever.from_llm(
+    llm=llm,
+    retriever=vectorstore.as_retriever(search_kwargs={<span class="str">"k"</span>: <span class="num">5</span>}),
+    prompt_template=hyde_template
+)
+
+docs = hyde_retriever.invoke(<span class="str">"Comment faire une demande de RTT ?"</span>)</pre>
+          </div>
+
+          <div class="callout warn">
+            <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <div class="callout-body">
+              <div class="callout-title">Risque : le document hypothétique peut contenir des hallucinations</div>
+              <p class="callout-text">Le document généré par le LLM peut contenir des informations incorrectes. Ce n'est pas grave — on l'utilise uniquement comme vecteur de recherche, pas comme réponse. Mais si le LLM hallucine beaucoup dans le doc hypothétique, cela peut orienter la recherche dans une mauvaise direction. Utiliser température=0 et des prompts très directifs pour minimiser ce risque.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 4 : MULTI-QUERY -->
+    <div class="section" id="s4">
+
+      <div class="technique-card">
+        <div class="technique-header">
+          <div class="technique-num">T-02</div>
+          <div class="technique-meta">
+            <div class="technique-name">Multi-Query Retrieval</div>
+            <div class="technique-tagline">Reformuler la question de plusieurs façons pour capturer plus de perspectives</div>
+          </div>
+        </div>
+        <div class="technique-body">
+          <div class="section-header" style="margin-bottom:16px">
+            <span class="section-num">04</span>
+            <h2 class="section-title">Multi-Query Retrieval</h2>
+          </div>
+          <div class="technique-tags">
+            <span class="t-tag gain">+15-25% Recall</span>
+            <span class="t-tag cost">N appels LLM + N searches</span>
+            <span class="t-tag tool">LangChain MultiQueryRetriever</span>
+          </div>
+
+          <h3>Le problème : les mots ne capturent pas tout</h3>
+          <p>Une question formulée d'une certaine façon peut rater des chunks pertinents formulés différemment. Exemple : "Comment réduire la consommation d'énergie ?" peut rater des chunks sur "économies d'électricité" ou "optimisation énergétique".</p>
+
+          <div class="ascii-box">MULTI-QUERY — PIPELINE COMPLET
+══════════════════════════════
+
+QUESTION ORIGINALE :
+  "Quels sont les avantages du télétravail pour les employés ?"
+
+ÉTAPE 1 — LLM génère N reformulations (N=3-5) :
+  Q1 : "Quels sont les bénéfices du travail à domicile pour les salariés ?"
+  Q2 : "En quoi le remote work améliore-t-il la qualité de vie au travail ?"
+  Q3 : "Quels impacts positifs le travail depuis la maison a-t-il sur les collaborateurs ?"
+  Q4 : "Avantages du home office pour les employés"
+  
+ÉTAPE 2 — Retrieval indépendant pour CHAQUE reformulation :
+  Search(Q1) → [doc3, doc7, doc12, doc18, doc22]
+  Search(Q2) → [doc3, doc9, doc12, doc15, doc19]
+  Search(Q3) → [doc3, doc12, doc17, doc20, doc22]
+  Search(Q4) → [doc3, doc7, doc12, doc14, doc21]
+
+ÉTAPE 3 — Fusion et déduplication par RRF :
+  doc3  : Rang 1 dans Q1, Q2, Q3, Q4 → score RRF très élevé
+  doc12 : Rang 3,3,2,3 → score élevé
+  doc7  : Rang 2 dans Q1, Q4 → score modéré
+  doc9  : Rang 2 dans Q2 seulement → score faible
+  
+  → Top-5 final fusionné : [doc3, doc12, doc7, doc22, doc14]
+
+AVANTAGE :
+  doc17 (trouvé seulement par Q3) serait ignoré en retrieval naïf
+  mais capturé ici grâce à la reformulation diversifiée.</div>
+
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — MultiQueryRetriever LangChain</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> langchain.retrievers.multi_query <span class="kw">import</span> MultiQueryRetriever
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">import</span> logging
+
+logging.basicConfig()
+logging.getLogger(<span class="str">"langchain.retrievers.multi_query"</span>).setLevel(logging.INFO)
+
+llm = ChatOpenAI(temperature=<span class="num">0</span>)
+retriever = vectorstore.as_retriever()
+
+multi_query_retriever = MultiQueryRetriever.from_llm(
+    retriever=retriever,
+    llm=llm,
+    parser_key=<span class="str">"lines"</span>  <span class="cm"># parse les reformulations ligne par ligne</span>
+)
+
+<span class="cm"># Retourne des documents uniques agrégés de toutes les requêtes</span>
+unique_docs = multi_query_retriever.invoke(
+    <span class="str">"Quels sont les avantages du télétravail ?"</span>
+)
+<span class="fn">print</span>(<span class="str">f"{len(unique_docs)} documents uniques récupérés"</span>)</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 5 : RAG-FUSION -->
+    <div class="section" id="s5">
+
+      <div class="technique-card">
+        <div class="technique-header">
+          <div class="technique-num">T-03</div>
+          <div class="technique-meta">
+            <div class="technique-name">RAG-Fusion</div>
+            <div class="technique-tagline">Multi-Query + Reciprocal Rank Fusion = la combinaison gagnante (Rackauckas, 2023)</div>
+          </div>
+        </div>
+        <div class="technique-body">
+          <div class="section-header" style="margin-bottom:16px">
+            <span class="section-num">05</span>
+            <h2 class="section-title">RAG-Fusion</h2>
+          </div>
+          <div class="technique-tags">
+            <span class="t-tag gain">+20-30% NDCG</span>
+            <span class="t-tag cost">N appels LLM + N searches + RRF</span>
+            <span class="t-tag tool">Custom implementation</span>
+          </div>
+
+          <p>RAG-Fusion est une architecture qui combine Multi-Query et Reciprocal Rank Fusion de façon systématique, produisant un meilleur classement des documents que chaque technique seule.</p>
+
+          <div class="mermaid-wrap">
+            <div class="mermaid">
+flowchart TD
+    A["❓ Question originale"] --> B["LLM génère\n4 reformulations"]
+    B --> C["Search Q1 → Top-5"]
+    B --> D["Search Q2 → Top-5"]
+    B --> E["Search Q3 → Top-5"]
+    B --> F["Search Q4 → Top-5"]
+    C & D & E & F --> G["Reciprocal Rank Fusion\nRRF score pour chaque doc"]
+    G --> H["Classement fusionné\nTop-K documents"]
+    H --> I["LLM génère\nréponse finale"]
+    style B fill:#1a1e2a,stroke:#10b981,color:#10b981
+    style G fill:#1a1e2a,stroke:#2dd4bf,color:#2dd4bf
+    style I fill:rgba(16,185,129,.1),stroke:#10b981,color:#e8eaf2
+            </div>
+          </div>
+
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — RAG-Fusion avec RRF custom</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> langchain_core.output_parsers <span class="kw">import</span> StrOutputParser
+<span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> ChatPromptTemplate
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> collections <span class="kw">import</span> defaultdict
+
+<span class="cm"># 1. Génération de requêtes alternatives</span>
+query_gen_prompt = ChatPromptTemplate.from_messages([(<span class="str">"human"</span>,
+    <span class="str">"""Génère 4 reformulations différentes de cette question.
+    Retourne SEULEMENT les questions, une par ligne.
+    Question: {question}"""</span>
+)])
+generate_queries = (
+    query_gen_prompt
+    | ChatOpenAI(temperature=<span class="num">0.3</span>)
+    | StrOutputParser()
+    | (<span class="kw">lambda</span> x: x.split(<span class="str">"\n"</span>))
+)
+
+<span class="cm"># 2. Reciprocal Rank Fusion</span>
+<span class="kw">def</span> <span class="fn">reciprocal_rank_fusion</span>(results_list: list[list], k: int = <span class="num">60</span>):
+    <span class="cm">"""Fusionne plusieurs listes de documents classés par RRF."""</span>
+    fused_scores = defaultdict(<span class="fn">float</span>)
+    doc_map = {}
+    
+    <span class="kw">for</span> docs <span class="kw">in</span> results_list:
+        <span class="kw">for</span> rank, doc <span class="kw">in</span> <span class="fn">enumerate</span>(docs):
+            doc_id = doc.page_content[:100]  <span class="cm"># clé unique</span>
+            fused_scores[doc_id] += <span class="num">1.0</span> / (k + rank + <span class="num">1</span>)
+            doc_map[doc_id] = doc
+    
+    <span class="cm"># Trier par score décroissant</span>
+    sorted_ids = <span class="fn">sorted</span>(fused_scores, key=fused_scores.get, reverse=<span class="kw">True</span>)
+    <span class="kw">return</span> [doc_map[doc_id] <span class="kw">for</span> doc_id <span class="kw">in</span> sorted_ids]
+
+<span class="cm"># 3. Pipeline complet</span>
+<span class="kw">def</span> <span class="fn">rag_fusion_retrieval</span>(question: str, vectorstore, top_k: int = <span class="num">5</span>):
+    queries = generate_queries.invoke({<span class="str">"question"</span>: question})
+    queries.append(question)  <span class="cm"># inclure la question originale</span>
+    
+    all_results = [
+        vectorstore.similarity_search(q, k=top_k)
+        <span class="kw">for</span> q <span class="kw">in</span> queries <span class="kw">if</span> q.strip()
+    ]
+    
+    fused_docs = <span class="fn">reciprocal_rank_fusion</span>(all_results)
+    <span class="kw">return</span> fused_docs[:top_k]</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 6 : STEP-BACK -->
+    <div class="section" id="s6">
+
+      <div class="technique-card">
+        <div class="technique-header">
+          <div class="technique-num">T-04</div>
+          <div class="technique-meta">
+            <div class="technique-name">Step-Back Prompting</div>
+            <div class="technique-tagline">Partir d'une vue générale pour mieux répondre aux questions spécifiques (Zheng et al., 2023)</div>
+          </div>
+        </div>
+        <div class="technique-body">
+          <div class="section-header" style="margin-bottom:16px">
+            <span class="section-num">06</span>
+            <h2 class="section-title">Step-Back Prompting</h2>
+          </div>
+          <div class="technique-tags">
+            <span class="t-tag gain">+12% sur questions multi-hop</span>
+            <span class="t-tag cost">+1-2 appels LLM</span>
+            <span class="t-tag tool">LangChain custom chain</span>
+          </div>
+
+          <h3>L'analogie : le médecin et le symptôme</h3>
+          <p>Un patient dit "j'ai mal à la tête depuis 3 jours". Un bon médecin ne cherche pas immédiatement "traitement mal de tête 3 jours" — il <em>prend du recul</em> et cherche d'abord le contexte général (pathologies possibles avec ce symptôme, facteurs de risque) avant de diagnostiquer.</p>
+
+          <div class="ascii-box">STEP-BACK PROMPTING — MÉCANISME
+═════════════════════════════════
+
+QUESTION SPÉCIFIQUE (difficile à retriever directement) :
+  "Quelles sont les implications légales pour une PME française
+   qui emploie un salarié en CDD depuis 18 mois sans interruption ?"
+
+ÉTAPE 1 — LLM génère la "step-back question" (question abstraite) :
+  "Quelles sont les règles générales sur la durée des CDD
+   et leur requalification en CDI en droit du travail français ?"
+   
+ÉTAPE 2 — Retrieval sur la question abstraite :
+  → Retourne les chunks sur le droit du travail CDD général
+  
+ÉTAPE 3 — Retrieval sur la question spécifique :
+  → Retourne les chunks sur les cas pratiques PME/CDD
+
+ÉTAPE 4 — LLM génère la réponse avec les deux contextes :
+  Contexte général (step-back) + Contexte spécifique (original)
+  → Réponse plus complète et précise
+
+RÉSULTAT :
+  La réponse inclut le cadre légal général (requalification automatique
+  après 18 mois ou 2 renouvellements) ET les implications pratiques
+  spécifiques aux PME.</div>
+
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — Step-Back Prompting</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> ChatPromptTemplate
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langchain_core.output_parsers <span class="kw">import</span> StrOutputParser
+
+<span class="cm"># Génération de la step-back question</span>
+step_back_prompt = ChatPromptTemplate.from_messages([
+    (<span class="str">"system"</span>, <span class="str">"""Tu es un expert en droit du travail. Pour une question spécifique,
+génère une version plus générale et abstraite qui capture le cadre conceptuel.
+Cette question abstraite permettra de trouver le contexte général."""</span>),
+    (<span class="str">"human"</span>, <span class="str">"Question spécifique : {question}\nQuestion abstraite :"</span>)
+])
+
+llm = ChatOpenAI(model=<span class="str">"gpt-4o"</span>, temperature=<span class="num">0</span>)
+step_back_chain = step_back_prompt | llm | StrOutputParser()
+
+<span class="kw">def</span> <span class="fn">step_back_retrieval</span>(question, retriever):
+    <span class="cm"># Générer la question abstraite</span>
+    abstract_question = step_back_chain.invoke({<span class="str">"question"</span>: question})
+    
+    <span class="cm"># Retrieval sur les deux questions</span>
+    specific_docs = retriever.invoke(question)
+    abstract_docs = retriever.invoke(abstract_question)
+    
+    <span class="cm"># Combiner (déduplication)</span>
+    seen, combined = <span class="fn">set</span>(), []
+    <span class="kw">for</span> doc <span class="kw">in</span> abstract_docs + specific_docs:
+        k = doc.page_content[:80]
+        <span class="kw">if</span> k <span class="kw">not in</span> seen:
+            seen.add(k); combined.append(doc)
+    <span class="kw">return</span> combined[:<span class="num">6</span>]</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 7 : QUERY DECOMPOSITION -->
+    <div class="section" id="s7">
+
+      <div class="technique-card">
+        <div class="technique-header">
+          <div class="technique-num">T-05</div>
+          <div class="technique-meta">
+            <div class="technique-name">Query Decomposition</div>
+            <div class="technique-tagline">Décomposer une question complexe en sous-questions indépendantes</div>
+          </div>
+        </div>
+        <div class="technique-body">
+          <div class="section-header" style="margin-bottom:16px">
+            <span class="section-num">07</span>
+            <h2 class="section-title">Query Decomposition</h2>
+          </div>
+          <div class="technique-tags">
+            <span class="t-tag gain">Essentiel pour questions multi-hop</span>
+            <span class="t-tag cost">N appels LLM + N searches</span>
+            <span class="t-tag tool">LangChain LCEL</span>
+          </div>
+
+          <h3>Le problème des questions multi-hop</h3>
+          <p>Certaines questions nécessitent plusieurs étapes de raisonnement. Exemple : "Quelle est la rémunération maximale pour un salarié au SMIC avec 5 ans d'ancienneté et une prime d'ancienneté de 3% ?" nécessite de connaître le SMIC actuel, la règle d'ancienneté ET le calcul de prime.</p>
+
+          <div class="ascii-box">QUERY DECOMPOSITION — DEUX STRATÉGIES
+═══════════════════════════════════════
+
+STRATÉGIE 1 — LEAST-TO-MOST (séquentielle, chaque réponse alimente la suivante)
+  
+  Q complexe : "Quelles entreprises similaires à TechCorp ont le meilleur
+                track record en RAG deployment ?"
+  
+  SQ1 : "Quelles sont les caractéristiques principales de TechCorp ?"
+        → [Chunk: TechCorp est une ESN spécialisée IA, 500 personnes...]
+        → Réponse1: "ESN IA, 500 employés, spécialisation NLP"
+  
+  SQ2 : "Quelles ESN IA similaires à TechCorp (ESN IA, 500 employes) 
+         existent sur le marché ?"
+        → Utilise Réponse1 comme contexte pour affiner SQ2
+        → [Chunks: DataCorp, AIStudio, NLPTech...]
+  
+  SQ3 : "Parmi DataCorp, AIStudio, NLPTech, lesquels ont déployé RAG ?"
+
+STRATÉGIE 2 — PARALLÈLE (sous-questions indépendantes)
+
+  Q complexe : "Compare les congés et la télétravail dans les accords d'entreprise"
+  
+  SQ1 : "Quelle est la politique de congés ?" → [chunks congés]
+  SQ2 : "Quelle est la politique de télétravail ?" → [chunks téléravail]
+  
+  (exécutées en parallèle, fusionnées ensuite)</div>
+
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — Decomposition parallèle</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> ChatPromptTemplate
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">import</span> json, asyncio
+
+decompose_prompt = ChatPromptTemplate.from_messages([(<span class="str">"human"</span>,
+<span class="str">"""Décompose cette question en sous-questions simples et indépendantes.
+Retourne un JSON {"sub_questions": ["SQ1", "SQ2", ...]}.
+Question: {question}"""</span>)])
+
+<span class="kw">async def</span> <span class="fn">parallel_decomposition_retrieval</span>(question, retriever):
+    <span class="cm"># Décomposer</span>
+    llm = ChatOpenAI(model=<span class="str">"gpt-4o-mini"</span>, temperature=<span class="num">0</span>,
+                     response_format={<span class="str">"type"</span>: <span class="str">"json_object"</span>})
+    response = <span class="kw">await</span> (decompose_prompt | llm).ainvoke({<span class="str">"question"</span>: question})
+    sub_questions = json.loads(response.content)[<span class="str">"sub_questions"</span>]
+    
+    <span class="cm"># Retrieval parallèle (async) pour chaque sous-question</span>
+    tasks = [retriever.ainvoke(sq) <span class="kw">for</span> sq <span class="kw">in</span> sub_questions]
+    results = <span class="kw">await</span> asyncio.gather(*tasks)
+    
+    <span class="cm"># Fusionner et dédupliquer</span>
+    seen, all_docs = <span class="fn">set</span>(), []
+    <span class="kw">for</span> docs <span class="kw">in</span> results:
+        <span class="kw">for</span> doc <span class="kw">in</span> docs:
+            k = doc.page_content[:<span class="num">80</span>]
+            <span class="kw">if</span> k <span class="kw">not in</span> seen: seen.add(k); all_docs.append(doc)
+    
+    <span class="kw">return</span> all_docs, sub_questions</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 8 : RE-RANKING -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2 class="section-title">Re-Ranking avancé en production</h2>
+      </div>
+
+      <p>Le re-ranking est l'étape qui suit le retrieval vectoriel (Bi-Encoder) : on prend les Top-20 à 50 candidats et on les reclasse avec un modèle plus précis (Cross-Encoder) qui analyse la paire (question, document) conjointement.</p>
+
+      <h3>Architecture retrieve → rerank → generate</h3>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-dot">1</div>
+          <div class="flow-content">
+            <div class="flow-title">Retrieval vectoriel (Bi-Encoder) — rapide</div>
+            <div class="flow-desc">ANN search sur toute la base → Top-50 candidats en ~10ms. Précision ~85%. Le Bi-Encoder a pré-calculé tous les vecteurs documents.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-dot">2</div>
+          <div class="flow-content">
+            <div class="flow-title">Re-ranking (Cross-Encoder) — précis</div>
+            <div class="flow-desc">Score de pertinence pour chaque paire (question, candidat_i) → Reclassement des 50 candidats en ~100-200ms. Précision ~95%.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-dot">3</div>
+          <div class="flow-content">
+            <div class="flow-title">Sélection Top-K</div>
+            <div class="flow-desc">Garder les Top-3 à 5 après re-ranking. Ces candidats ont été doublement filtrés pour leur pertinence.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-dot">4</div>
+          <div class="flow-content">
+            <div class="flow-title">Génération LLM</div>
+            <div class="flow-desc">Prompt augmenté avec les Top-K documents les plus pertinents → réponse de haute qualité.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Modèles de re-ranking populaires</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Modèle</th><th>Type</th><th>Qualité</th><th>Vitesse</th><th>Usage</th></tr></thead>
+          <tbody>
+            <tr><td><strong>ms-marco-MiniLM-L-6-v2</strong></td><td>Cross-Encoder</td><td class="td-mid">Bonne</td><td class="td-good">Rapide</td><td>Production CPU</td></tr>
+            <tr><td><strong>bge-reranker-large</strong></td><td>Cross-Encoder</td><td class="td-good">Excellente</td><td class="td-mid">Modérée</td><td>Production GPU</td></tr>
+            <tr><td><strong>Cohere Rerank v3</strong></td><td>API propriétaire</td><td class="td-good">SOTA</td><td class="td-good">Rapide (API)</td><td>Cloud, faible latence</td></tr>
+            <tr><td><strong>Jina Reranker v2</strong></td><td>Cross-Encoder</td><td class="td-good">Très bonne</td><td class="td-mid">Modérée</td><td>Open source, multilingual</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Re-ranking avec sentence-transformers</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> sentence_transformers <span class="kw">import</span> CrossEncoder
+
+<span class="cm"># Charger le modèle de re-ranking</span>
+reranker = CrossEncoder(<span class="str">"cross-encoder/ms-marco-MiniLM-L-6-v2"</span>)
+
+<span class="kw">def</span> <span class="fn">retrieve_and_rerank</span>(question: str, vectorstore, top_k: int = <span class="num">5</span>):
+    <span class="cm"># Étape 1 : retrieval large (top_k * 10)</span>
+    candidates = vectorstore.similarity_search(question, k=top_k * <span class="num">10</span>)
+    
+    <span class="cm"># Étape 2 : préparer les paires (question, chunk)</span>
+    pairs = [(question, doc.page_content) <span class="kw">for</span> doc <span class="kw">in</span> candidates]
+    
+    <span class="cm"># Étape 3 : score de pertinence via Cross-Encoder</span>
+    scores = reranker.predict(pairs)  <span class="cm"># score entre -inf et +inf (logit)</span>
+    
+    <span class="cm"># Étape 4 : trier et retourner les top_k</span>
+    ranked = <span class="fn">sorted</span>(<span class="fn">zip</span>(candidates, scores), key=<span class="kw">lambda</span> x: x[<span class="num">1</span>], reverse=<span class="kw">True</span>)
+    <span class="kw">return</span> [doc <span class="kw">for</span> doc, score <span class="kw">in</span> ranked[:top_k]]</pre>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Cohere Rerank — La solution API la plus simple</div>
+          <p class="callout-text">Cohere Rerank v3 offre un service de re-ranking via API en quelques lignes de code, multilingue (100+ langues), avec d'excellentes performances. Idéal si vous voulez le bénéfice du re-ranking sans héberger un modèle. Tarif : ~$2/1000 docs re-rankés.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 9 : CRAG -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2 class="section-title">CRAG — Corrective RAG</h2>
+      </div>
+
+      <p><strong>CRAG (Corrective Retrieval-Augmented Generation)</strong>, Yan et al. 2024, introduit une étape d'évaluation et de correction du retrieval. Au lieu d'injecter aveuglément les documents récupérés dans le prompt, on évalue leur pertinence et on adapte la stratégie en conséquence.</p>
+
+      <div class="ascii-box">CRAG — PIPELINE AVEC AUTO-CORRECTION
+═══════════════════════════════════════
+
+Question → Retrieval initial → [doc1, doc2, doc3, doc4, doc5]
+                                        │
+                           ┌────────────▼────────────┐
+                           │  ÉVALUATEUR DE PERTINENCE│
+                           │  (LLM ou modèle dédié)   │
+                           │                          │
+                           │  doc1: PERTINENT ✅       │
+                           │  doc2: PERTINENT ✅       │
+                           │  doc3: AMBIGU ⚠️          │
+                           │  doc4: NON PERTINENT ❌   │
+                           │  doc5: NON PERTINENT ❌   │
+                           └────────────┬────────────┘
+                                        │
+                    ┌───────────────────┼───────────────────┐
+                    │                   │                   │
+              CORRECT (✅)         AMBIGU (⚠️)        INCORRECT (❌)
+              (≥1 pertinent)    (confiance faible)   (0 pertinent)
+                    │                   │                   │
+             Utiliser             Web search             Web search
+             directement      pour compléter        pour remplacer
+                    │                   │                   │
+                    └───────────────────┴───────────────────┘
+                                        │
+                                 LLM génère réponse
+                              avec documents validés</div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — CRAG simplifié avec évaluation LLM</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> ChatPromptTemplate
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langchain_core.output_parsers <span class="kw">import</span> StrOutputParser
+<span class="kw">from</span> langchain_community.tools <span class="kw">import</span> TavilySearchResults
+
+<span class="cm"># Évaluateur de pertinence</span>
+relevance_prompt = ChatPromptTemplate.from_messages([(<span class="str">"human"</span>,
+<span class="str">"""Évalue si ce document est pertinent pour répondre à la question.
+Réponds uniquement par "oui", "non", ou "partiel".
+
+Question: {question}
+Document: {document}
+
+Pertinence:"""</span>)])
+
+llm = ChatOpenAI(model=<span class="str">"gpt-4o-mini"</span>, temperature=<span class="num">0</span>)
+evaluator = relevance_prompt | llm | StrOutputParser()
+web_search = TavilySearchResults(k=<span class="num">3</span>)
+
+<span class="kw">def</span> <span class="fn">corrective_rag</span>(question, retrieved_docs):
+    <span class="cm"># Évaluer chaque doc</span>
+    evaluations = [
+        evaluator.invoke({<span class="str">"question"</span>: question, <span class="str">"document"</span>: doc.page_content})
+        <span class="kw">for</span> doc <span class="kw">in</span> retrieved_docs
+    ]
+    
+    relevant_docs = [d <span class="kw">for</span> d, e <span class="kw">in</span> <span class="fn">zip</span>(retrieved_docs, evaluations) <span class="kw">if</span> <span class="str">"oui"</span> <span class="kw">in</span> e.lower()]
+    partial_docs  = [d <span class="kw">for</span> d, e <span class="kw">in</span> <span class="fn">zip</span>(retrieved_docs, evaluations) <span class="kw">if</span> <span class="str">"partiel"</span> <span class="kw">in</span> e.lower()]
+    
+    <span class="kw">if</span> <span class="fn">len</span>(relevant_docs) >= <span class="num">2</span>:
+        <span class="cm"># Suffisamment de docs pertinents</span>
+        <span class="kw">return</span> relevant_docs
+    <span class="kw">elif</span> partial_docs:
+        <span class="cm"># Compléter par web search</span>
+        web_results = web_search.invoke(question)
+        <span class="kw">return</span> partial_docs + web_results
+    <span class="kw">else</span>:
+        <span class="cm"># Remplacer par web search</span>
+        <span class="kw">return</span> web_search.invoke(question)</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 10 : SELF-RAG -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <h2 class="section-title">Self-RAG — RAG qui s'auto-évalue</h2>
+      </div>
+
+      <p><strong>Self-RAG</strong> (Asai et al., 2023) est une architecture où le LLM lui-même décide <em>quand</em> chercher des informations, <em>si</em> ce qu'il a trouvé est pertinent, et <em>si</em> sa réponse générée est supportée par les sources. Il génère des tokens spéciaux de contrôle.</p>
+
+      <div class="ascii-box">SELF-RAG — TOKENS SPÉCIAUX DE CONTRÔLE
+══════════════════════════════════════════
+
+Le modèle génère 4 types de "reflection tokens" :
+
+[RETRIEVE]  → Décision de chercher ou pas
+  "Est-ce que je dois chercher des informations ?"
+  Oui → déclenche un retrieval
+  Non → répond depuis les paramètres du modèle
+
+[ISREL]     → Pertinence du document récupéré
+  "Ce document est-il pertinent pour ma question ?"
+  Valeurs : relevant / irrelevant
+
+[ISSUP]     → Support de la génération par le document
+  "Ce que je génère est-il soutenu par les sources ?"
+  Valeurs : fully supported / partially supported / no support
+
+[ISUSE]     → Utilité de la réponse générée
+  "Ma réponse est-elle utile pour l'utilisateur ?"
+  Score : 1-5
+
+EXEMPLE DE GÉNÉRATION SELF-RAG :
+  Input : "Qu'est-ce que le diabète de type 2 ?"
+  
+  → [RETRIEVE: oui] → retrieval
+  → doc1 récupéré → [ISREL: relevant]
+  → Génère : "Le diabète de type 2 est caractérisé par..."
+  → [ISSUP: fully supported]  ← vérifie que c'est dans doc1
+  → [ISUSE: 5]  ← juge l'utilité</div>
+
+      <div class="callout concept">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a799ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Self-RAG vs CRAG : quelle différence ?</div>
+          <p class="callout-text"><strong>CRAG</strong> utilise un évaluateur externe (LLM séparé) pour évaluer les documents récupérés puis décide de compléter ou remplacer le retrieval. <strong>Self-RAG</strong> fine-tune un seul LLM pour qu'il génère lui-même des tokens de contrôle pendant la génération. Self-RAG est plus élégant (un seul modèle) mais nécessite un fine-tuning dédié. CRAG est plus flexible (aucun fine-tuning requis, plug-and-play).</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 11 : COMPARATIF -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <span class="section-num">11</span>
+        <h2 class="section-title">Comparatif des techniques avancées</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Technique</th><th>Problème résolu</th><th>Gain qualité</th><th>Coût additionnel</th><th>Recommandée si…</th></tr></thead>
+          <tbody>
+            <tr><td><strong>HyDE</strong></td><td>Asymétrie question/doc</td><td class="td-mid">+10-20%</td><td>+1 LLM call</td><td>Questions très différentes du style des docs</td></tr>
+            <tr><td><strong>Multi-Query</strong></td><td>Vocabulaire limité</td><td class="td-mid">+15-25%</td><td>+N LLM calls</td><td>Corpus avec vocabulaire varié</td></tr>
+            <tr><td><strong>RAG-Fusion</strong></td><td>Ranking imparfait</td><td class="td-good">+20-30%</td><td>+N LLM + RRF</td><td>Meilleur default en production</td></tr>
+            <tr><td><strong>Step-Back</strong></td><td>Questions trop spécifiques</td><td class="td-mid">+12%</td><td>+1-2 LLM calls</td><td>Questions complexes avec contexte général nécessaire</td></tr>
+            <tr><td><strong>Decomposition</strong></td><td>Questions multi-hop</td><td class="td-good">Majeur</td><td>+N LLM + N searches</td><td>Questions à plusieurs parties ou raisonnement en chaîne</td></tr>
+            <tr><td><strong>Re-ranking</strong></td><td>Mauvais classement initial</td><td class="td-good">+5-15% NDCG</td><td>+Modèle Cross-Encoder</td><td>Presque toujours — excellent ROI</td></tr>
+            <tr><td><strong>CRAG</strong></td><td>Docs non pertinents</td><td class="td-good">Robustesse++</td><td>+Évaluation + web</td><td>Corpus incomplet, questions hors domaine possibles</td></tr>
+            <tr><td><strong>Self-RAG</strong></td><td>Décision retrieve/non</td><td class="td-good">Précision++</td><td>Fine-tuning requis</td><td>Déploiement où le fine-tuning est possible</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>La stack recommandée pour la production</h3>
+      <div class="callout emerald">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Stack recommandée en production (par ordre de priorité)</div>
+          <p class="callout-text">
+            <strong>Base obligatoire :</strong> Hybrid Search (Dense + Sparse BM25) + Re-ranking Cross-Encoder. Cela couvre 80% des gains possibles.<br><br>
+            <strong>Si les questions sont variées :</strong> Ajouter Multi-Query ou RAG-Fusion.<br><br>
+            <strong>Si les questions sont complexes :</strong> Ajouter Query Decomposition ou Step-Back.<br><br>
+            <strong>Si le corpus peut être incomplet :</strong> Ajouter CRAG avec fallback web search.<br><br>
+            <strong>Ne pas tout activer en même temps</strong> — chaque technique ajoute de la latence. Mesurer l'impact de chaque ajout avec des métriques objectives avant de passer au niveau suivant.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 12 : CAS INDUSTRIELS -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <span class="section-num">12</span>
+        <h2 class="section-title">Cas industriels</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Entreprise</th><th>Technique utilisée</th><th>Contexte</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Perplexity AI</strong></td><td>CRAG + Web Search</td><td>Moteur de recherche IA</td><td>Retrieval dynamique web quand la base est insuffisante</td></tr>
+            <tr><td><strong>Notion AI</strong></td><td>Multi-Query + Re-ranking</td><td>Search dans l'espace de travail</td><td>+25% de pertinence sur les recherches cross-pages</td></tr>
+            <tr><td><strong>OpenAI</strong></td><td>Re-ranking + Self-evaluation</td><td>ChatGPT avec mémoire</td><td>Évaluation automatique de la pertinence des souvenirs</td></tr>
+            <tr><td><strong>Google (AI Overview)</strong></td><td>Step-Back + Multi-Query</td><td>Résumés dans Search</td><td>Capture du contexte général + détails spécifiques</td></tr>
+            <tr><td><strong>Cohere</strong></td><td>RAG-Fusion + Rerank</td><td>Enterprise RAG</td><td>Leur modèle Rerank v3 est maintenant utilisé partout</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 13 : ERREURS -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <span class="section-num">13</span>
+        <h2 class="section-title">Erreurs fréquentes</h2>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 1 — Activer toutes les techniques sans mesurer l'impact</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Multi-Query + HyDE + Step-Back + Decomposition + Re-ranking = 5+ appels LLM par requête, latence de 5-10 secondes, coût x5. Sans mesure de l'impact de chaque technique, on peut dépenser beaucoup pour des gains marginaux. Toujours ajouter une technique à la fois et mesurer le delta de qualité vs coût.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 2 — Utiliser HyDE sans ajuster le prompt selon le domaine</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Le document hypothétique de HyDE doit avoir le même style que les vrais documents. Un prompt générique ("génère un texte sur ce sujet") produit un document dans un style différent de celui des vrais chunks. Toujours spécifier le format attendu dans le prompt HyDE : "Génère un extrait de [type de document : règlement, article scientifique, etc.] qui répondrait à cette question."</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 3 — Re-ranking sur trop peu de candidats initiaux</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Si le retrieval initial ne retourne que 5 candidats et que le bon document n'en fait pas partie, le re-ranking ne peut pas le faire apparaître. Le re-ranking réordonne les candidats existants — il ne peut pas créer de nouveaux candidats. Toujours retriever large (Top-20 à 50) avant de re-ranker pour Top-5.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 4 — Confondre Query Decomposition et Multi-Query</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Multi-Query</strong> : génère des reformulations de la MÊME question, pour capturer différentes façons d'exprimer le même concept. Toutes les sous-requêtes cherchent le même type d'information.<br><br><strong>Query Decomposition</strong> : découpe une question en sous-questions portant sur des ASPECTS DIFFÉRENTS, chacune nécessitant une recherche indépendante. Utilisé pour les questions multi-hop ou multi-thèmes.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 5 — CRAG avec un évaluateur trop conservateur</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Si l'évaluateur de CRAG est trop strict (marque "non pertinent" trop souvent), le système déclenchera des web searches inutiles, augmentant la latence et le coût. Calibrer l'évaluateur sur un jeu de test pour trouver le bon seuil de pertinence. En pratique, un léger biais vers "partiellement pertinent" est préférable pour éviter les false negatives.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 14 : EXERCICES -->
+    <div class="section" id="s14">
+      <div class="section-header">
+        <span class="section-num">14</span>
+        <h2 class="section-title">Exercices</h2>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 1 — Choisir la bonne technique</span>
+        </div>
+        <div class="ex-body">
+          Pour chacun des problèmes suivants, quelle technique de retrieval avancé recommanderiez-vous ?<br><br>
+          <strong>a)</strong> Une question sur la "dépréciation des actifs" dans une base de documents comptables, mais les documents parlent d'"amortissement". Le retrieval naïf échoue car le vocabulaire diffère.<br>
+          <strong>b)</strong> "Explique-moi le fonctionnement complet de la chaîne d'approvisionnement de l'entreprise, en incluant les fournisseurs, la logistique et la distribution." (Question très large avec plusieurs aspects).<br>
+          <strong>c)</strong> Le retrieval retourne les 5 documents les plus proches, mais l'évaluation montre que le 4ème est souvent le plus pertinent.<br>
+          <strong>d)</strong> Parfois une question tombe hors du domaine de la base documentaire et le LLM répond avec confiance en se basant sur ses paramètres internes (pas de retrieval).
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Multi-Query</strong> — générer des reformulations avec le vocabulaire alternatif ("amortissement", "dépréciation", "dotation aux amortissements") pour capturer tous les chunks pertinents indépendamment de la terminologie utilisée.<br><br>
+          <strong>b) Query Decomposition</strong> — décomposer en SQ1: "Qui sont les fournisseurs ?", SQ2: "Comment fonctionne la logistique ?", SQ3: "Comment fonctionne la distribution ?" — chaque sous-question fait un retrieval indépendant.<br><br>
+          <strong>c) Re-ranking (Cross-Encoder)</strong> — le ranking initial est imparfait. Un Cross-Encoder analyse la paire (question, doc4) avec plus de précision et le remonterait en Top-1 ou 2.<br><br>
+          <strong>d) CRAG</strong> — l'évaluateur détecterait que les documents récupérés ne sont pas pertinents et déclencherait un web search ou signalerait l'absence d'information dans la base, évitant que le LLM réponde par des hallucinations.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header medium">
+          <span class="ex-badge">Moyen</span>
+          <span class="ex-title">Exercice 2 — Implémenter RAG-Fusion from scratch</span>
+        </div>
+        <div class="ex-body">
+          Vous avez une base vectorielle et une question : "Quels sont les impacts environnementaux de la production d'énergie solaire ?"<br><br>
+          <strong>a)</strong> Proposez 4 reformulations que le LLM pourrait générer pour cette question.<br>
+          <strong>b)</strong> Voici les résultats fictifs pour chaque reformulation :<br>
+          Q1: [A, B, C, D, E] | Q2: [B, A, F, G, C] | Q3: [A, C, H, B, I] | Q4: [J, A, B, K, C]<br>
+          Calculez le score RRF (k=60) pour les documents A, B et C.<br>
+          <strong>c)</strong> Quel serait le classement final de ces 3 documents ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Reformulations :</strong><br>
+          Q1 : "Empreinte carbone des panneaux photovoltaïques"<br>
+          Q2 : "Pollution liée à la fabrication de cellules solaires"<br>
+          Q3 : "Cycle de vie environnemental des installations photovoltaïques"<br>
+          Q4 : "Problèmes écologiques de l'énergie solaire"<br><br>
+          <strong>b) Calcul RRF (k=60) :</strong><br>
+          RRF(doc) = Σ 1/(60 + rang_dans_Qi)<br><br>
+          <strong>Doc A :</strong> Q1(rang1) + Q2(rang2) + Q3(rang1) + Q4(rang2) = 1/61 + 1/62 + 1/61 + 1/62 = 0.01639 + 0.01613 + 0.01639 + 0.01613 = <strong>0.06504</strong><br><br>
+          <strong>Doc B :</strong> Q1(rang2) + Q2(rang1) + Q3(rang4) + Q4(rang3) = 1/62 + 1/61 + 1/64 + 1/63 = 0.01613 + 0.01639 + 0.01563 + 0.01587 = <strong>0.06402</strong><br><br>
+          <strong>Doc C :</strong> Q1(rang3) + Q2(rang5) + Q3(rang2) + Q4(rang5) = 1/63 + 1/65 + 1/62 + 1/65 = 0.01587 + 0.01538 + 0.01613 + 0.01538 = <strong>0.06276</strong><br><br>
+          <strong>c) Classement :</strong> A (0.065) > B (0.064) > C (0.063). Doc A est champion car il apparaît en rang 1 dans deux requêtes différentes.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header hard">
+          <span class="ex-badge">Difficile</span>
+          <span class="ex-title">Exercice 3 — Concevoir un pipeline RAG complet</span>
+        </div>
+        <div class="ex-body">
+          Vous construisez un assistant RAG pour un service juridique d'une grande entreprise. Les contraintes sont :<br>
+          • SLA : &lt;3 secondes de latence totale<br>
+          • Questions très variées : simples ("quelle est la durée du préavis ?") et complexes ("compare les avantages du statut cadre vs non-cadre sur 5 critères")<br>
+          • Corpus de 100 000 documents (codes, contrats, jurisprudence)<br>
+          • Fiabilité critique : aucune hallucination acceptable<br><br>
+          <strong>a)</strong> Proposez une architecture complète avec les techniques de ce chapitre.<br>
+          <strong>b)</strong> Comment gérez-vous le SLA de 3 secondes avec des techniques qui ajoutent de la latence ?<br>
+          <strong>c)</strong> Quelle approche utilisez-vous pour détecter quand la base documentaire ne contient pas la réponse ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Architecture :</strong><br>
+          <em>Détection du type de question (classifieur léger)</em> → routing vers deux pipelines :<br>
+          Pipeline Simple (questions factuelles courtes) : Hybrid Search → Re-ranking (Top-50 → Top-5) → LLM → Réponse<br>
+          Pipeline Complexe (questions multi-aspects) : Query Decomposition (async, en parallèle) → Hybrid Search pour chaque SQ → RRF → Re-ranking → LLM → Réponse<br><br>
+          <strong>b) Gestion du SLA :</strong><br>
+          • Classifier en &lt;100ms (petit modèle ou règles heuristiques sur longueur/complexité)<br>
+          • Pipeline Simple : Hybrid Search (50ms) + Re-ranking CPU (150ms) + LLM (1.5s) ≈ 1.8s ✅<br>
+          • Pipeline Complexe : Decomposition async (500ms LLM) + N searches parallèles (N×50ms → 50ms total async) + Re-ranking (200ms) + LLM (2s) ≈ 2.8s ✅<br>
+          • Cache des queries fréquentes → &lt;100ms pour les 20% de questions répétées<br><br>
+          <strong>c) Détection "hors domaine" (style CRAG) :</strong><br>
+          Après re-ranking, vérifier le score du Top-1 Cross-Encoder. Si score &lt; seuil (ex: &lt;-1.0 en logit), déclencher une alerte "information insuffisante dans la base". Ne jamais laisser le LLM répondre depuis ses paramètres internes sur des questions juridiques critiques. Afficher explicitement : "Cette information n'est pas disponible dans notre base documentaire. Consultez un juriste."
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 15 : QUIZ -->
+    <div class="section" id="s15">
+      <div class="section-header">
+        <span class="section-num">15</span>
+        <h2 class="section-title">Quiz d'auto-évaluation</h2>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q1. Dans HyDE, quel est le rôle du document hypothétique ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Il est directement présenté à l'utilisateur comme réponse</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Il sert uniquement de vecteur de recherche pour trouver de vrais documents</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Il remplace la base de données vectorielle</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Il est utilisé pour fine-tuner le modèle d'embedding</div>
+        </div>
+        <div class="quiz-reveal">Le document hypothétique de HyDE n'est jamais montré à l'utilisateur. Son seul rôle est d'être vectorisé pour produire un vecteur de recherche dans le même espace sémantique que les vrais documents — résolvant l'asymétrie question/document.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q2. Quelle est la différence fondamentale entre Multi-Query et Query Decomposition ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">A) Multi-Query reformule la même question ; Decomposition cherche des informations différentes</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Multi-Query est plus lent que Decomposition</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Multi-Query utilise un Cross-Encoder ; Decomposition utilise un Bi-Encoder</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Multi-Query ne fonctionne qu'en anglais</div>
+        </div>
+        <div class="quiz-reveal">Multi-Query génère des paraphrases de la même question (même information cherchée, vocabulaire différent). Query Decomposition génère des sous-questions portant sur des aspects distincts (informations différentes nécessaires). Multi-Query = diversité de formulation ; Decomposition = division du problème.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q3. Dans RAG-Fusion, pourquoi utilise-t-on RRF plutôt que de simplement additionner les scores de similarité ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) RRF est plus rapide à calculer</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) RRF normalise les rangs entre requêtes, évitant les biais dus aux différentes échelles de scores</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) RRF élimine les doublons automatiquement</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) RRF est plus précis mathématiquement</div>
+        </div>
+        <div class="quiz-reveal">Les scores de similarité cosinus de deux requêtes différentes ne sont pas comparables directement — une requête peut avoir des scores entre [0.7, 0.9] et une autre entre [0.4, 0.6]. RRF utilise uniquement le rang (1er, 2ème, 3ème…) qui est comparable entre requêtes, via la formule 1/(k + rang).</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q4. CRAG introduit quelle étape absente du RAG classique ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) La génération de questions alternatives</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Une évaluation de pertinence des documents récupérés avec correction éventuelle</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) L'utilisation d'un Cross-Encoder pour le retrieval</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Le fine-tuning du LLM sur les données d'entreprise</div>
+        </div>
+        <div class="quiz-reveal">CRAG ajoute une étape d'évaluation entre le retrieval et la génération : un évaluateur (LLM ou modèle dédié) juge si les documents récupérés sont pertinents. Si insuffisamment pertinents, il déclenche une correction (web search, reformulation) avant de passer à la génération.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q5. Step-Back Prompting est particulièrement efficace pour quel type de questions ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Les questions très courtes et précises (une date, un nom)</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Les questions en langues étrangères</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) Les questions spécifiques qui nécessitent d'abord le contexte général pour bien comprendre</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Les questions sur des images ou des données visuelles</div>
+        </div>
+        <div class="quiz-reveal">Step-Back est efficace quand la bonne réponse dépend d'un cadre conceptuel général qui n'est pas explicitement dans la question. Ex: une question sur "les implications légales du CDD de 18 mois" nécessite de récupérer d'abord les règles générales sur les CDD avant de traiter le cas spécifique.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 16 : RÉSUMÉ -->
+    <div class="section" id="s16">
+      <div class="section-header">
+        <span class="section-num">16</span>
+        <h2 class="section-title">Résumé du chapitre</h2>
+      </div>
+
+      <div class="summary-box">
+        <h3>🎯 Ce qu'il faut absolument retenir</h3>
+        <div class="summary-item"><div class="summary-num">1</div><div>Le retrieval naïf souffre de 5 problèmes : asymétrie question/doc, vocabulaire limité, questions vagues, multi-aspects, et mauvais classement initial.</div></div>
+        <div class="summary-item"><div class="summary-num">2</div><div><strong>HyDE</strong> résout l'asymétrie en générant un document hypothétique dans le style des vrais documents, puis en cherchant des documents similaires à ce doc fictif.</div></div>
+        <div class="summary-item"><div class="summary-num">3</div><div><strong>Multi-Query</strong> génère N reformulations de la même question pour capturer différentes expressions d'un même concept, fusionnées par RRF.</div></div>
+        <div class="summary-item"><div class="summary-num">4</div><div><strong>RAG-Fusion</strong> = Multi-Query + RRF systématique = le meilleur default pour la plupart des cas de production (+20-30% NDCG).</div></div>
+        <div class="summary-item"><div class="summary-num">5</div><div><strong>Step-Back</strong> génère une question plus abstraite pour capturer le contexte général, utile pour les questions très spécifiques.</div></div>
+        <div class="summary-item"><div class="summary-num">6</div><div><strong>Query Decomposition</strong> découpe les questions multi-hop en sous-questions indépendantes exécutées en parallèle.</div></div>
+        <div class="summary-item"><div class="summary-num">7</div><div>Le <strong>Re-ranking Cross-Encoder</strong> (retrieve Top-50 → rerank → Top-5) est le gain de qualité le plus consistant avec le meilleur ROI.</div></div>
+        <div class="summary-item"><div class="summary-num">8</div><div><strong>CRAG</strong> évalue la pertinence des docs récupérés et corrige en déclenchant un web search si nécessaire. <strong>Self-RAG</strong> intègre cette logique dans le LLM via fine-tuning.</div></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="tag">HyDE</span><span class="tag">Multi-Query</span><span class="tag">RAG-Fusion</span><span class="tag">RRF</span><span class="tag">Step-Back</span><span class="tag">Query Decomposition</span><span class="tag">Re-ranking</span><span class="tag">Cross-Encoder</span><span class="tag">CRAG</span><span class="tag">Self-RAG</span><span class="tag">Hybrid Search</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SECTION 17 : RESSOURCES -->
+    <div class="section" id="s17">
+      <div class="section-header">
+        <span class="section-num">17</span>
+        <h2 class="section-title">Ressources</h2>
+      </div>
+
+      <div class="res-grid">
+        <a class="res-item" href="https://arxiv.org/abs/2212.10496" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">HyDE</div><div class="res-sub">Gao et al., 2022 — Hypothetical Document Embeddings</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2310.11511" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">Self-RAG</div><div class="res-sub">Asai et al., 2023 — LLM avec réflexion intégrée</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2401.15884" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">CRAG</div><div class="res-sub">Yan et al., 2024 — Corrective RAG</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2310.06025" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">Step-Back Prompting</div><div class="res-sub">Zheng et al., 2023</div></div>
+        </a>
+        <a class="res-item" href="https://python.langchain.com/docs/how_to/MultiQueryRetriever/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">LangChain MultiQueryRetriever</div><div class="res-sub">Documentation officielle</div></div>
+        </a>
+        <a class="res-item" href="https://cohere.com/rerank" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">Cohere Rerank v3</div><div class="res-sub">API de re-ranking multilingue</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="chapter-footer">
+      <div class="footer-cards">
+        <div class="footer-card">
+          <div class="label">✅ Ce que nous avons appris</div>
+          <div class="value">Advanced Retrieval Techniques</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">HyDE, Multi-Query, RAG-Fusion, Step-Back, Query Decomposition, Re-ranking Cross-Encoder, CRAG et Self-RAG — toutes les techniques pour maximiser la qualité du retrieval en production.</div>
+        </div>
+        <div class="footer-card">
+          <div class="label">👉 Chapitre suivant</div>
+          <div class="value">Évaluation RAG avec RAGAS</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Nous allons apprendre à évaluer rigoureusement un système RAG de bout en bout : métriques RAGAS (faithfulness, answer relevance, context recall, context precision), LLM-as-judge, et construction d'un pipeline d'évaluation continu.</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:32px 0">
+        <div style="display:inline-flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 28px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-size:14px;color:var(--text-2)">Écrivez <strong style="color:var(--emerald)">"Suivant"</strong> pour le Chapitre 7 — Évaluation RAG avec RAGAS</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding-bottom:16px;font-size:12px;color:var(--text-3)">
+        RAG Masterclass · Chapitre 6 sur 12 · Cours universitaire interactif
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+mermaid.initialize({theme:'dark',themeVariables:{primaryColor:'#1a1e2a',primaryTextColor:'#e8eaf2',primaryBorderColor:'#10b981',lineColor:'#5c6480',fontFamily:'Inter,sans-serif',fontSize:'13px'},flowchart:{curve:'basis'}});
+window.addEventListener('scroll',()=>{
+  const st=window.scrollY,dh=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progress-bar').style.width=(dh>0?(st/dh)*100:0)+'%';
+  document.getElementById('back-top').classList.toggle('show',st>400);
+  const sections=document.querySelectorAll('.section');
+  let current='';sections.forEach(s=>{if(s.offsetTop-100<=st)current=s.id});
+  document.querySelectorAll('.sidebar-item').forEach(item=>{
+    item.classList.remove('active');
+    if(item.getAttribute('onclick')?.includes(current))item.classList.add('active');
+  });
+});
+function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='light'?'dark':'light')}
+function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleAcc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open')}
+function answerQuiz(opt,correct){
+  opt.closest('.quiz-opts').querySelectorAll('.quiz-opt').forEach(o=>{o.style.pointerEvents='none';if(o===opt)o.classList.add(correct?'correct':'wrong')});
+  const r=opt.closest('.quiz-card').querySelector('.quiz-reveal');if(r)r.classList.add('show');
+}
+function toggleSolution(btn){
+  const s=btn.nextElementSibling;s.classList.toggle('show');
+  btn.textContent=s.classList.contains('show')?'🙈 Masquer':'📖 Voir la correction';
+}
+document.querySelectorAll('.copy-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    navigator.clipboard.writeText(btn.closest('.code-block').querySelector('pre').textContent)
+      .then(()=>{btn.textContent='✓ Copié';setTimeout(()=>btn.textContent='Copier',2000)});
+  });
+});
+const searchInput=document.getElementById('search-input');let st2;
+searchInput.addEventListener('input',()=>{
+  clearTimeout(st2);st2=setTimeout(()=>{
+    const q=searchInput.value.trim();
+    document.querySelectorAll('.search-highlight').forEach(el=>{el.outerHTML=el.textContent});
+    if(q.length<2)return;
+    const rx=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    const walker=document.createTreeWalker(document.querySelector('.main'),NodeFilter.SHOW_TEXT,null);
+    const nodes=[];let node;
+    while((node=walker.nextNode())){if(node.parentElement.closest('script,style')===null&&rx.test(node.textContent))nodes.push(node);}
+    nodes.forEach(n=>{const sp=document.createElement('span');sp.innerHTML=n.textContent.replace(rx,'<mark class="search-highlight">$1</mark>');n.parentNode.replaceChild(sp,n);});
+    const first=document.querySelector('.search-highlight');
+    if(first)first.scrollIntoView({behavior:'smooth',block:'center'});
+  },300);
+});
+</script>
+</body>
+</html>
