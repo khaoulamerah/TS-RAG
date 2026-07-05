@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Évaluation RAG | Cours RAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f14;--bg-2:#13161e;--bg-3:#1a1e2a;--bg-card:#161923;
+  --border:#252a38;--border-2:#2e3547;
+  --text-1:#e8eaf2;--text-2:#9ba3bf;--text-3:#5c6480;
+  --accent:#7c6af7;--accent-2:#a799ff;--accent-glow:rgba(124,106,247,.18);
+  --teal:#2dd4bf;--teal-soft:rgba(45,212,191,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --rose:#f43f5e;--rose-soft:rgba(244,63,94,.12);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --blue:#3b82f6;--blue-soft:rgba(59,130,246,.12);
+  --sky:#0ea5e9;--sky-soft:rgba(14,165,233,.12);
+  --sidebar-w:280px;--radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --font-display:'Fraunces',serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#f8f9fc;--bg-2:#f0f2f8;--bg-3:#e8ebf5;--bg-card:#ffffff;
+  --border:#dde1f0;--border-2:#c8ceea;--text-1:#111827;--text-2:#4b5563;--text-3:#9ca3af;
+  --accent-glow:rgba(124,106,247,.10);--shadow:0 4px 24px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text-1);line-height:1.7;font-size:16px;overflow-x:hidden}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--sky),var(--blue));width:0%;z-index:1000;box-shadow:0 0 10px var(--sky)}
+.topnav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(13,15,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:900}
+[data-theme="light"] .topnav{background:rgba(248,249,252,.85)}
+.topnav-brand{font-family:var(--font-display);font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--sky),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex:1}
+.topnav-search{display:flex;align-items:center;gap:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;flex:0 0 220px}
+.topnav-search input{background:none;border:none;outline:none;color:var(--text-1);font-size:13px;width:100%;font-family:var(--font-body)}
+.topnav-search input::placeholder{color:var(--text-3)}
+.btn-theme{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all .2s}
+.btn-theme:hover{border-color:var(--sky);color:var(--sky)}
+.layout{display:flex;padding-top:56px;min-height:100vh}
+.sidebar{position:fixed;top:56px;left:0;bottom:0;width:var(--sidebar-w);background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;padding:24px 0;z-index:800}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);padding:12px 24px 6px}
+.sidebar-item{display:block;padding:7px 24px;color:var(--text-2);font-size:13.5px;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg-3);color:var(--text-1)}
+.sidebar-item.active{background:var(--sky-soft);color:var(--sky);font-weight:500}
+.sidebar-sub{font-size:12.5px;padding-left:36px;color:var(--text-3)}
+.sidebar-chapter{font-size:12px;color:var(--text-3);padding:4px 24px;display:flex;align-items:center;gap:8px}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 64px 120px;max-width:calc(var(--sidebar-w) + 860px)}
+@media(max-width:900px){.sidebar{transform:translateX(-100%)}.main{margin-left:0;padding:32px 24px 100px}}
+.hero{margin-bottom:64px;padding:56px 0 0}
+.hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.hero-eyebrow::before{content:'';width:24px;height:2px;background:linear-gradient(90deg,var(--sky),var(--blue));display:block}
+.hero-title{font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:24px}
+.hero-title .hl{background:linear-gradient(135deg,var(--sky) 0%,var(--blue) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:18px;color:var(--text-2);line-height:1.75;max-width:640px;margin-bottom:36px}
+.hero-meta{display:flex;gap:24px;flex-wrap:wrap}
+.hero-badge{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--text-2)}
+.objectives{background:linear-gradient(135deg,var(--sky-soft),var(--blue-soft));border:1px solid var(--sky);border-radius:var(--radius);padding:32px;margin:48px 0}
+.objectives h3{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--sky);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.obj-item{display:flex;align-items:flex-start;gap:10px;background:var(--sky-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;color:var(--text-1)}
+.obj-dot{width:6px;height:6px;background:var(--sky);border-radius:50%;margin-top:7px;flex-shrink:0}
+.section{margin:80px 0}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.section-num{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--sky);background:var(--sky-soft);border:1px solid rgba(14,165,233,.3);border-radius:6px;padding:4px 10px}
+.section-title{font-family:var(--font-display);font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:600;margin:32px 0 14px;color:var(--text-1)}
+h4{font-size:15px;font-weight:600;color:var(--sky);margin:24px 0 10px}
+p{color:var(--text-2);margin-bottom:16px;line-height:1.8}
+strong{color:var(--text-1);font-weight:600}
+.callout{border-radius:var(--radius);padding:20px 24px;margin:24px 0;display:flex;gap:16px;align-items:flex-start}
+.callout-icon{flex-shrink:0;margin-top:2px}
+.callout-body{flex:1}
+.callout-title{font-weight:600;font-size:14px;margin-bottom:6px}
+.callout-text{font-size:14px;color:var(--text-2);line-height:1.7;margin:0}
+.callout.info{background:var(--blue-soft);border:1px solid rgba(59,130,246,.3)}.callout.info .callout-title{color:#60a5fa}
+.callout.warn{background:var(--amber-soft);border:1px solid rgba(245,158,11,.3)}.callout.warn .callout-title{color:var(--amber)}
+.callout.tip{background:var(--green-soft);border:1px solid rgba(34,197,94,.3)}.callout.tip .callout-title{color:var(--green)}
+.callout.danger{background:var(--rose-soft);border:1px solid rgba(244,63,94,.3)}.callout.danger .callout-title{color:var(--rose)}
+.callout.concept{background:var(--accent-glow);border:1px solid rgba(124,106,247,.3)}.callout.concept .callout-title{color:var(--accent-2)}
+.callout.sky{background:var(--sky-soft);border:1px solid rgba(14,165,233,.3)}.callout.sky .callout-title{color:var(--sky)}
+.callout.teal{background:var(--teal-soft);border:1px solid rgba(45,212,191,.3)}.callout.teal .callout-title{color:var(--teal)}
+.code-block{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:20px 0;box-shadow:var(--shadow)}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-3);border-bottom:1px solid var(--border)}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:var(--text-3);font-weight:500}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-3);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.copy-btn:hover{border-color:var(--sky);color:var(--sky)}
+pre{padding:20px 24px;overflow-x:auto;font-size:13px;font-family:var(--font-mono);line-height:1.8;color:#c9d1d9}
+.kw{color:#ff7b72}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.fn{color:#d2a8ff}.num{color:#79c0ff}.var{color:#ffa657}
+.ascii-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#a8b5d0;overflow-x:auto;margin:24px 0;white-space:pre}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin:28px 0}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--sky),var(--blue));opacity:0;transition:opacity .25s}
+.card:hover{border-color:var(--border-2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:28px;margin-bottom:14px}
+.card-title{font-weight:600;font-size:15px;margin-bottom:8px;color:var(--text-1)}
+.card-desc{font-size:13.5px;color:var(--text-2);line-height:1.7}
+.table-wrap{overflow-x:auto;margin:24px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg-3);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 16px;font-size:14px;color:var(--text-2);border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg-2)}
+.td-good{color:var(--green);font-weight:600}.td-bad{color:var(--rose)}.td-mid{color:var(--amber)}
+.accordion{margin:16px 0}
+.acc-header{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;font-size:15px;transition:all .2s;user-select:none}
+.acc-header:hover{border-color:var(--border-2)}
+.acc-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;background:var(--bg-3)}
+.acc-arrow{transition:transform .25s;color:var(--text-3)}
+.acc-header.open .acc-arrow{transform:rotate(180deg)}
+.acc-body{display:none;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-bottom-left-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.acc-body.open{display:block}
+.quiz-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:20px 0}
+.quiz-q{font-weight:600;font-size:16px;margin-bottom:16px}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text-2);transition:all .2s}
+.quiz-opt:hover{border-color:var(--sky);color:var(--text-1)}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.quiz-reveal{display:none;margin-top:16px;padding:16px;background:var(--bg-3);border-radius:var(--radius-sm);font-size:14px;color:var(--text-2)}
+.quiz-reveal.show{display:block}
+.ex-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0}
+.ex-header{padding:14px 20px;display:flex;gap:12px;align-items:center}
+.ex-header.easy{background:rgba(34,197,94,.08);border-bottom:1px solid rgba(34,197,94,.2)}
+.ex-header.medium{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2)}
+.ex-header.hard{background:rgba(244,63,94,.08);border-bottom:1px solid rgba(244,63,94,.2)}
+.ex-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+.easy .ex-badge{background:var(--green-soft);color:var(--green)}
+.medium .ex-badge{background:var(--amber-soft);color:var(--amber)}
+.hard .ex-badge{background:var(--rose-soft);color:var(--rose)}
+.ex-title{font-weight:600;font-size:14px}
+.ex-body{padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.ex-solution{background:var(--bg-2);border-top:1px solid var(--border);padding:16px 24px;display:none}
+.ex-solution.show{display:block}
+.btn-solution{background:none;border:1px solid var(--border);color:var(--text-3);padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;margin:8px 24px 16px;transition:all .2s;font-family:var(--font-body)}
+.btn-solution:hover{border-color:var(--sky);color:var(--sky)}
+#back-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:linear-gradient(135deg,var(--sky),var(--blue));border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(14,165,233,.4);opacity:0;transform:translateY(16px);transition:all .3s;z-index:800}
+#back-top.show{opacity:1;transform:translateY(0)}
+#back-top:hover{transform:translateY(-2px)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:64px 0}
+.svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;overflow-x:auto}
+.mermaid-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;text-align:center;overflow-x:auto}
+.formula-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;margin:24px 0;font-family:var(--font-mono);font-size:14px;color:#c9d1d9;line-height:2.2}
+.formula-label{font-size:12px;color:var(--text-3);margin-bottom:8px;font-family:var(--font-body)}
+.tag{display:inline-block;background:var(--sky-soft);border:1px solid rgba(14,165,233,.3);color:var(--sky);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;margin:2px}
+.summary-box{background:linear-gradient(135deg,var(--sky-soft),var(--blue-soft));border:1px solid var(--sky);border-radius:var(--radius);padding:32px;margin:48px 0}
+.summary-box h3{color:var(--sky);margin-top:0;margin-bottom:20px}
+.summary-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;color:var(--text-2)}
+.summary-num{width:24px;height:24px;background:var(--sky-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--sky);flex-shrink:0}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:24px 0}
+.res-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;text-decoration:none;transition:all .2s}
+.res-item:hover{border-color:var(--border-2);transform:translateY(-1px)}
+.res-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 8px;flex-shrink:0}
+.res-type.paper{background:var(--blue-soft);color:#60a5fa}
+.res-type.video{background:var(--rose-soft);color:#fb7185}
+.res-type.code{background:var(--green-soft);color:var(--green)}
+.res-type.doc{background:var(--sky-soft);color:var(--sky)}
+.res-title{font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:3px}
+.res-sub{font-size:12px;color:var(--text-3)}
+.chapter-footer{border-top:1px solid var(--border);margin-top:80px;padding-top:48px}
+.footer-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px}
+.footer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.footer-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px}
+.footer-card .value{font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.search-highlight{background:rgba(245,158,11,.3);border-radius:2px}
+@media(max-width:600px){.footer-cards{grid-template-columns:1fr}}
+
+/* Metric cards */
+.metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:24px}
+.metric-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
+.metric-icon{font-size:26px;width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.metric-info h4{font-size:17px;font-weight:700;color:var(--text-1);margin:0 0 4px;font-family:var(--font-display)}
+.metric-info .sub{font-size:13px;color:var(--text-3)}
+.metric-body{padding:22px 24px;font-size:14px;color:var(--text-2);line-height:1.8}
+
+/* Score gauge */
+.gauge-row{display:flex;align-items:center;gap:12px;margin:8px 0}
+.gauge-label{font-size:12px;color:var(--text-3);min-width:100px;font-family:var(--font-mono)}
+.gauge-bar{flex:1;height:8px;background:var(--bg-3);border-radius:999px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:999px;transition:width .5s}
+.gauge-val{font-size:12px;font-family:var(--font-mono);font-weight:700;min-width:40px;text-align:right}
+
+/* Interactive RAGAS demo */
+.ragas-demo{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:32px 0}
+.ragas-demo h4{color:var(--sky);margin-top:0;margin-bottom:20px}
+.input-group{margin-bottom:16px}
+.input-group label{display:block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.input-group textarea{width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);font-family:var(--font-body);font-size:13px;padding:10px 14px;resize:vertical;min-height:70px;outline:none;line-height:1.6}
+.input-group textarea:focus{border-color:var(--sky)}
+.btn-evaluate{background:linear-gradient(135deg,var(--sky),var(--blue));border:none;color:white;padding:10px 24px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-weight:600;font-size:14px;transition:all .2s}
+.btn-evaluate:hover{opacity:.9;transform:translateY(-1px)}
+.scores-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}
+.score-box{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;text-align:center}
+.score-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.score-value{font-family:var(--font-mono);font-size:24px;font-weight:700}
+
+/* Radar chart placeholder */
+.radar-wrap{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:24px 0;display:flex;align-items:center;justify-content:center}
+
+/* Pipeline flow */
+.eval-pipeline{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:24px 0}
+.eval-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;font-size:13px;color:var(--text-2);flex:1;min-width:120px;text-align:center}
+.eval-arrow{color:var(--text-3);font-size:18px;padding:0 8px;flex-shrink:0}
+.eval-box.highlight{border-color:var(--sky);background:var(--sky-soft);color:var(--sky);font-weight:600}
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+
+<nav class="topnav">
+  <div class="topnav-brand">🧠 RAG Masterclass</div>
+  <div class="topnav-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Rechercher dans ce chapitre…">
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">☀️ / 🌙</button>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-chapter">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <a href="chapitre-06-advanced-retrieval.html" style="color:var(--text-3);text-decoration:none;font-size:12px">Ch.6 — Advanced Retrieval</a>
+    </div>
+    <div class="sidebar-label">📊 Chapitre 7</div>
+    <button class="sidebar-item active" onclick="scrollTo(0,0)">Évaluation RAG</button>
+    <div class="sidebar-label">Contenu</div>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s1')">1. Objectifs</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s2')">2. Pourquoi évaluer ?</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s3')">3. Les 4 métriques RAGAS</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s4')">4. Faithfulness</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s5')">5. Answer Relevance</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s6')">6. Context Recall</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s7')">7. Context Precision</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s8')">8. Démo interactive</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s9')">9. LLM-as-Judge</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s10')">10. Créer un dataset</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s11')">11. Pipeline continu</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s12')">12. Autres outils</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s13')">13. Cas industriels</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s14')">14. Erreurs fréquentes</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s15')">15. Exercices</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s16')">16. Quiz</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s17')">17. Résumé</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s18')">18. Ressources</button>
+  </aside>
+
+  <main class="main">
+
+    <div class="hero">
+      <div class="hero-eyebrow">Chapitre 7 sur 12</div>
+      <h1 class="hero-title">
+        <span class="hl">Évaluation RAG</span><br>avec RAGAS
+      </h1>
+      <p class="hero-desc">
+        "Comment savoir si mon système RAG est bon ?" est la question la plus importante — et la plus négligée. Ce chapitre couvre les métriques RAGAS, le paradigme LLM-as-Judge, la construction d'un dataset d'évaluation, et les pipelines d'évaluation continues en production.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-badge">⏱️ ~60 min de lecture</div>
+        <div class="hero-badge">📐 Métriques &amp; Benchmarks</div>
+        <div class="hero-badge">🏭 MLOps pour RAG</div>
+      </div>
+    </div>
+
+    <!-- S1: OBJECTIFS -->
+    <div class="section" id="s1">
+      <div class="section-header"><span class="section-num">01</span><h2 class="section-title">Objectifs d'apprentissage</h2></div>
+      <div class="objectives">
+        <h3>À la fin de ce chapitre, vous serez capables de…</h3>
+        <div class="obj-grid">
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre pourquoi l'évaluation RAG est non triviale</div>
+          <div class="obj-item"><div class="obj-dot"></div>Définir et calculer les 4 métriques RAGAS</div>
+          <div class="obj-item"><div class="obj-dot"></div>Interpréter des scores RAGAS et diagnostiquer les problèmes</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre le paradigme LLM-as-Judge et ses biais</div>
+          <div class="obj-item"><div class="obj-dot"></div>Construire un dataset d'évaluation Gold Standard</div>
+          <div class="obj-item"><div class="obj-dot"></div>Générer automatiquement des questions de test</div>
+          <div class="obj-item"><div class="obj-dot"></div>Mettre en place un pipeline d'évaluation continu</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comparer les outils d'évaluation (RAGAS, TruLens, DeepEval)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S2: POURQUOI ÉVALUER -->
+    <div class="section" id="s2">
+      <div class="section-header"><span class="section-num">02</span><h2 class="section-title">Pourquoi l'évaluation RAG est non triviale</h2></div>
+
+      <p>Évaluer un système RAG est bien plus difficile qu'évaluer un classificateur standard. Il n'existe pas de simple métrique accuracy ou F1 — la qualité d'une réponse en langage naturel est multidimensionnelle et subjective.</p>
+
+      <h3>Les dimensions de la qualité RAG</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">✅</div>
+          <div class="card-title">Fidélité (Faithfulness)</div>
+          <div class="card-desc">La réponse est-elle supportée par les documents récupérés ? Pas d'information inventée ?</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <div class="card-title">Pertinence de la réponse</div>
+          <div class="card-desc">La réponse répond-elle réellement à la question posée ?</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <div class="card-title">Recall du contexte</div>
+          <div class="card-desc">A-t-on récupéré tous les documents nécessaires pour répondre ?</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <div class="card-title">Précision du contexte</div>
+          <div class="card-desc">Les documents récupérés sont-ils tous pertinents ? Pas de bruit ?</div>
+        </div>
+      </div>
+
+      <div class="callout sky">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sky)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Le triangle de l'évaluation RAG</div>
+          <p class="callout-text">Un système RAG peut avoir une haute fidélité mais une faible pertinence (répond fidèlement aux documents mais pas à la question). Il peut avoir un bon recall de contexte mais une faible précision (récupère les bons docs + beaucoup de mauvais). Chaque dimension doit être évaluée indépendamment pour un diagnostic précis.</p>
+        </div>
+      </div>
+
+      <h3>Pourquoi l'évaluation humaine seule ne suffit pas</h3>
+      <p>L'évaluation humaine est le gold standard mais elle est :</p>
+      <ul style="margin-left:20px;color:var(--text-2);line-height:2">
+        <li><strong>Coûteuse</strong> — un annotateur humain peut évaluer ~50-100 réponses/heure</li>
+        <li><strong>Lente</strong> — impossible d'évaluer chaque déploiement en continu</li>
+        <li><strong>Subjective</strong> — accord inter-annotateurs rarement &gt;80% sur les nuances</li>
+        <li><strong>Non scalable</strong> — un corpus de 10 000 questions nécessite des semaines</li>
+      </ul>
+      <p>D'où l'émergence de l'approche <strong>LLM-as-Judge</strong> : utiliser un LLM puissant (GPT-4, Claude) pour automatiser l'évaluation, avec une corrélation élevée avec le jugement humain.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S3: RAGAS OVERVIEW -->
+    <div class="section" id="s3">
+      <div class="section-header"><span class="section-num">03</span><h2 class="section-title">RAGAS — Les 4 métriques fondamentales</h2></div>
+
+      <p><strong>RAGAS</strong> (Retrieval-Augmented Generation Assessment, Es et al. 2023) est le framework d'évaluation RAG le plus adopté. Il propose 4 métriques qui couvrent les deux étapes clés : retrieval et génération.</p>
+
+      <div class="svg-wrap">
+        <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px">
+          <rect width="720" height="360" fill="#161923" rx="12"/>
+          <text x="360" y="34" text-anchor="middle" font-family="Fraunces,serif" font-size="17" font-weight="900" fill="#e8eaf2">Les 4 métriques RAGAS</text>
+
+          <!-- 2 phases -->
+          <rect x="20" y="55" width="335" height="280" rx="8" fill="rgba(14,165,233,0.04)" stroke="rgba(14,165,233,.3)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="187" y="74" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#0ea5e9" font-weight="700" letter-spacing="0.1em">RETRIEVAL COMPONENT</text>
+
+          <rect x="365" y="55" width="335" height="280" rx="8" fill="rgba(124,106,247,0.04)" stroke="rgba(124,106,247,.3)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="532" y="74" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a799ff" font-weight="700" letter-spacing="0.1em">GENERATION COMPONENT</text>
+
+          <!-- Context Recall -->
+          <rect x="34" y="90" width="307" height="100" rx="8" fill="#1a1e2a" stroke="#0ea5e9" stroke-opacity="0.6"/>
+          <text x="80" y="118" font-size="22">📋</text>
+          <text x="110" y="116" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#e8eaf2">Context Recall</text>
+          <text x="110" y="134" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">Les bons docs sont-ils</text>
+          <text x="110" y="150" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">récupérés ?</text>
+          <rect x="34" y="155" width="307" height="24" rx="4" fill="rgba(14,165,233,0.1)"/>
+          <text x="190" y="171" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#0ea5e9">Besoins couverts par le contexte ?</text>
+
+          <!-- Context Precision -->
+          <rect x="34" y="205" width="307" height="100" rx="8" fill="#1a1e2a" stroke="#0ea5e9" stroke-opacity="0.6"/>
+          <text x="80" y="233" font-size="22">🔍</text>
+          <text x="110" y="231" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#e8eaf2">Context Precision</text>
+          <text x="110" y="249" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">Les docs récupérés sont-ils</text>
+          <text x="110" y="265" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">tous pertinents ?</text>
+          <rect x="34" y="270" width="307" height="24" rx="4" fill="rgba(14,165,233,0.1)"/>
+          <text x="190" y="286" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#0ea5e9">Rapport signal/bruit du contexte</text>
+
+          <!-- Faithfulness -->
+          <rect x="379" y="90" width="307" height="100" rx="8" fill="#1a1e2a" stroke="#a799ff" stroke-opacity="0.6"/>
+          <text x="425" y="118" font-size="22">✅</text>
+          <text x="455" y="116" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#e8eaf2">Faithfulness</text>
+          <text x="455" y="134" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">La réponse est-elle fidèle</text>
+          <text x="455" y="150" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">aux sources ?</text>
+          <rect x="379" y="155" width="307" height="24" rx="4" fill="rgba(124,106,247,0.1)"/>
+          <text x="532" y="171" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#a799ff">Pas d'hallucination !</text>
+
+          <!-- Answer Relevance -->
+          <rect x="379" y="205" width="307" height="100" rx="8" fill="#1a1e2a" stroke="#a799ff" stroke-opacity="0.6"/>
+          <text x="425" y="233" font-size="22">🎯</text>
+          <text x="455" y="231" font-family="Inter,sans-serif" font-size="14" font-weight="700" fill="#e8eaf2">Answer Relevance</text>
+          <text x="455" y="249" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">La réponse répond-elle</text>
+          <text x="455" y="265" font-family="Inter,sans-serif" font-size="12" fill="#9ba3bf">à la question ?</text>
+          <rect x="379" y="270" width="307" height="24" rx="4" fill="rgba(124,106,247,0.1)"/>
+          <text x="532" y="286" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#a799ff">Pas de hors-sujet !</text>
+
+          <!-- RAGAS Score -->
+          <rect x="230" y="320" width="260" height="28" rx="6" fill="rgba(14,165,233,0.15)" stroke="#0ea5e9" stroke-opacity="0.5"/>
+          <text x="360" y="338" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#0ea5e9">RAGAS Score = moyenne harmonique des 4 métriques</text>
+        </svg>
+      </div>
+
+      <div class="ascii-box">INPUTS REQUIS PAR RAGAS
+═════════════════════════
+
+Pour calculer les 4 métriques, RAGAS nécessite :
+
+  question          : "Combien de jours de congés après 3 ans ?"
+  answer            : "Après 3 ans d'ancienneté, vous bénéficiez de 28 jours."
+  contexts          : ["Après 3 ans d'ancienneté, 28 jours...", "Tout salarié bénéficie..."]
+  ground_truth      : "Après 3 ans d'ancienneté, 28 jours ouvrés sont accordés."
+
+                    ┌─────────────────────────────┐
+  faithfulness      │ answer + contexts           │ → Pas de ground_truth requis
+  answer_relevance  │ question + answer           │ → Pas de ground_truth requis
+  context_recall    │ contexts + ground_truth     │ → Ground_truth requis
+  context_precision │ question + contexts + gt    │ → Ground_truth requis</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S4: FAITHFULNESS -->
+    <div class="section" id="s4">
+      <div class="section-header"><span class="section-num">04</span><h2 class="section-title">Faithfulness — Fidélité aux sources</h2></div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon" style="background:rgba(34,197,94,.12)">✅</div>
+          <div class="metric-info">
+            <h4>Faithfulness</h4>
+            <div class="sub">Mesure : la réponse ne contient-elle que des informations supportées par le contexte récupéré ?</div>
+          </div>
+        </div>
+        <div class="metric-body">
+          <p>La Faithfulness est la métrique anti-hallucination du RAG. Elle mesure quelle proportion des affirmations dans la réponse peut être directement attribuée aux documents fournis en contexte.</p>
+
+          <div class="formula-box">
+            <div class="formula-label">Faithfulness</div>
+            Faithfulness = |Affirmations supportées par le contexte| / |Total des affirmations dans la réponse|<br><br>
+            <span style="color:#9ba3bf;font-size:12px;font-family:Inter,sans-serif">Plage : [0, 1] | 1.0 = toutes les affirmations sont dans les sources | 0.0 = hallucination totale</span>
+          </div>
+
+          <div class="ascii-box">EXEMPLE DE CALCUL — FAITHFULNESS
+══════════════════════════════════
+
+CONTEXTE RÉCUPÉRÉ :
+  [Doc 1] : "Après 3 ans d'ancienneté, le salarié bénéficie de 28 jours."
+  [Doc 2] : "Les demandes doivent être soumises 15 jours à l'avance."
+
+RÉPONSE DU LLM :
+  "Après 3 ans d'ancienneté, vous avez droit à 28 jours de congés payés.
+   La demande doit être effectuée 15 jours à l'avance sur l'intranet.
+   Vous pouvez également convertir 5 jours en RTT."
+
+DÉCOMPOSITION EN AFFIRMATIONS :
+  Affirmation 1 : "Après 3 ans → 28 jours de congés"    ← SUPPORTÉE ✅ (Doc 1)
+  Affirmation 2 : "Demande 15 jours à l'avance"          ← SUPPORTÉE ✅ (Doc 2)
+  Affirmation 3 : "Convertir 5 jours en RTT"             ← NON SUPPORTÉE ❌ (inventée !)
+
+FAITHFULNESS = 2/3 = 0.67
+
+→ La réponse contient une hallucination : la conversion en RTT n'est
+  pas dans les documents fournis.</div>
+
+          <h3>Comment RAGAS calcule la Faithfulness</h3>
+          <p>RAGAS utilise un LLM-as-Judge en deux étapes :</p>
+          <ol style="margin-left:20px;color:var(--text-2);line-height:2">
+            <li><strong>Extraction des affirmations</strong> : le LLM décompose la réponse en assertions atomiques</li>
+            <li><strong>Vérification NLI</strong> : pour chaque assertion, le LLM vérifie si elle peut être déduite du contexte (NLI = Natural Language Inference)</li>
+          </ol>
+
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — RAGAS Faithfulness</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> ragas.metrics <span class="kw">import</span> Faithfulness
+<span class="kw">from</span> ragas <span class="kw">import</span> evaluate
+<span class="kw">from</span> datasets <span class="kw">import</span> Dataset
+<span class="kw">from</span> ragas.llms <span class="kw">import</span> LangchainLLMWrapper
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+
+<span class="cm"># Préparer les données</span>
+data = {
+    <span class="str">"question"</span>: [<span class="str">"Combien de jours après 3 ans ?"</span>],
+    <span class="str">"answer"</span>: [<span class="str">"Après 3 ans, vous avez droit à 28 jours. Vous pouvez aussi convertir 5 jours en RTT."</span>],
+    <span class="str">"contexts"</span>: [[<span class="str">"Après 3 ans d'ancienneté, 28 jours sont accordés."</span>,
+                   <span class="str">"Les demandes doivent être faites 15 jours à l'avance."</span>]],
+    <span class="str">"ground_truth"</span>: [<span class="str">"Après 3 ans, 28 jours sont accordés."</span>]
+}
+dataset = Dataset.from_dict(data)
+
+<span class="cm"># LLM évaluateur</span>
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model=<span class="str">"gpt-4o"</span>))
+
+<span class="cm"># Évaluer</span>
+result = evaluate(
+    dataset,
+    metrics=[Faithfulness()],
+    llm=evaluator_llm
+)
+<span class="fn">print</span>(result)  <span class="cm"># {'faithfulness': 0.67}</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S5: ANSWER RELEVANCE -->
+    <div class="section" id="s5">
+      <div class="section-header"><span class="section-num">05</span><h2 class="section-title">Answer Relevance — Pertinence de la réponse</h2></div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon" style="background:rgba(124,106,247,.12)">🎯</div>
+          <div class="metric-info">
+            <h4>Answer Relevance</h4>
+            <div class="sub">Mesure : la réponse répond-elle directement à la question posée ?</div>
+          </div>
+        </div>
+        <div class="metric-body">
+          <p>Une réponse peut être fidèle aux sources (Faithfulness élevée) mais ne pas répondre à la question. Exemple : "Combien de congés après 5 ans ?" → "La politique de congés de notre entreprise remonte à 1985 et a été révisée plusieurs fois..." — fidèle si c'est dans les docs, mais hors-sujet.</p>
+
+          <h3>L'approche de RAGAS : génération de questions inverses</h3>
+          <p>Au lieu de comparer directement réponse et question, RAGAS génère N questions auxquelles la réponse pourrait répondre, puis mesure la similarité vectorielle entre ces questions générées et la question originale.</p>
+
+          <div class="formula-box">
+            <div class="formula-label">Answer Relevance</div>
+            AR = (1/N) × Σᵢ cos(embedding(qᵢ_générée), embedding(question_originale))<br><br>
+            <span style="color:#9ba3bf;font-size:12px;font-family:Inter,sans-serif">
+              qᵢ_générée = ième question générée par LLM depuis la réponse<br>
+              Plage : [0, 1] | 1.0 = réponse parfaitement pertinente
+            </span>
+          </div>
+
+          <div class="ascii-box">EXEMPLE — ANSWER RELEVANCE
+══════════════════════════
+
+QUESTION ORIGINALE : "Combien de jours de congés après 3 ans ?"
+
+RÉPONSE DU LLM :
+  "Après 3 ans d'ancienneté, vous bénéficiez de 28 jours ouvrés
+   de congés payés par an."
+
+QUESTIONS GÉNÉRÉES PAR LE LLM depuis la réponse :
+  Q1 : "Quel est le nombre de jours de congés pour 3 ans d'ancienneté ?"
+  Q2 : "Combien de jours après 3 ans dans l'entreprise ?"
+  Q3 : "Quel est le droit aux congés après 3 ans ?"
+
+SIMILARITÉ COSINUS avec la question originale :
+  sim(Q1, originale) = 0.94
+  sim(Q2, originale) = 0.91
+  sim(Q3, originale) = 0.89
+
+ANSWER RELEVANCE = (0.94 + 0.91 + 0.89) / 3 = 0.91
+
+→ La réponse est très pertinente pour la question.
+
+CAS MAUVAIS : réponse hors-sujet
+  "La politique de congés est en vigueur depuis 1985..."
+  Questions générées : "Depuis quand la politique de congés existe-t-elle ?"
+  sim avec originale → 0.21 → Answer Relevance = 0.21 (très bas !)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S6: CONTEXT RECALL -->
+    <div class="section" id="s6">
+      <div class="section-header"><span class="section-num">06</span><h2 class="section-title">Context Recall — Couverture du retrieval</h2></div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon" style="background:rgba(14,165,233,.12)">📋</div>
+          <div class="metric-info">
+            <h4>Context Recall</h4>
+            <div class="sub">Mesure : a-t-on récupéré tous les documents nécessaires pour répondre correctement ?</div>
+          </div>
+        </div>
+        <div class="metric-body">
+          <p>Le Context Recall mesure si le contexte récupéré couvre l'ensemble des informations nécessaires pour produire la réponse de référence (ground truth). Nécessite un ground truth.</p>
+
+          <div class="formula-box">
+            <div class="formula-label">Context Recall</div>
+            CR = |Phrases du ground_truth supportées par le contexte| / |Total des phrases du ground_truth|<br><br>
+            <span style="color:#9ba3bf;font-size:12px;font-family:Inter,sans-serif">Plage : [0, 1] | 1.0 = contexte couvre toute la réponse de référence | 0.0 = contexte inutile</span>
+          </div>
+
+          <div class="ascii-box">EXEMPLE — CONTEXT RECALL
+═════════════════════════
+
+GROUND TRUTH (réponse de référence annotée) :
+  "Après 3 ans d'ancienneté, le salarié bénéficie de 28 jours
+   de congés payés. Les demandes doivent être faites 15 jours
+   à l'avance. Les congés non pris au 31 décembre sont reportés
+   dans la limite de 10 jours."
+
+DÉCOMPOSITION EN PHRASES (3 affirmations) :
+  GT-1 : "Après 3 ans → 28 jours"
+  GT-2 : "Demandes 15 jours à l'avance"
+  GT-3 : "Report limité à 10 jours"
+
+CONTEXTE RÉCUPÉRÉ :
+  [Doc 1] : "Après 3 ans d'ancienneté, 28 jours." → couvre GT-1 ✅
+  [Doc 2] : "Demandes 15 jours à l'avance." → couvre GT-2 ✅
+  ⚠️ GT-3 non couverte (Doc sur le report n'a pas été récupéré)
+
+CONTEXT RECALL = 2/3 = 0.67
+
+DIAGNOSTIC : Le retrieval a raté le chunk sur le report des congés.
+  → Problème de chunking ou de qualité d'embedding sur ce sujet.</div>
+
+          <div class="callout teal">
+            <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="callout-body">
+              <div class="callout-title">Context Recall vs Recall@K</div>
+              <p class="callout-text">La différence est subtile mais importante. Le <strong>Recall@K</strong> (chapitre 5) mesure si le chunk exact est dans le Top-K. Le <strong>Context Recall RAGAS</strong> mesure si les informations nécessaires sont présentes dans le contexte injecté, indépendamment de quel chunk les contient. Context Recall est plus flexible et aligné avec ce qui compte vraiment : le LLM a-t-il accès à l'information ?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S7: CONTEXT PRECISION -->
+    <div class="section" id="s7">
+      <div class="section-header"><span class="section-num">07</span><h2 class="section-title">Context Precision — Signal vs Bruit</h2></div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon" style="background:rgba(245,158,11,.12)">🔍</div>
+          <div class="metric-info">
+            <h4>Context Precision</h4>
+            <div class="sub">Mesure : les documents récupérés sont-ils tous pertinents ? (rapport signal/bruit)</div>
+          </div>
+        </div>
+        <div class="metric-body">
+          <p>Le Context Precision mesure si les chunks retournés sont majoritairement pertinents ou si le retrieval ramène trop de bruit. Un contexte avec beaucoup de documents non pertinents perturbe le LLM (Lost in the Middle) et dilue l'information utile.</p>
+
+          <div class="formula-box">
+            <div class="formula-label">Context Precision@K (variante pondérée)</div>
+            CP@K = Σₖ (Precision@k × rel(k)) / |{docs pertinents dans Top-K}|<br><br>
+            <span style="color:#9ba3bf;font-size:12px;font-family:Inter,sans-serif">
+              rel(k) = 1 si doc k est pertinent, 0 sinon | Precision@k = proportion de docs pertinents parmi les k premiers
+            </span>
+          </div>
+
+          <div class="ascii-box">EXEMPLE — CONTEXT PRECISION@5
+══════════════════════════════
+
+Question : "Combien de jours de congés après 3 ans ?"
+
+Top-5 documents retournés (dans l'ordre) :
+  Rang 1 : "Après 3 ans d'ancienneté, 28 jours..."     → PERTINENT (rel=1) ✅
+  Rang 2 : "Budget marketing Q3 2024..."                → NON PERTINENT (rel=0) ❌
+  Rang 3 : "Les demandes se font sur l'intranet..."      → PERTINENT (rel=1) ✅
+  Rang 4 : "Règles de télétravail..."                    → NON PERTINENT (rel=0) ❌
+  Rang 5 : "Report des congés non pris..."               → PERTINENT (rel=1) ✅
+
+Precision@1 = 1/1 = 1.00 (rang 1 est pertinent)
+Precision@3 = 2/3 = 0.67 (2 pertinents sur 3 premiers)
+Precision@5 = 3/5 = 0.60
+
+Context Precision (pondérée) :
+= (1.00×1 + 0×0 + 0.67×1 + 0×0 + 0.60×1) / 3
+= (1.00 + 0.67 + 0.60) / 3 = 0.76
+
+PROBLÈME IDENTIFIÉ :
+  Des documents non pertinents (rang 2 et 4) "polluent" le contexte.
+  → Le retrieval ramène du bruit qui peut perturber le LLM.</div>
+        </div>
+      </div>
+
+      <h3>Comment interpréter les scores RAGAS ensemble</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Scenario</th><th>Faithfulness</th><th>Answer Rel.</th><th>Context Recall</th><th>Context Prec.</th><th>Diagnostic</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Parfait</strong></td><td class="td-good">~1.0</td><td class="td-good">~1.0</td><td class="td-good">~1.0</td><td class="td-good">~1.0</td><td>Système excellent</td></tr>
+            <tr><td><strong>Hallucination</strong></td><td class="td-bad">&lt;0.6</td><td class="td-good">&gt;0.8</td><td class="td-good">&gt;0.8</td><td class="td-mid">~0.7</td><td>LLM invente — améliorer le prompt</td></tr>
+            <tr><td><strong>Hors sujet</strong></td><td class="td-good">&gt;0.8</td><td class="td-bad">&lt;0.5</td><td class="td-mid">~0.6</td><td class="td-mid">~0.6</td><td>Retrieval incorrect — améliorer le chunking</td></tr>
+            <tr><td><strong>Retrieval incomplet</strong></td><td class="td-mid">~0.7</td><td class="td-mid">~0.7</td><td class="td-bad">&lt;0.6</td><td class="td-good">&gt;0.8</td><td>Chunks manquants — améliorer l'index</td></tr>
+            <tr><td><strong>Trop de bruit</strong></td><td class="td-mid">~0.7</td><td class="td-mid">~0.7</td><td class="td-good">&gt;0.8</td><td class="td-bad">&lt;0.5</td><td>Retrieval pollué — réduire Top-K ou re-ranker</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S8: INTERACTIVE DEMO -->
+    <div class="section" id="s8">
+      <div class="section-header"><span class="section-num">08</span><h2 class="section-title">Simulateur RAGAS interactif</h2></div>
+
+      <div class="ragas-demo">
+        <h4>🧪 Calculateur RAGAS simplifié</h4>
+        <p style="font-size:13px;color:var(--text-3);margin-bottom:20px">Entrez vos données et obtenez une estimation des scores RAGAS (simulation pédagogique — sans appel LLM réel)</p>
+
+        <div class="input-group">
+          <label>Question</label>
+          <textarea id="demo-question" rows="2" placeholder="Ex: Combien de jours de congés après 3 ans d'ancienneté ?">Combien de jours de congés après 3 ans d'ancienneté ?</textarea>
+        </div>
+        <div class="input-group">
+          <label>Réponse générée</label>
+          <textarea id="demo-answer" rows="3" placeholder="La réponse du LLM…">Après 3 ans d'ancienneté, vous bénéficiez de 28 jours ouvrés de congés payés. La demande doit être soumise 15 jours à l'avance sur l'intranet.</textarea>
+        </div>
+        <div class="input-group">
+          <label>Contexte récupéré (documents)</label>
+          <textarea id="demo-context" rows="3" placeholder="Les chunks retournés par le retrieval…">Après 3 ans d'ancienneté, ce droit est porté à 28 jours. Les demandes de congés se font via l'intranet au minimum 15 jours à l'avance.</textarea>
+        </div>
+        <div class="input-group">
+          <label>Ground Truth (réponse de référence)</label>
+          <textarea id="demo-gt" rows="2" placeholder="La réponse correcte annotée…">Après 3 ans d'ancienneté, 28 jours de congés sont accordés et la demande doit se faire 15 jours à l'avance.</textarea>
+        </div>
+
+        <button class="btn-evaluate" onclick="computeRAGAS()">⚡ Calculer les scores RAGAS</button>
+
+        <div id="scores-output" style="display:none">
+          <div class="scores-grid">
+            <div class="score-box">
+              <div class="score-label">Faithfulness</div>
+              <div class="score-value" id="score-faith" style="color:var(--green)">—</div>
+            </div>
+            <div class="score-box">
+              <div class="score-label">Answer Relevance</div>
+              <div class="score-value" id="score-ar" style="color:var(--sky)">—</div>
+            </div>
+            <div class="score-box">
+              <div class="score-label">Context Recall</div>
+              <div class="score-value" id="score-cr" style="color:var(--teal)">—</div>
+            </div>
+            <div class="score-box">
+              <div class="score-label">Context Precision</div>
+              <div class="score-value" id="score-cp" style="color:var(--amber)">—</div>
+            </div>
+          </div>
+          <div id="ragas-overall" style="text-align:center;margin-top:16px;padding:16px;background:var(--bg-3);border-radius:var(--radius-sm)">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:6px">RAGAS Score Global</div>
+            <div id="score-global" style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--sky)">—</div>
+          </div>
+          <div id="ragas-diag" style="margin-top:16px;padding:14px 16px;background:var(--bg-3);border-radius:var(--radius-sm);font-size:13px;color:var(--text-2);display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S9: LLM-AS-JUDGE -->
+    <div class="section" id="s9">
+      <div class="section-header"><span class="section-num">09</span><h2 class="section-title">LLM-as-Judge — L'évaluateur automatique</h2></div>
+
+      <p>Le paradigme <strong>LLM-as-Judge</strong> utilise un LLM puissant (GPT-4, Claude 3 Opus) pour évaluer automatiquement les sorties d'un autre LLM. Cette approche montre une corrélation de 80-90% avec le jugement humain expert.</p>
+
+      <h3>Architecture d'un LLM-as-Judge</h3>
+      <div class="ascii-box">LLM-AS-JUDGE — PIPELINE D'ÉVALUATION
+══════════════════════════════════════
+
+INPUTS :
+  question    : "Combien de jours de congés après 3 ans ?"
+  réponse     : "Vous avez droit à 28 jours après 3 ans..."
+  contexte    : ["Après 3 ans, 28 jours sont accordés..."]
+  ground_truth: "28 jours après 3 ans d'ancienneté"
+
+PROMPT DU JUGE (example pour Faithfulness) :
+┌─────────────────────────────────────────────────────────────────┐
+│  SYSTEM : Tu es un expert en évaluation de systèmes RAG.       │
+│           Évalue si la réponse est fidèle au contexte fourni.  │
+│                                                                 │
+│  CONTEXTE : [Doc 1] : "Après 3 ans → 28 jours."               │
+│                                                                 │
+│  RÉPONSE À ÉVALUER : "Vous avez droit à 28 jours après 3 ans." │
+│                                                                 │
+│  TÂCHE :                                                        │
+│  1. Décompose la réponse en affirmations atomiques             │
+│  2. Pour chaque affirmation, détermine si elle est supportée   │
+│     par le contexte (oui/non)                                  │
+│  3. Retourne un JSON {"faithfulness_score": 0.0-1.0}           │
+└─────────────────────────────────────────────────────────────────┘
+
+OUTPUT DU JUGE :
+  {
+    "statements": ["Vous avez droit à 28 jours", "après 3 ans"],
+    "supported": [true, true],
+    "faithfulness_score": 1.0
+  }</div>
+
+      <h3>Les biais du LLM-as-Judge</h3>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>⚠️ Biais de verbosité — les réponses longues semblent meilleures</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Les LLMs-juges ont tendance à préférer les réponses longues et détaillées aux réponses courtes et précises, même quand la réponse courte est correcte. Contre-mesure : évaluer explicitement la concision ou utiliser des critères standardisés qui pénalisent la verbosité inutile.</p>
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>⚠️ Biais de position — le premier élément présenté semble meilleur</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Dans les comparaisons A/B, le LLM-juge préfère souvent le premier élément présenté. Contre-mesure : inverser l'ordre de présentation et moyenner les deux évaluations.</p>
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>⚠️ Self-enhancement bias — le LLM préfère ses propres sorties</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>GPT-4-as-Judge peut favoriser les réponses générées par GPT-4 vs Claude ou LLaMA. Contre-mesure : utiliser un modèle différent pour l'évaluation que celui utilisé pour la génération. Idéalement : utiliser plusieurs juges et moyenner.</p>
+        </div>
+      </div>
+
+      <h3>Calibration : corrélation LLM-Judge vs humain</h3>
+      <div class="callout concept">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a799ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Corrélations observées en pratique</div>
+          <p class="callout-text">
+            • GPT-4-as-Judge vs human : corrélation de Spearman ~0.85 sur des tâches de pertinence<br>
+            • Claude 3 Opus-as-Judge : résultats similaires avec moins de verbosité bias<br>
+            • Faithfulness (RAGAS) : corrélation ~0.88 avec annotations humaines<br>
+            • Answer Relevance : corrélation ~0.82 avec annotations humaines<br><br>
+            Ces corrélations sont suffisantes pour l'évaluation automatique continue, tout en réservant l'évaluation humaine pour les cas ambigus et la calibration initiale.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S10: DATASET CREATION -->
+    <div class="section" id="s10">
+      <div class="section-header"><span class="section-num">10</span><h2 class="section-title">Créer un dataset d'évaluation</h2></div>
+
+      <p>Un bon dataset d'évaluation est la fondation de tout l'écosystème d'évaluation. Il représente l'investissement le plus important — mais aussi le plus rentable.</p>
+
+      <h3>Les 3 approches de création</h3>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>✍️ Approche 1 — Annotation manuelle (Gold Standard)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p><strong>Comment :</strong> Des experts du domaine créent des questions et leurs réponses de référence à partir des documents. Chaque paire est validée par au moins 2 annotateurs.</p>
+          <p><strong>Avantages :</strong> Qualité maximale, représentativité réelle des questions utilisateurs.</p>
+          <p><strong>Inconvénients :</strong> Lent (2-3h pour 50 paires), coûteux, difficile à mettre à jour.</p>
+          <p><strong>Recommandation :</strong> Créer 50-200 paires Gold Standard. C'est le jeu de test principal, jamais modifié.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🤖 Approche 2 — Génération automatique (Synthetic)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Utiliser un LLM pour générer automatiquement des questions à partir des documents. RAGAS propose <code>TestsetGenerator</code> qui génère des questions de différents niveaux de complexité.</p>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Python — Génération automatique avec RAGAS TestsetGenerator</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="kw">from</span> ragas.testset.generator <span class="kw">import</span> TestsetGenerator
+<span class="kw">from</span> ragas.testset.evolutions <span class="kw">import</span> simple, reasoning, multi_context
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI, OpenAIEmbeddings
+<span class="kw">from</span> langchain_community.document_loaders <span class="kw">import</span> DirectoryLoader
+
+<span class="cm"># Charger les documents</span>
+loader = DirectoryLoader(<span class="str">"./docs"</span>, glob=<span class="str">"**/*.pdf"</span>)
+documents = loader.load()
+
+<span class="cm"># Générateur de testset</span>
+generator = TestsetGenerator.from_langchain(
+    generator_llm=ChatOpenAI(model=<span class="str">"gpt-4o"</span>),
+    critic_llm=ChatOpenAI(model=<span class="str">"gpt-4o-mini"</span>),
+    embeddings=OpenAIEmbeddings()
+)
+
+<span class="cm"># Générer 100 questions avec distribution de complexité</span>
+testset = generator.generate_with_langchain_docs(
+    documents,
+    test_size=<span class="num">100</span>,
+    distributions={
+        simple: <span class="num">0.5</span>,       <span class="cm"># 50% questions simples</span>
+        reasoning: <span class="num">0.25</span>,   <span class="cm"># 25% questions de raisonnement</span>
+        multi_context: <span class="num">0.25</span>  <span class="cm"># 25% multi-documents</span>
+    }
+)
+
+testset.to_pandas().to_csv(<span class="str">"eval_dataset.csv"</span>, index=<span class="kw">False</span>)</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📊 Approche 3 — Mining des logs utilisateurs</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>En production, les vraies questions des utilisateurs sont la source d'évaluation la plus réaliste. Collecter les interactions avec feedback utilisateur (thumbs up/down, réponses corrigées), puis annoter les cas représentatifs comme dataset de test.</p>
+          <p><strong>Avantage :</strong> Distribution réelle des questions utilisateurs — ce qui compte vraiment.</p>
+          <p><strong>Attention :</strong> Gérer la confidentialité et l'anonymisation des données utilisateurs.</p>
+        </div>
+      </div>
+
+      <h3>Types de questions à inclure</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Type</th><th>Exemple</th><th>Complexité</th><th>% recommandé</th></tr></thead>
+          <tbody>
+            <tr><td>Factuelle simple</td><td>"Quelle est la durée du préavis ?"</td><td class="td-good">Faible</td><td>40%</td></tr>
+            <tr><td>Factuelle avec condition</td><td>"Congés après 5 ans ?"</td><td class="td-mid">Modérée</td><td>25%</td></tr>
+            <tr><td>Multi-documents</td><td>"Compare congés cadre vs non-cadre"</td><td class="td-mid">Modérée</td><td>20%</td></tr>
+            <tr><td>Raisonnement</td><td>"Si j'ai 3 ans et 6 mois, combien ?"</td><td class="td-bad">Élevée</td><td>10%</td></tr>
+            <tr><td>Hors domaine</td><td>"Quel est le cours du bitcoin ?"</td><td>N/A</td><td>5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S11: CONTINUOUS PIPELINE -->
+    <div class="section" id="s11">
+      <div class="section-header"><span class="section-num">11</span><h2 class="section-title">Pipeline d'évaluation continu en production</h2></div>
+
+      <p>L'évaluation ne doit pas être un événement ponctuel — c'est un processus continu qui s'intègre dans le cycle de développement.</p>
+
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart LR
+    A["💾 Nouveau\ndéploiement\nRAG"] --> B["🧪 Évaluation\nautomatique\nRAGAS"]
+    B --> C{Score\n≥ seuil ?}
+    C -->|Oui| D["✅ Déploiement\napprouvé"]
+    C -->|Non| E["🔍 Diagnostic\ncomposant\nfaillant"]
+    E --> F["🔧 Fix ciblé\nChunking / Retrieval\n/ Prompt"]
+    F --> A
+    D --> G["📊 Monitoring\ncontinu en\nproduction"]
+    G --> H{Dérive\ndétectée ?}
+    H -->|Oui| E
+    H -->|Non| G
+    style B fill:#1a1e2a,stroke:#0ea5e9,color:#0ea5e9
+    style C fill:#1a1e2a,stroke:#f59e0b,color:#f59e0b
+    style D fill:rgba(34,197,94,.1),stroke:#22c55e,color:#22c55e
+    style G fill:#1a1e2a,stroke:#2dd4bf,color:#2dd4bf
+        </div>
+      </div>
+
+      <h3>Implémentation : CI/CD pour RAG</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Pipeline d'évaluation automatique (CI/CD)</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> ragas <span class="kw">import</span> evaluate
+<span class="kw">from</span> ragas.metrics <span class="kw">import</span> Faithfulness, AnswerRelevancy, ContextRecall, ContextPrecision
+<span class="kw">from</span> datasets <span class="kw">import</span> Dataset
+
+<span class="kw">class</span> <span class="fn">RAGEvaluationPipeline</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, rag_system, eval_dataset_path, thresholds):
+        self.rag = rag_system
+        self.eval_df = pd.read_csv(eval_dataset_path)
+        self.thresholds = thresholds  <span class="cm"># ex: {"faithfulness": 0.8, "answer_relevancy": 0.75}</span>
+        self.metrics = [Faithfulness(), AnswerRelevancy(), ContextRecall(), ContextPrecision()]
+    
+    <span class="kw">def</span> <span class="fn">run</span>(self) -> dict:
+        <span class="cm"># 1. Générer les réponses avec le système RAG actuel</span>
+        results = []
+        <span class="kw">for</span> _, row <span class="kw">in</span> self.eval_df.iterrows():
+            answer, contexts = self.rag.query(row[<span class="str">"question"</span>])
+            results.append({
+                <span class="str">"question"</span>: row[<span class="str">"question"</span>],
+                <span class="str">"answer"</span>: answer,
+                <span class="str">"contexts"</span>: contexts,
+                <span class="str">"ground_truth"</span>: row[<span class="str">"ground_truth"</span>]
+            })
+        
+        dataset = Dataset.from_list(results)
+        
+        <span class="cm"># 2. Calculer les métriques RAGAS</span>
+        scores = evaluate(dataset, metrics=self.metrics)
+        
+        <span class="cm"># 3. Vérifier les seuils (gate check)</span>
+        passed = <span class="kw">True</span>
+        failing = []
+        <span class="kw">for</span> metric, threshold <span class="kw">in</span> self.thresholds.items():
+            <span class="kw">if</span> scores[metric] < threshold:
+                passed = <span class="kw">False</span>
+                failing.append(<span class="str">f"{metric}: {scores[metric]:.3f} < {threshold}"</span>)
+        
+        <span class="cm"># 4. Rapport</span>
+        <span class="kw">return</span> {
+            <span class="str">"scores"</span>: dict(scores),
+            <span class="str">"passed"</span>: passed,
+            <span class="str">"failing_metrics"</span>: failing,
+            <span class="str">"ragas_score"</span>: scores.to_pandas()[<span class="fn">list</span>(scores.keys())].mean(axis=<span class="num">1</span>).mean()
+        }
+
+<span class="cm"># Utilisation dans un script CI</span>
+pipeline = RAGEvaluationPipeline(
+    rag_system=my_rag,
+    eval_dataset_path=<span class="str">"eval_dataset.csv"</span>,
+    thresholds={<span class="str">"faithfulness"</span>: <span class="num">0.80</span>, <span class="str">"answer_relevancy"</span>: <span class="num">0.75</span>,
+                <span class="str">"context_recall"</span>: <span class="num">0.70</span>, <span class="str">"context_precision"</span>: <span class="num">0.65</span>}
+)
+result = pipeline.run()
+<span class="kw">if not</span> result[<span class="str">"passed"</span>]:
+    <span class="fn">raise</span> ValueError(<span class="str">f"Évaluation échouée : {result['failing_metrics']}"</span>)
+    <span class="cm"># → GitHub Actions échoue, déploiement bloqué</span></pre>
+      </div>
+
+      <h3>Monitoring en production : détection de dérive</h3>
+      <div class="ascii-box">MONITORING CONTINU — STRATÉGIE
+════════════════════════════════
+
+MÉTRIQUES À MONITORER EN TEMPS RÉEL :
+  ┌──────────────────────────────────────────────────────────────┐
+  │  Métrique               │ Fréquence  │ Alerte si            │
+  ├──────────────────────────────────────────────────────────────┤
+  │  Faithfulness (sample)  │ Horaire    │ < 0.75 sur 1h        │
+  │  Answer Relevance       │ Horaire    │ < 0.70 sur 1h        │
+  │  Latence retrieval      │ Temps réel │ p95 > 500ms          │
+  │  Taux no-answer         │ Journalier │ > 5%                 │
+  │  Feedback utilisateur ↓ │ Journalier │ Thumbs-down > 15%    │
+  └──────────────────────────────────────────────────────────────┘
+
+STRATÉGIE D'ÉCHANTILLONNAGE :
+  - Évaluer 10-20% des requêtes en production (LLM-as-Judge)
+  - Évaluer 100% des requêtes qui reçoivent un feedback négatif
+  - Re-run le dataset complet hebdomadairement (évaluation de régression)</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S12: AUTRES OUTILS -->
+    <div class="section" id="s12">
+      <div class="section-header"><span class="section-num">12</span><h2 class="section-title">Comparatif des outils d'évaluation</h2></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Outil</th><th>Métriques phares</th><th>Interface</th><th>Forces</th><th>Limites</th></tr></thead>
+          <tbody>
+            <tr><td><strong>RAGAS</strong></td><td>Faithfulness, AR, CR, CP</td><td>Python SDK</td><td class="td-good">Standard de l'industrie, documentation excellente</td><td>Coût LLM élevé pour gros datasets</td></tr>
+            <tr><td><strong>TruLens</strong></td><td>RAG Triad (same as RAGAS)</td><td>Dashboard web</td><td class="td-good">Dashboard visuel, tracing des appels LLM</td><td>Plus lourd à déployer</td></tr>
+            <tr><td><strong>DeepEval</strong></td><td>15+ métriques</td><td>Python + CI</td><td class="td-good">Intégration native CI/CD, assertions Pytest</td><td>Moins mature que RAGAS</td></tr>
+            <tr><td><strong>LangSmith</strong></td><td>Custom via LLM</td><td>Cloud SaaS</td><td class="td-good">Observabilité, tracing, datasets gérés</td><td>Payant au-delà du free tier</td></tr>
+            <tr><td><strong>Arize Phoenix</strong></td><td>Embedding + LLM</td><td>Dashboard</td><td class="td-good">Visualisation embeddings, détection de dérive</td><td>Complexe à configurer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Évaluation avec DeepEval (Pytest-style)</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">import</span> pytest
+<span class="kw">from</span> deepeval <span class="kw">import</span> assert_test
+<span class="kw">from</span> deepeval.test_case <span class="kw">import</span> LLMTestCase
+<span class="kw">from</span> deepeval.metrics <span class="kw">import</span> FaithfulnessMetric, AnswerRelevancyMetric
+
+<span class="kw">def</span> <span class="fn">test_rag_response</span>():
+    test_case = LLMTestCase(
+        input=<span class="str">"Combien de jours après 3 ans ?"</span>,
+        actual_output=<span class="str">"Après 3 ans, vous avez droit à 28 jours."</span>,
+        retrieval_context=[<span class="str">"Après 3 ans d'ancienneté, 28 jours sont accordés."</span>]
+    )
+    assert_test(test_case, [
+        FaithfulnessMetric(threshold=<span class="num">0.8</span>),
+        AnswerRelevancyMetric(threshold=<span class="num">0.75</span>)
+    ])
+    <span class="cm"># → Run: deepeval test run test_rag.py</span></pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S13: CAS INDUSTRIELS -->
+    <div class="section" id="s13">
+      <div class="section-header"><span class="section-num">13</span><h2 class="section-title">Cas industriels</h2></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Entreprise</th><th>Outil</th><th>Approche</th><th>Résultat</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Notion</strong></td><td>RAGAS + custom</td><td>Évaluation hebdomadaire sur 500 questions</td><td>Détection d'une régression de -12% Faithfulness après un changement de LLM</td></tr>
+            <tr><td><strong>Stripe Docs</strong></td><td>LangSmith + LLM-Judge</td><td>Monitoring continu avec sampling 20%</td><td>Alerte automatique quand le taux de "réponse hors sujet" dépasse 8%</td></tr>
+            <tr><td><strong>Klarna</strong></td><td>TruLens</td><td>Tracing + RAG Triad sur tous les tickets</td><td>Identification que Context Precision faible (0.48) causait 30% de mauvaises réponses</td></tr>
+            <tr><td><strong>Scale AI</strong></td><td>Custom evaluation</td><td>Human evaluation + LLM-Judge combinés</td><td>Calibration : LLM-Judge corrèle à 0.87 avec l'évaluation humaine sur leur domaine</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S14: ERREURS -->
+    <div class="section" id="s14">
+      <div class="section-header"><span class="section-num">14</span><h2 class="section-title">Erreurs fréquentes</h2></div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 1 — Évaluer sur les mêmes données que celles indexées (data leakage)</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Si les questions du dataset d'évaluation sont générées depuis les mêmes documents que ceux indexés, les scores sont artificiellement gonflés. Le système "connaît" les réponses car elles sont dans son index. Créer le dataset d'évaluation avant l'indexation, ou utiliser un sous-ensemble de documents distinct pour l'évaluation.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 2 — Utiliser un seul score global pour diagnostiquer</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Un RAGAS score global de 0.72 ne dit rien sur où est le problème. Regarder toujours les 4 métriques individuellement : si Faithfulness = 0.95 et Context Recall = 0.50, le problème est le retrieval, pas la génération. Le score global masque l'information de diagnostic.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 3 — Faire confiance aveuglément aux scores LLM-as-Judge</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Les LLM-juges ont des biais systématiques (verbosité, position, self-enhancement). Toujours calibrer l'évaluateur sur un petit jeu d'exemples annotés humainement. Mesurer la corrélation entre le LLM-juge et le jugement humain sur votre domaine spécifique avant de faire confiance aux scores automatiques.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 4 — Dataset d'évaluation non représentatif</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Un dataset de 50 questions toutes simples et factuelles ne permet pas de détecter les problèmes sur les questions complexes ou multi-hop. Inclure une distribution représentative des types de questions réels : simples, complexes, ambiguës, hors-domaine. Analyser les logs utilisateurs pour comprendre la distribution réelle.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>❌ Erreur 5 — Évaluer uniquement avant le déploiement, jamais en production</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>Les performances peuvent se dégrader en production sans changement de code : évolution des questions utilisateurs, nouvelles données dans la base, drift du LLM (fine-tuning interne chez le provider). Sans monitoring continu, on peut passer des semaines à répondre avec un système dégradé sans le savoir.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S15: EXERCICES -->
+    <div class="section" id="s15">
+      <div class="section-header"><span class="section-num">15</span><h2 class="section-title">Exercices</h2></div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 1 — Calculer la Faithfulness manuellement</span>
+        </div>
+        <div class="ex-body">
+          <strong>Contexte :</strong> "Le SMIC horaire est de 11,65€ depuis le 1er mai 2023. Pour un temps plein (35h/semaine), le SMIC mensuel brut est de 1767€."<br><br>
+          <strong>Réponse du LLM :</strong> "Le SMIC mensuel est de 1767€ brut. Avec 13ème mois, cela représente environ 1922€/mois en moyenne. Pour un 28h/semaine, le SMIC serait de 1414€."<br><br>
+          Décomposez en affirmations et calculez la Faithfulness.
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Décomposition des affirmations :</strong><br>
+          A1 : "SMIC mensuel est de 1767€ brut" → SUPPORTÉE ✅ (dans le contexte)<br>
+          A2 : "Avec 13ème mois, environ 1922€/mois en moyenne" → NON SUPPORTÉE ❌ (inventé)<br>
+          A3 : "Pour 28h/semaine, SMIC de 1414€" → PARTIELLEMENT supportée (le taux horaire est dans le contexte, mais le calcul pour 28h n'y est pas explicitement) → NON SUPPORTÉE directement ❌<br><br>
+          <strong>Faithfulness = 1/3 = 0.33</strong><br><br>
+          La réponse a une très faible fidélité malgré son aspect plausible. Le 13ème mois et le calcul 28h sont des hallucinations (non mentionnés dans les sources).
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header easy">
+          <span class="ex-badge">Facile</span>
+          <span class="ex-title">Exercice 2 — Diagnostiquer depuis les scores RAGAS</span>
+        </div>
+        <div class="ex-body">
+          Voici les scores RAGAS de 3 systèmes RAG testés :<br><br>
+          <strong>Système A :</strong> Faithfulness=0.92, Answer_Rel=0.88, Context_Recall=0.45, Context_Precision=0.78<br>
+          <strong>Système B :</strong> Faithfulness=0.51, Answer_Rel=0.84, Context_Recall=0.88, Context_Precision=0.73<br>
+          <strong>Système C :</strong> Faithfulness=0.85, Answer_Rel=0.79, Context_Recall=0.82, Context_Precision=0.38<br><br>
+          Pour chaque système, identifiez le problème principal et proposez une action corrective.
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Système A :</strong> Faible Context_Recall (0.45). La génération et la précision sont bonnes, mais le retrieval ne ramène pas tous les documents nécessaires. → Améliorer le chunking (semantic chunking, parent-document retrieval), augmenter K, ou utiliser le Hybrid Search pour capturer plus de documents pertinents.<br><br>
+          <strong>Système B :</strong> Faible Faithfulness (0.51). Le retrieval est excellent mais le LLM invente des informations non présentes dans les documents. → Améliorer le prompt système (instructions strictes : "répondre uniquement depuis les documents"), ou utiliser un modèle de génération plus fiable avec température=0.<br><br>
+          <strong>Système C :</strong> Faible Context_Precision (0.38). Le retrieval récupère les informations nécessaires mais aussi beaucoup de bruit. → Réduire K, ajouter un Cross-Encoder pour re-ranker, ou améliorer le filtrage par métadonnées pour réduire les faux positifs.
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header medium">
+          <span class="ex-badge">Moyen</span>
+          <span class="ex-title">Exercice 3 — Concevoir un dataset d'évaluation</span>
+        </div>
+        <div class="ex-body">
+          Vous développez un assistant RAG pour un service de support client d'un opérateur télécom. Les utilisateurs posent des questions sur leurs forfaits, factures, couverture réseau et problèmes techniques.<br><br>
+          <strong>a)</strong> Combien de questions recommandez-vous pour le dataset initial ? Quelle distribution par type ?<br>
+          <strong>b)</strong> Proposez 2 exemples de questions pour chaque type (factuelle, conditionnelle, multi-documents, hors-domaine).<br>
+          <strong>c)</strong> Quelles métadonnées inclueriez-vous avec chaque paire (question, ground_truth) ?<br>
+          <strong>d)</strong> Quelle stratégie de mise à jour du dataset au fil du temps ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Dataset :</strong> 150-200 questions pour démarrer. Distribution : 40% factuelle (60-80Q), 25% conditionnelle (38-50Q), 20% multi-documents (30-40Q), 10% raisonnement (15-20Q), 5% hors-domaine (8-10Q).<br><br>
+          <strong>b) Exemples :</strong><br>
+          Factuelle : "Quel est le prix du forfait 100Go ?" / "Combien de numéros puis-je appeler en illimité ?"<br>
+          Conditionnelle : "Si j'ai consommé 95% de mes données, est-il possible d'en racheter ?" / "Quel est le délai de résiliation si je suis engagé ?"<br>
+          Multi-documents : "Compare les forfaits 50Go et 100Go sur 5 critères" / "Quelles options sont disponibles en 5G vs 4G ?"<br>
+          Hors-domaine : "Quel est le meilleur opérateur au monde ?" / "Conseille-moi un smartphone"<br><br>
+          <strong>c) Métadonnées :</strong> {categorie: "forfait|facturation|reseau|technique|hors-domaine", difficulte: "simple|conditionnelle|multi-doc|reasoning", langue: "fr", date_creation: "2024-01-15", annotateur: "expert_id", version_docs: "v2.3"}<br><br>
+          <strong>d) Mise à jour :</strong> Revue mensuelle des logs utilisateurs pour identifier de nouveaux types de questions non couverts. Ajouter 20-30 nouvelles questions/mois basées sur les cas réels. Re-évaluer le dataset complet quand les documents de référence changent (nouveaux forfaits, etc.).
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header hard">
+          <span class="ex-badge">Difficile</span>
+          <span class="ex-title">Exercice 4 — Pipeline d'évaluation complet</span>
+        </div>
+        <div class="ex-body">
+          Vous êtes responsable de la qualité d'un système RAG médical utilisé par 500 médecins pour consulter des protocoles de traitement. Le système génère ~10 000 réponses par jour.<br><br>
+          <strong>a)</strong> Définissez vos seuils RAGAS minimum acceptables et justifiez-les (le domaine médical est critique).<br>
+          <strong>b)</strong> Quelle stratégie d'évaluation proposez-vous (évaluation automatique vs humaine, fréquence, sampling) ?<br>
+          <strong>c)</strong> Comment détectez-vous un cas de réponse "dangereuse" (hallucination médicale critique) rapidement ?<br>
+          <strong>d)</strong> Quelle action prenez-vous si Faithfulness chute soudainement de 0.92 à 0.71 en 24h ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Seuils médicaux stricts :</strong><br>
+          Faithfulness ≥ 0.95 (tolérance quasi-nulle aux hallucinations — conséquences potentiellement fatales)<br>
+          Answer Relevance ≥ 0.90 (les réponses hors-sujet peuvent induire en erreur)<br>
+          Context Recall ≥ 0.85 (un protocole manquant peut mener à un sous-traitement)<br>
+          Context Precision ≥ 0.80 (le bruit peut diluer l'information critique)<br><br>
+          <strong>b) Stratégie d'évaluation :</strong><br>
+          Automatique (LLM-as-Judge) : 100% des requêtes en temps réel pour Faithfulness uniquement (latence critique). Métriques complètes sur 20% en sampling horaire.<br>
+          Humaine : 50 questions/semaine évaluées par des médecins experts. 100% des cas signalés par les utilisateurs. Review complète mensuelle du dataset (150 questions).<br><br>
+          <strong>c) Détection hallucination critique :</strong><br>
+          Score de confiance factuelle spécifique : vérifier que toute posologie, toute contre-indication ou toute information médicale chiffrée est exactement supportée (pas approximativement). Ajouter une métrique custom "Medical Hallucination" qui pénalise spécifiquement les informations chiffrées non supportées. Alerting en temps réel si faithfulness &lt; 0.85 sur une fenêtre de 10 questions consécutives.<br><br>
+          <strong>d) Action si chute Faithfulness 0.92 → 0.71 :</strong><br>
+          1. Alerter immédiatement l'équipe de garde (PagerDuty)<br>
+          2. Mettre le système en mode dégradé : afficher un avertissement aux médecins ("Vérifiez impérativement les sources indiquées")<br>
+          3. Investiguer : changement de LLM provider ? Nouveaux documents ajoutés ? Dérive de la distribution des questions ?<br>
+          4. Si cause non identifiée sous 1h : rollback vers la version précédente du système<br>
+          5. Post-mortem pour identifier la cause racine
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S16: QUIZ -->
+    <div class="section" id="s16">
+      <div class="section-header"><span class="section-num">16</span><h2 class="section-title">Quiz d'auto-évaluation</h2></div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q1. Quelle métrique RAGAS ne nécessite PAS de ground truth ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Context Recall</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Context Precision</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) Faithfulness</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Aucune — toutes nécessitent un ground truth</div>
+        </div>
+        <div class="quiz-reveal">Faithfulness (answer + contexts) et Answer Relevance (question + answer) ne nécessitent pas de ground truth. Context Recall et Context Precision le nécessitent pour comparer avec la réponse de référence.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q2. Un système obtient Faithfulness=0.95 et Context Recall=0.40. Quel est le problème ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Le LLM hallucine trop</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Le retrieval ne récupère pas tous les documents nécessaires</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Le contexte contient trop de bruit</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) La réponse n'est pas pertinente</div>
+        </div>
+        <div class="quiz-reveal">Faithfulness haute → le LLM ne hallucine pas. Context Recall bas → le retrieval ne ramène pas tous les documents nécessaires pour couvrir le ground truth. C'est un problème de retrieval (chunking, index, K trop petit) — pas de génération.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q3. Comment RAGAS calcule-t-il l'Answer Relevance ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) En comparant la réponse au ground truth mot à mot</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) En générant des questions inverses depuis la réponse et en mesurant leur similarité avec la question originale</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) En comptant les mots-clés en commun entre question et réponse</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) En demandant à un humain de noter de 1 à 5</div>
+        </div>
+        <div class="quiz-reveal">RAGAS utilise un LLM pour générer N questions auxquelles la réponse pourrait répondre, puis calcule la similarité cosinus entre ces questions générées et la question originale. Si les questions générées sont proches de la question originale, la réponse est pertinente.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q4. Quel biais du LLM-as-Judge est le plus documenté ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">A) Le biais de verbosité — préférence pour les réponses longues</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Le biais linguistique — préférence pour le français</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Le biais de date — préférence pour les réponses récentes</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Le biais de format — préférence pour les listes à puces</div>
+        </div>
+        <div class="quiz-reveal">Le biais de verbosité est le plus documenté : les LLMs-juges préfèrent systématiquement les réponses plus longues, même quand la réponse courte et précise est objectivement meilleure. Contre-mesures : évaluer la concision explicitement, ou utiliser des critères standardisés qui pénalisent la verbosité inutile.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q5. Quelle est la meilleure stratégie pour un dataset d'évaluation de haute qualité ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Générer 10 000 questions automatiquement avec un LLM</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Utiliser uniquement des questions hors-domaine pour tester la robustesse</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">C) Combiner annotation humaine (Gold Standard 100-200Q) + génération synthétique pour la couverture</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Évaluer uniquement avec le feedback thumbs up/down des utilisateurs</div>
+        </div>
+        <div class="quiz-reveal">L'approche hybride est optimale : un petit set Gold Standard (100-200Q annotées par des experts) sert de référence absolute, complété par des questions synthétiques générées automatiquement pour couvrir plus de cas, et calibré par les vraies questions utilisateurs des logs de production.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S17: RÉSUMÉ -->
+    <div class="section" id="s17">
+      <div class="section-header"><span class="section-num">17</span><h2 class="section-title">Résumé du chapitre</h2></div>
+
+      <div class="summary-box">
+        <h3>🎯 Ce qu'il faut absolument retenir</h3>
+        <div class="summary-item"><div class="summary-num">1</div><div>L'évaluation RAG est multidimensionnelle : fidélité, pertinence, recall du contexte, précision du contexte. Un seul score ne suffit pas.</div></div>
+        <div class="summary-item"><div class="summary-num">2</div><div><strong>Faithfulness</strong> = anti-hallucination. Proportion d'affirmations supportées par les sources. Ne nécessite pas de ground truth.</div></div>
+        <div class="summary-item"><div class="summary-num">3</div><div><strong>Answer Relevance</strong> = pertinence de la réponse. Calculée via questions inverses + similarité vectorielle. Ne nécessite pas de ground truth.</div></div>
+        <div class="summary-item"><div class="summary-num">4</div><div><strong>Context Recall</strong> = couverture du retrieval. Le contexte couvre-t-il tout le ground truth ? Nécessite un ground truth.</div></div>
+        <div class="summary-item"><div class="summary-num">5</div><div><strong>Context Precision</strong> = rapport signal/bruit. Les docs récupérés sont-ils tous pertinents ? Nécessite un ground truth.</div></div>
+        <div class="summary-item"><div class="summary-num">6</div><div>Le <strong>LLM-as-Judge</strong> corrèle à ~0.85 avec le jugement humain. Utiliser GPT-4 ou Claude Opus pour l'évaluation. Attention aux biais (verbosité, position, self-enhancement).</div></div>
+        <div class="summary-item"><div class="summary-num">7</div><div>Le <strong>dataset d'évaluation</strong> est l'actif le plus précieux. Combiner Gold Standard annotés (100-200Q) + génération synthétique + logs utilisateurs.</div></div>
+        <div class="summary-item"><div class="summary-num">8</div><div>L'évaluation doit être <strong>continue</strong> : avant déploiement (CI/CD gate) ET en production (monitoring, sampling). RAGAS, TruLens, DeepEval, LangSmith sont les outils de référence.</div></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="tag">RAGAS</span><span class="tag">Faithfulness</span><span class="tag">Answer Relevance</span><span class="tag">Context Recall</span><span class="tag">Context Precision</span><span class="tag">LLM-as-Judge</span><span class="tag">Gold Standard</span><span class="tag">TruLens</span><span class="tag">DeepEval</span><span class="tag">LangSmith</span><span class="tag">CI/CD RAG</span><span class="tag">Data Drift</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S18: RESSOURCES -->
+    <div class="section" id="s18">
+      <div class="section-header"><span class="section-num">18</span><h2 class="section-title">Ressources</h2></div>
+      <div class="res-grid">
+        <a class="res-item" href="https://arxiv.org/abs/2309.15217" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">RAGAS</div><div class="res-sub">Es et al., 2023 — Le papier fondateur</div></div>
+        </a>
+        <a class="res-item" href="https://docs.ragas.io/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">RAGAS Documentation</div><div class="res-sub">Guide complet et API reference</div></div>
+        </a>
+        <a class="res-item" href="https://arxiv.org/abs/2306.05685" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">LLM-as-Judge</div><div class="res-sub">Zheng et al., 2023 — MT-Bench et Chatbot Arena</div></div>
+        </a>
+        <a class="res-item" href="https://github.com/confident-ai/deepeval" target="_blank">
+          <span class="res-type code">GitHub</span>
+          <div><div class="res-title">DeepEval</div><div class="res-sub">Framework d'évaluation style Pytest</div></div>
+        </a>
+        <a class="res-item" href="https://www.trulens.org/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">TruLens</div><div class="res-sub">Observabilité RAG avec dashboard visuel</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="chapter-footer">
+      <div class="footer-cards">
+        <div class="footer-card">
+          <div class="label">✅ Ce que nous avons appris</div>
+          <div class="value">Évaluation RAG avec RAGAS</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Les 4 métriques RAGAS (Faithfulness, Answer Relevance, Context Recall, Context Precision), le paradigme LLM-as-Judge, la création de datasets d'évaluation, les pipelines CI/CD et le monitoring continu en production.</div>
+        </div>
+        <div class="footer-card">
+          <div class="label">👉 Chapitre suivant</div>
+          <div class="value">GraphRAG &amp; Knowledge Graphs</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Nous allons explorer GraphRAG — comment enrichir le RAG avec des graphes de connaissances pour capturer les relations entre entités, permettre un raisonnement multi-hop, et améliorer la qualité des réponses sur des domaines fortement structurés.</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:32px 0">
+        <div style="display:inline-flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 28px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sky)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-size:14px;color:var(--text-2)">Écrivez <strong style="color:var(--sky)">"Suivant"</strong> pour le Chapitre 8 — GraphRAG &amp; Knowledge Graphs</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding-bottom:16px;font-size:12px;color:var(--text-3)">
+        RAG Masterclass · Chapitre 7 sur 12 · Cours universitaire interactif
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+mermaid.initialize({theme:'dark',themeVariables:{primaryColor:'#1a1e2a',primaryTextColor:'#e8eaf2',primaryBorderColor:'#0ea5e9',lineColor:'#5c6480',fontFamily:'Inter,sans-serif',fontSize:'13px'},flowchart:{curve:'basis'}});
+window.addEventListener('scroll',()=>{
+  const st=window.scrollY,dh=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progress-bar').style.width=(dh>0?(st/dh)*100:0)+'%';
+  document.getElementById('back-top').classList.toggle('show',st>400);
+  const sections=document.querySelectorAll('.section');
+  let current='';sections.forEach(s=>{if(s.offsetTop-100<=st)current=s.id});
+  document.querySelectorAll('.sidebar-item').forEach(item=>{
+    item.classList.remove('active');
+    if(item.getAttribute('onclick')?.includes(current))item.classList.add('active');
+  });
+});
+function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='light'?'dark':'light')}
+function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleAcc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open')}
+function answerQuiz(opt,correct){
+  opt.closest('.quiz-opts').querySelectorAll('.quiz-opt').forEach(o=>{o.style.pointerEvents='none';if(o===opt)o.classList.add(correct?'correct':'wrong')});
+  const r=opt.closest('.quiz-card').querySelector('.quiz-reveal');if(r)r.classList.add('show');
+}
+function toggleSolution(btn){
+  const s=btn.nextElementSibling;s.classList.toggle('show');
+  btn.textContent=s.classList.contains('show')?'🙈 Masquer':'📖 Voir la correction';
+}
+document.querySelectorAll('.copy-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    navigator.clipboard.writeText(btn.closest('.code-block').querySelector('pre').textContent)
+      .then(()=>{btn.textContent='✓ Copié';setTimeout(()=>btn.textContent='Copier',2000)});
+  });
+});
+const searchInput=document.getElementById('search-input');let st2;
+searchInput.addEventListener('input',()=>{
+  clearTimeout(st2);st2=setTimeout(()=>{
+    const q=searchInput.value.trim();
+    document.querySelectorAll('.search-highlight').forEach(el=>{el.outerHTML=el.textContent});
+    if(q.length<2)return;
+    const rx=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    const walker=document.createTreeWalker(document.querySelector('.main'),NodeFilter.SHOW_TEXT,null);
+    const nodes=[];let node;
+    while((node=walker.nextNode())){if(node.parentElement.closest('script,style')===null&&rx.test(node.textContent))nodes.push(node);}
+    nodes.forEach(n=>{const sp=document.createElement('span');sp.innerHTML=n.textContent.replace(rx,'<mark class="search-highlight">$1</mark>');n.parentNode.replaceChild(sp,n);});
+    const first=document.querySelector('.search-highlight');
+    if(first)first.scrollIntoView({behavior:'smooth',block:'center'});
+  },300);
+});
+
+/* RAGAS Interactive Demo */
+function computeRAGAS() {
+  const question = document.getElementById('demo-question').value;
+  const answer = document.getElementById('demo-answer').value;
+  const context = document.getElementById('demo-context').value;
+  const gt = document.getElementById('demo-gt').value;
+
+  if(!answer || !context) { alert('Remplissez tous les champs.'); return; }
+
+  // Simplified heuristic computation (pedagogical only)
+  function overlap(a, b) {
+    const wa = new Set(a.toLowerCase().split(/\s+/).filter(w=>w.length>3));
+    const wb = new Set(b.toLowerCase().split(/\s+/).filter(w=>w.length>3));
+    let common = 0;
+    wa.forEach(w => { if(wb.has(w)) common++; });
+    return common / Math.max(wa.size, wb.size, 1);
+  }
+
+  // Faithfulness: overlap between answer and context
+  const faith = Math.min(0.99, overlap(answer, context) * 1.4 + 0.3);
+
+  // Answer Relevance: overlap between answer and question
+  const ar = Math.min(0.99, overlap(answer, question) * 1.2 + 0.45);
+
+  // Context Recall: overlap between context and ground truth
+  const cr = Math.min(0.99, overlap(context, gt) * 1.3 + 0.2);
+
+  // Context Precision: ratio of answer supported by context
+  const cp = Math.min(0.99, overlap(context, answer) * 1.2 + 0.3);
+
+  const global = ((faith + ar + cr + cp) / 4);
+
+  const fmt = v => (Math.max(0.1, Math.min(0.99, v))).toFixed(2);
+  document.getElementById('score-faith').textContent = fmt(faith);
+  document.getElementById('score-ar').textContent = fmt(ar);
+  document.getElementById('score-cr').textContent = fmt(cr);
+  document.getElementById('score-cp').textContent = fmt(cp);
+  document.getElementById('score-global').textContent = fmt(global);
+
+  // Color coding
+  const colorize = (el, val) => {
+    const v = parseFloat(val);
+    el.style.color = v >= 0.80 ? 'var(--green)' : v >= 0.60 ? 'var(--amber)' : 'var(--rose)';
+  };
+  ['faith','ar','cr','cp'].forEach(id => {
+    const el = document.getElementById('score-'+id);
+    colorize(el, el.textContent);
+  });
+
+  // Diagnostic
+  const diag = document.getElementById('ragas-diag');
+  const g = parseFloat(fmt(global));
+  const f = parseFloat(fmt(faith));
+  const c = parseFloat(fmt(cr));
+  const p = parseFloat(fmt(cp));
+  let msg = '';
+  if(f < 0.65) msg += '⚠️ Faithfulness faible → le LLM peut halluciner. Améliorer le prompt système. ';
+  if(c < 0.65) msg += '⚠️ Context Recall faible → le retrieval rate des documents. Améliorer le chunking ou augmenter K. ';
+  if(p < 0.65) msg += '⚠️ Context Precision faible → trop de bruit dans le contexte. Ajouter un re-ranker. ';
+  if(!msg && g > 0.8) msg = '✅ Scores globalement bons. Continuez à monitorer en production.';
+  diag.textContent = msg || '📊 Scores calculés. Comparez avec vos seuils de production.';
+  diag.style.display = 'block';
+
+  document.getElementById('scores-output').style.display = 'block';
+  document.getElementById('score-global').style.color = g >= 0.80 ? 'var(--green)' : g >= 0.65 ? 'var(--amber)' : 'var(--rose)';
+}
+</script>
+</body>
+</html>
