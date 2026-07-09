@@ -1,0 +1,1 @@
+print("Translation script started")
