@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — GraphRAG | Cours RAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f14;--bg-2:#13161e;--bg-3:#1a1e2a;--bg-card:#161923;
+  --border:#252a38;--border-2:#2e3547;
+  --text-1:#e8eaf2;--text-2:#9ba3bf;--text-3:#5c6480;
+  --accent:#7c6af7;--accent-2:#a799ff;--accent-glow:rgba(124,106,247,.18);
+  --teal:#2dd4bf;--teal-soft:rgba(45,212,191,.12);
+  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
+  --rose:#f43f5e;--rose-soft:rgba(244,63,94,.12);
+  --green:#22c55e;--green-soft:rgba(34,197,94,.12);
+  --blue:#3b82f6;--blue-soft:rgba(59,130,246,.12);
+  --fuchsia:#d946ef;--fuchsia-soft:rgba(217,70,239,.12);
+  --sidebar-w:280px;--radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --font-display:'Fraunces',serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{--bg:#f8f9fc;--bg-2:#f0f2f8;--bg-3:#e8ebf5;--bg-card:#ffffff;--border:#dde1f0;--border-2:#c8ceea;--text-1:#111827;--text-2:#4b5563;--text-3:#9ca3af;--accent-glow:rgba(124,106,247,.10);--shadow:0 4px 24px rgba(0,0,0,.08)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text-1);line-height:1.7;font-size:16px;overflow-x:hidden}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--fuchsia),var(--accent));width:0%;z-index:1000;box-shadow:0 0 10px var(--fuchsia)}
+.topnav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(13,15,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:900}
+[data-theme="light"] .topnav{background:rgba(248,249,252,.85)}
+.topnav-brand{font-family:var(--font-display);font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--fuchsia),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex:1}
+.topnav-search{display:flex;align-items:center;gap:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;flex:0 0 220px}
+.topnav-search input{background:none;border:none;outline:none;color:var(--text-1);font-size:13px;width:100%;font-family:var(--font-body)}
+.topnav-search input::placeholder{color:var(--text-3)}
+.btn-theme{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all .2s}
+.btn-theme:hover{border-color:var(--fuchsia);color:var(--fuchsia)}
+.layout{display:flex;padding-top:56px;min-height:100vh}
+.sidebar{position:fixed;top:56px;left:0;bottom:0;width:var(--sidebar-w);background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;padding:24px 0;z-index:800}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);padding:12px 24px 6px}
+.sidebar-item{display:block;padding:7px 24px;color:var(--text-2);font-size:13.5px;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg-3);color:var(--text-1)}
+.sidebar-item.active{background:var(--fuchsia-soft);color:var(--fuchsia);font-weight:500}
+.sidebar-sub{font-size:12.5px;padding-left:36px;color:var(--text-3)}
+.sidebar-chapter{font-size:12px;color:var(--text-3);padding:4px 24px;display:flex;align-items:center;gap:8px}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 64px 120px;max-width:calc(var(--sidebar-w) + 860px)}
+@media(max-width:900px){.sidebar{transform:translateX(-100%)}.main{margin-left:0;padding:32px 24px 100px}}
+.hero{margin-bottom:64px;padding:56px 0 0}
+.hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--fuchsia);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.hero-eyebrow::before{content:'';width:24px;height:2px;background:linear-gradient(90deg,var(--fuchsia),var(--accent));display:block}
+.hero-title{font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:24px}
+.hero-title .hl{background:linear-gradient(135deg,var(--fuchsia) 0%,var(--accent-2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:18px;color:var(--text-2);line-height:1.75;max-width:640px;margin-bottom:36px}
+.hero-meta{display:flex;gap:24px;flex-wrap:wrap}
+.hero-badge{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--text-2)}
+.objectives{background:linear-gradient(135deg,var(--fuchsia-soft),var(--accent-glow));border:1px solid var(--fuchsia);border-radius:var(--radius);padding:32px;margin:48px 0}
+.objectives h3{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--fuchsia);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.obj-item{display:flex;align-items:flex-start;gap:10px;background:var(--fuchsia-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;color:var(--text-1)}
+.obj-dot{width:6px;height:6px;background:var(--fuchsia);border-radius:50%;margin-top:7px;flex-shrink:0}
+.section{margin:80px 0}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.section-num{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--fuchsia);background:var(--fuchsia-soft);border:1px solid rgba(217,70,239,.3);border-radius:6px;padding:4px 10px}
+.section-title{font-family:var(--font-display);font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:600;margin:32px 0 14px;color:var(--text-1)}
+h4{font-size:15px;font-weight:600;color:var(--fuchsia);margin:24px 0 10px}
+p{color:var(--text-2);margin-bottom:16px;line-height:1.8}
+strong{color:var(--text-1);font-weight:600}
+.callout{border-radius:var(--radius);padding:20px 24px;margin:24px 0;display:flex;gap:16px;align-items:flex-start}
+.callout-icon{flex-shrink:0;margin-top:2px}
+.callout-body{flex:1}
+.callout-title{font-weight:600;font-size:14px;margin-bottom:6px}
+.callout-text{font-size:14px;color:var(--text-2);line-height:1.7;margin:0}
+.callout.info{background:var(--blue-soft);border:1px solid rgba(59,130,246,.3)}.callout.info .callout-title{color:#60a5fa}
+.callout.warn{background:var(--amber-soft);border:1px solid rgba(245,158,11,.3)}.callout.warn .callout-title{color:var(--amber)}
+.callout.tip{background:var(--green-soft);border:1px solid rgba(34,197,94,.3)}.callout.tip .callout-title{color:var(--green)}
+.callout.danger{background:var(--rose-soft);border:1px solid rgba(244,63,94,.3)}.callout.danger .callout-title{color:var(--rose)}
+.callout.concept{background:var(--accent-glow);border:1px solid rgba(124,106,247,.3)}.callout.concept .callout-title{color:var(--accent-2)}
+.callout.fuchsia{background:var(--fuchsia-soft);border:1px solid rgba(217,70,239,.3)}.callout.fuchsia .callout-title{color:var(--fuchsia)}
+.callout.teal{background:var(--teal-soft);border:1px solid rgba(45,212,191,.3)}.callout.teal .callout-title{color:var(--teal)}
+.code-block{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:20px 0;box-shadow:var(--shadow)}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-3);border-bottom:1px solid var(--border)}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:var(--text-3);font-weight:500}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-3);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.copy-btn:hover{border-color:var(--fuchsia);color:var(--fuchsia)}
+pre{padding:20px 24px;overflow-x:auto;font-size:13px;font-family:var(--font-mono);line-height:1.8;color:#c9d1d9}
+.kw{color:#ff7b72}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.fn{color:#d2a8ff}.num{color:#79c0ff}.var{color:#ffa657}
+.ascii-box{background:#0a0c12;border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#a8b5d0;overflow-x:auto;margin:24px 0;white-space:pre}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin:28px 0}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--fuchsia),var(--accent-2));opacity:0;transition:opacity .25s}
+.card:hover{border-color:var(--border-2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:28px;margin-bottom:14px}
+.card-title{font-weight:600;font-size:15px;margin-bottom:8px;color:var(--text-1)}
+.card-desc{font-size:13.5px;color:var(--text-2);line-height:1.7}
+.table-wrap{overflow-x:auto;margin:24px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg-3);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 16px;font-size:14px;color:var(--text-2);border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg-2)}
+.td-good{color:var(--green);font-weight:600}.td-bad{color:var(--rose)}.td-mid{color:var(--amber)}
+.accordion{margin:16px 0}
+.acc-header{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;font-size:15px;transition:all .2s;user-select:none}
+.acc-header:hover{border-color:var(--border-2)}
+.acc-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;background:var(--bg-3)}
+.acc-arrow{transition:transform .25s;color:var(--text-3)}
+.acc-header.open .acc-arrow{transform:rotate(180deg)}
+.acc-body{display:none;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-bottom-left-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.acc-body.open{display:block}
+.quiz-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:20px 0}
+.quiz-q{font-weight:600;font-size:16px;margin-bottom:16px}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text-2);transition:all .2s}
+.quiz-opt:hover{border-color:var(--fuchsia);color:var(--text-1)}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.quiz-reveal{display:none;margin-top:16px;padding:16px;background:var(--bg-3);border-radius:var(--radius-sm);font-size:14px;color:var(--text-2)}
+.quiz-reveal.show{display:block}
+.ex-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0}
+.ex-header{padding:14px 20px;display:flex;gap:12px;align-items:center}
+.ex-header.easy{background:rgba(34,197,94,.08);border-bottom:1px solid rgba(34,197,94,.2)}
+.ex-header.medium{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2)}
+.ex-header.hard{background:rgba(244,63,94,.08);border-bottom:1px solid rgba(244,63,94,.2)}
+.ex-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+.easy .ex-badge{background:var(--green-soft);color:var(--green)}
+.medium .ex-badge{background:var(--amber-soft);color:var(--amber)}
+.hard .ex-badge{background:var(--rose-soft);color:var(--rose)}
+.ex-title{font-weight:600;font-size:14px}
+.ex-body{padding:20px 24px;font-size:14px;color:var(--text-2);line-height:1.75}
+.ex-solution{background:var(--bg-2);border-top:1px solid var(--border);padding:16px 24px;display:none}
+.ex-solution.show{display:block}
+.btn-solution{background:none;border:1px solid var(--border);color:var(--text-3);padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;margin:8px 24px 16px;transition:all .2s;font-family:var(--font-body)}
+.btn-solution:hover{border-color:var(--fuchsia);color:var(--fuchsia)}
+#back-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:linear-gradient(135deg,var(--fuchsia),var(--accent));border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(217,70,239,.4);opacity:0;transform:translateY(16px);transition:all .3s;z-index:800}
+#back-top.show{opacity:1;transform:translateY(0)}
+#back-top:hover{transform:translateY(-2px)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:64px 0}
+.svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;overflow-x:auto}
+.mermaid-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin:28px 0;text-align:center;overflow-x:auto}
+.tag{display:inline-block;background:var(--fuchsia-soft);border:1px solid rgba(217,70,239,.3);color:var(--fuchsia);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;margin:2px}
+.summary-box{background:linear-gradient(135deg,var(--fuchsia-soft),var(--accent-glow));border:1px solid var(--fuchsia);border-radius:var(--radius);padding:32px;margin:48px 0}
+.summary-box h3{color:var(--fuchsia);margin-top:0;margin-bottom:20px}
+.summary-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;color:var(--text-2)}
+.summary-num{width:24px;height:24px;background:var(--fuchsia-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--fuchsia);flex-shrink:0}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:24px 0}
+.res-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;text-decoration:none;transition:all .2s}
+.res-item:hover{border-color:var(--border-2);transform:translateY(-1px)}
+.res-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:3px 8px;flex-shrink:0}
+.res-type.paper{background:var(--blue-soft);color:#60a5fa}
+.res-type.code{background:var(--green-soft);color:var(--green)}
+.res-type.doc{background:var(--fuchsia-soft);color:var(--fuchsia)}
+.res-type.video{background:var(--rose-soft);color:#fb7185}
+.res-title{font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:3px}
+.res-sub{font-size:12px;color:var(--text-3)}
+.chapter-footer{border-top:1px solid var(--border);margin-top:80px;padding-top:48px}
+.footer-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px}
+.footer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.footer-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px}
+.footer-card .value{font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.search-highlight{background:rgba(245,158,11,.3);border-radius:2px}
+@media(max-width:600px){.footer-cards{grid-template-columns:1fr}}
+/* Graph canvas */
+.graph-canvas-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:28px 0}
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<nav class="topnav">
+  <div class="topnav-brand">🧠 RAG Masterclass</div>
+  <div class="topnav-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Rechercher…">
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">☀️ / 🌙</button>
+</nav>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-chapter">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <a href="chapitre-07-evaluation-ragas.html" style="color:var(--text-3);text-decoration:none;font-size:12px">Ch.7 — Évaluation RAGAS</a>
+    </div>
+    <div class="sidebar-label">🕸️ Chapitre 8</div>
+    <button class="sidebar-item active" onclick="scrollTo(0,0)">GraphRAG</button>
+    <div class="sidebar-label">Contenu</div>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s1')">1. Objectifs</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s2')">2. Limites du RAG vectoriel</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s3')">3. Graphes de connaissances</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s4')">4. Architecture GraphRAG</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s5')">5. Extraction d'entités</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s6')">6. GraphRAG Microsoft</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s7')">7. Neo4j + RAG</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s8')">8. Multi-hop Reasoning</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s9')">9. Hybrid Graph+Vector</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s10')">10. Comparatif RAG vs Graph</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s11')">11. Cas industriels</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s12')">12. Erreurs fréquentes</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s13')">13. Exercices</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s14')">14. Quiz</button>
+    <button class="sidebar-item sidebar-sub" onclick="scrollToSection('s15')">15. Résumé</button>
+  </aside>
+  <main class="main">
+    <div class="hero">
+      <div class="hero-eyebrow">Chapitre 8 sur 12</div>
+      <h1 class="hero-title"><span class="hl">GraphRAG</span> &amp;<br>Knowledge Graphs</h1>
+      <p class="hero-desc">Le RAG vectoriel excelle pour trouver des passages similaires, mais échoue sur les questions nécessitant de suivre des relations entre entités. GraphRAG combine graphes de connaissances et LLMs pour un raisonnement multi-hop.</p>
+      <div class="hero-meta">
+        <div class="hero-badge">⏱️ ~65 min</div>
+        <div class="hero-badge">🕸️ Graphes + LLMs</div>
+        <div class="hero-badge">🔬 Avancé</div>
+      </div>
+    </div>
+
+    <!-- S1 -->
+    <div class="section" id="s1">
+      <div class="section-header"><span class="section-num">01</span><h2 class="section-title">Objectifs d'apprentissage</h2></div>
+      <div class="objectives">
+        <h3>À la fin de ce chapitre, vous serez capables de…</h3>
+        <div class="obj-grid">
+          <div class="obj-item"><div class="obj-dot"></div>Identifier les questions que le RAG vectoriel ne peut pas traiter</div>
+          <div class="obj-item"><div class="obj-dot"></div>Comprendre les graphes de connaissances (nœuds, arêtes, triplets)</div>
+          <div class="obj-item"><div class="obj-dot"></div>Décrire l'architecture GraphRAG de Microsoft</div>
+          <div class="obj-item"><div class="obj-dot"></div>Extraire des entités et relations depuis du texte</div>
+          <div class="obj-item"><div class="obj-dot"></div>Intégrer Neo4j dans un pipeline RAG</div>
+          <div class="obj-item"><div class="obj-dot"></div>Implémenter le raisonnement multi-hop</div>
+          <div class="obj-item"><div class="obj-dot"></div>Combiner recherche vectorielle et graphe (Hybrid GraphRAG)</div>
+          <div class="obj-item"><div class="obj-dot"></div>Choisir entre RAG vectoriel et GraphRAG selon le cas d'usage</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S2 -->
+    <div class="section" id="s2">
+      <div class="section-header"><span class="section-num">02</span><h2 class="section-title">Les limites du RAG vectoriel face aux relations</h2></div>
+      <p>Le RAG vectoriel est optimisé pour répondre à des questions dont la réponse se trouve dans un passage de texte — une information localisée. Il échoue dès qu'il faut <strong>traverser des relations entre plusieurs entités</strong> pour répondre.</p>
+
+      <h3>Les questions que le RAG vectoriel ne peut pas traiter</h3>
+      <div class="ascii-box">ÉCHECS DU RAG VECTORIEL — QUESTIONS RELATIONNELLES
+═════════════════════════════════════════════════════
+
+Question 1 : "Quels fournisseurs travaillent avec des entreprises concurrentes de notre client X ?"
+  → Nécessite : X → [concurrent_de] → Y → [fournisseur_de] → Z
+  → RAG vectoriel : aucun passage ne contient cette chaîne de relations
+
+Question 2 : "Quels médicaments interagissent avec ceux que prend le patient Y ?"
+  → Nécessite : Patient_Y → [prend] → [Méd_A, Méd_B] → [interagit_avec] → Méd_C
+  → RAG vectoriel : les interactions sont dans des docs séparés
+
+Question 3 : "Quels employés ont travaillé sous le même manager que Marie ?"
+  → Nécessite : Marie → [manage_par] → Manager_X → [manage] → {autres employés}
+  → RAG vectoriel : la relation transitoire n'est pas dans un seul chunk
+
+Question 4 : "Comment XYZ Corp est-elle liée à la fraude détectée ?"
+  → Nécessite : traverser plusieurs arêtes de relations
+  → RAG vectoriel : impossible sans graphe structuré</div>
+
+      <div class="callout fuchsia">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuchsia)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">La règle du pouce</div>
+          <p class="callout-text">Si la réponse à une question nécessite de <strong>suivre une chaîne de relations</strong> entre entités (A → B → C → D), le RAG vectoriel sera insuffisant. Si la réponse est contenue dans un passage de texte contigu, le RAG vectoriel est parfaitement adapté. GraphRAG est complémentaire, pas un remplaçant.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S3 -->
+    <div class="section" id="s3">
+      <div class="section-header"><span class="section-num">03</span><h2 class="section-title">Graphes de connaissances</h2></div>
+
+      <p>Un <strong>graphe de connaissances</strong> (Knowledge Graph) est une base de données structurée qui représente les entités du monde réel et les relations entre elles sous forme de graphe orienté.</p>
+
+      <h3>Les éléments fondamentaux</h3>
+      <div class="card-grid">
+        <div class="card"><div class="card-icon">⬤</div><div class="card-title">Nœuds (Entités)</div><div class="card-desc">Représentent des objets réels : personnes, organisations, produits, concepts. Ex: "Marie Curie", "Université de Paris", "Prix Nobel".</div></div>
+        <div class="card"><div class="card-icon">→</div><div class="card-title">Arêtes (Relations)</div><div class="card-desc">Représentent les liens entre entités, toujours typées et dirigées. Ex: [a_étudié_à], [a_reçu], [est_fondateur_de].</div></div>
+        <div class="card"><div class="card-icon">🏷️</div><div class="card-title">Propriétés (Attributs)</div><div class="card-desc">Métadonnées sur les nœuds et arêtes. Ex: date_naissance="1867", année=1903, montant="150K SEK".</div></div>
+        <div class="card"><div class="card-icon">📐</div><div class="card-title">Triplets (Faits)</div><div class="card-desc">La forme élémentaire : (Sujet, Prédicat, Objet). Ex: (Marie_Curie, a_reçu, Prix_Nobel_Physique_1903).</div></div>
+      </div>
+
+      <div class="graph-canvas-wrap">
+        <canvas id="graphCanvas" width="720" height="380" style="width:100%;border-radius:8px;background:#0a0c12;cursor:pointer"></canvas>
+        <p style="font-size:12px;color:var(--text-3);text-align:center;margin-top:8px">Graphe de connaissances interactif — Passez la souris sur les nœuds pour voir les détails</p>
+      </div>
+
+      <h3>Langages de requête pour les graphes</h3>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>🔍 Cypher (Neo4j) — Le SQL des graphes</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">Cypher — Neo4j</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="cm">// Trouver tous les concurrents des fournisseurs de notre client</span>
+MATCH (client:Company {name: <span class="str">"MonClient"</span>})
+      -[:HAS_SUPPLIER]->(fournisseur:Company)
+      -[:WORKS_WITH]->(concurrent:Company)
+      -[:COMPETES_WITH]->(client)
+<span class="kw">WHERE</span> concurrent.name <> <span class="str">"MonClient"</span>
+<span class="kw">RETURN</span> fournisseur.name, concurrent.name, concurrent.revenue
+<span class="kw">ORDER BY</span> concurrent.revenue <span class="kw">DESC</span>
+<span class="kw">LIMIT</span> <span class="num">10</span></pre>
+          </div>
+          <p>Cypher est un langage déclaratif optimisé pour les parcours de graphe. La syntaxe visuelle (nœuds comme cercles, relations comme flèches) rend les requêtes très lisibles.</p>
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <span>📊 SPARQL — Standard W3C pour les graphes RDF</span>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>SPARQL est le langage de requête standard pour les graphes RDF (Resource Description Framework) — le format adopté par Wikidata, DBpedia, et les linked data. Syntaxe proche du SQL mais orientée triplets (Sujet, Prédicat, Objet).</p>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">SPARQL</span><button class="copy-btn">Copier</button></div>
+            <pre><span class="cm"># Trouver les Prix Nobel reçus par des chercheurs nés en Pologne</span>
+<span class="kw">SELECT</span> ?chercheur ?prix ?année
+<span class="kw">WHERE</span> {
+  ?chercheur dbo:birthPlace ?ville .
+  ?ville dbo:country dbr:Poland .
+  ?chercheur dbo:award ?prix .
+  ?prix rdf:type dbo:NobelPrize .
+  ?prix dbo:year ?année .
+}
+<span class="kw">ORDER BY</span> ?année</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S4 -->
+    <div class="section" id="s4">
+      <div class="section-header"><span class="section-num">04</span><h2 class="section-title">Architecture GraphRAG</h2></div>
+
+      <p>GraphRAG est le terme générique pour les architectures qui combinent graphes de connaissances et LLMs. Il existe plusieurs patterns :</p>
+
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart TD
+    A["📄 Documents bruts"] --> B["🔍 Extraction d'entités\n&amp; relations (NER + RE)"]
+    B --> C["🕸️ Graphe de\nConnaissances"]
+    C --> D["🗄️ Vector DB\n(embeddings des nœuds)"]
+    A --> E["📝 Chunks textuels\n+ Vector DB classique"]
+    
+    F["❓ Question utilisateur"] --> G["🧠 Analyse de la question\n(entités détectées)"]
+    G --> H["🔍 Cypher/SPARQL\nQuery Generation"]
+    H --> C
+    G --> I["🔢 Vector Search\nsur chunks"]
+    I --> E
+    C --> J["📋 Faits du graphe\n(triplets, chemins)"]
+    E --> J
+    J --> K["📝 Prompt augmenté\nGraphe + Texte"]
+    K --> L["🤖 LLM → Réponse\nfidèle et relationnelle"]
+    style C fill:#1a1e2a,stroke:#d946ef,color:#d946ef
+    style L fill:rgba(217,70,239,.1),stroke:#d946ef,color:#e8eaf2
+        </div>
+      </div>
+
+      <h3>Les 3 patterns GraphRAG</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">Graph-only RAG</div>
+          <div class="card-desc">Le LLM génère des requêtes Cypher/SPARQL. Les résultats du graphe sont directement injectés dans le prompt. Idéal pour les questions purement relationnelles.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔀</div>
+          <div class="card-title">Hybrid Graph+Vector</div>
+          <div class="card-desc">Combiner recherche vectorielle (pour la similarité sémantique) ET traversée de graphe (pour les relations). Les deux contextes sont fusionnés dans le prompt.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <div class="card-title">Graph-enhanced Retrieval</div>
+          <div class="card-desc">Enrichir les chunks avec des métadonnées de graphe (entités, relations) pour améliorer le filtering et le ranking du retrieval classique.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S5 -->
+    <div class="section" id="s5">
+      <div class="section-header"><span class="section-num">05</span><h2 class="section-title">Extraction d'entités et de relations</h2></div>
+
+      <p>La première étape de GraphRAG est de construire le graphe depuis les textes. On extrait automatiquement les entités (NER) et les relations entre elles (RE).</p>
+
+      <h3>Pipeline d'extraction NER + RE avec LLM</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Extraction de triplets avec LLM</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> ChatPromptTemplate
+<span class="kw">import</span> json
+
+extraction_prompt = ChatPromptTemplate.from_messages([(<span class="str">"human"</span>, <span class="str">"""
+Extrais les entités et relations du texte suivant.
+Retourne un JSON avec :
+- entities: [{id, label, type, properties}]
+- relations: [{source_id, target_id, type, properties}]
+
+Types d'entités : PERSON, ORGANIZATION, LOCATION, CONCEPT, PRODUCT, DATE
+Types de relations : WORKS_FOR, FOUNDED, LOCATED_IN, ACQUIRED, COMPETES_WITH, etc.
+
+Texte : {text}
+
+JSON uniquement :"""</span>)])
+
+llm = ChatOpenAI(model=<span class="str">"gpt-4o"</span>, temperature=<span class="num">0</span>)
+
+<span class="kw">def</span> <span class="fn">extract_graph_elements</span>(text: str) -> dict:
+    response = (extraction_prompt | llm).invoke({<span class="str">"text"</span>: text})
+    <span class="kw">return</span> json.loads(response.content)
+
+<span class="cm"># Exemple</span>
+text = <span class="str">"""Marie Curie, physicienne polonaise, a fondé l'Institut du Radium
+à Paris en 1914. Elle a travaillé en collaboration avec son mari
+Pierre Curie, également physicien. Ensemble, ils ont découvert
+le polonium et le radium."""</span>
+
+result = <span class="fn">extract_graph_elements</span>(text)
+<span class="cm"># Résultat :
+# entities: [
+#   {id: "marie_curie", label: "Marie Curie", type: "PERSON"},
+#   {id: "pierre_curie", label: "Pierre Curie", type: "PERSON"},
+#   {id: "inst_radium", label: "Institut du Radium", type: "ORGANIZATION"},
+#   {id: "polonium", label: "Polonium", type: "CONCEPT"},
+#   {id: "radium", label: "Radium", type: "CONCEPT"}
+# ]
+# relations: [
+#   {source: "marie_curie", target: "inst_radium", type: "FOUNDED", properties: {year: 1914}},
+#   {source: "marie_curie", target: "pierre_curie", type: "MARRIED_TO"},
+#   {source: "marie_curie", target: "polonium", type: "DISCOVERED"},
+#   {source: "marie_curie", target: "radium", type: "DISCOVERED"}
+# ]</span></pre>
+      </div>
+
+      <h3>Insertion dans Neo4j</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Ingestion dans Neo4j</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> neo4j <span class="kw">import</span> GraphDatabase
+
+driver = GraphDatabase.driver(<span class="str">"bolt://localhost:7687"</span>, auth=(<span class="str">"neo4j"</span>, <span class="str">"password"</span>))
+
+<span class="kw">def</span> <span class="fn">ingest_to_neo4j</span>(entities, relations):
+    <span class="kw">with</span> driver.session() <span class="kw">as</span> session:
+        <span class="cm"># Créer les nœuds</span>
+        <span class="kw">for</span> entity <span class="kw">in</span> entities:
+            session.run(
+                <span class="str">f"MERGE (n:{entity['type']} {{id: $id}}) SET n.label = $label"</span>,
+                id=entity[<span class="str">"id"</span>], label=entity[<span class="str">"label"</span>]
+            )
+        <span class="cm"># Créer les relations</span>
+        <span class="kw">for</span> rel <span class="kw">in</span> relations:
+            query = <span class="str">f"""
+            MATCH (a {{id: $src}}), (b {{id: $tgt}})
+            MERGE (a)-[r:{rel['type']}]->(b)
+            SET r += $props
+            """</span>
+            session.run(query, src=rel[<span class="str">"source"</span>], tgt=rel[<span class="str">"target"</span>],
+                       props=rel.get(<span class="str">"properties"</span>, {}))</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S6 -->
+    <div class="section" id="s6">
+      <div class="section-header"><span class="section-num">06</span><h2 class="section-title">GraphRAG Microsoft — L'approche globale</h2></div>
+
+      <p>Microsoft Research a publié <strong>GraphRAG</strong> (Edge et al., 2024) — une approche radicalement différente qui génère d'abord un graphe de connaissances hiérarchique, puis permet des requêtes <em>globales</em> sur l'ensemble du corpus.</p>
+
+      <div class="ascii-box">MICROSOFT GRAPHRAG — DEUX MODES DE REQUÊTE
+════════════════════════════════════════════
+
+CONSTRUCTION DU GRAPHE (Offline) :
+  1. Extraction d'entités et relations depuis tous les documents
+  2. Détection de communautés (clusters d'entités fortement connectées)
+     → Algorithme : Leiden Community Detection
+  3. Génération de "community summaries" par niveau
+     Level 0 : résumé des petits clusters locaux
+     Level 1 : résumé des clusters de niveau supérieur
+     Level 2 : vue globale du corpus
+
+MODE 1 — LOCAL SEARCH (questions spécifiques) :
+  "Qui est Marie Curie ?" 
+  → Récupère les nœuds et relations proches de "Marie Curie"
+  → + Chunks textuels liés à ces entités
+  → Réponse précise et contextualisée
+
+MODE 2 — GLOBAL SEARCH (questions analytiques larges) :
+  "Quelles sont les grandes tendances de la recherche en physique ?" 
+  → Utilise les community summaries (pas la recherche vectorielle)
+  → Agrège les insights de plusieurs communautés
+  → Map-Reduce sur les summaries → Réponse globale
+
+AVANTAGE UNIQUE :
+  GraphRAG peut répondre à des questions analytiques sur l'ENSEMBLE
+  du corpus — impossible avec le RAG vectoriel classique.</div>
+
+      <div class="callout tip">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">Quand utiliser Microsoft GraphRAG ?</div>
+          <p class="callout-text">GraphRAG brille sur les questions globales ("Quels sont les thèmes principaux de toute cette documentation ?") et les analyses comparatives cross-documents. Son coût d'indexation est élevé (beaucoup d'appels LLM pour générer les summaries) mais la qualité sur les questions analytiques est bien supérieure au RAG classique.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Microsoft GraphRAG (CLI)</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="cm"># Installation</span>
+<span class="cm"># pip install graphrag</span>
+
+<span class="cm"># Initialisation du projet</span>
+<span class="cm"># graphrag init --root ./graphrag_project</span>
+
+<span class="cm"># Indexation (extraction + communautés + summaries)</span>
+<span class="cm"># graphrag index --root ./graphrag_project</span>
+
+<span class="cm"># Requête en Python</span>
+<span class="kw">from</span> graphrag.query.cli <span class="kw">import</span> run_global_search, run_local_search
+
+<span class="cm"># Recherche locale (entités spécifiques)</span>
+result = run_local_search(
+    root_dir=<span class="str">"./graphrag_project"</span>,
+    query=<span class="str">"Quelles sont les découvertes de Marie Curie ?"</span>
+)
+
+<span class="cm"># Recherche globale (analytique, sur tout le corpus)</span>
+result = run_global_search(
+    root_dir=<span class="str">"./graphrag_project"</span>,
+    query=<span class="str">"Quels sont les grands thèmes de ce corpus ?"</span>
+)</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S7 -->
+    <div class="section" id="s7">
+      <div class="section-header"><span class="section-num">07</span><h2 class="section-title">Neo4j + RAG — L'approche Text2Cypher</h2></div>
+
+      <p>L'approche Text2Cypher permet au LLM de générer automatiquement des requêtes Cypher depuis du langage naturel. C'est l'équivalent de Text2SQL pour les graphes.</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Text2Cypher avec LangChain + Neo4j</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> langchain_community.graphs <span class="kw">import</span> Neo4jGraph
+<span class="kw">from</span> langchain.chains <span class="kw">import</span> GraphCypherQAChain
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+
+<span class="cm"># Connexion Neo4j</span>
+graph = Neo4jGraph(
+    url=<span class="str">"bolt://localhost:7687"</span>,
+    username=<span class="str">"neo4j"</span>,
+    password=<span class="str">"password"</span>
+)
+
+<span class="cm"># Afficher le schéma (pour que le LLM comprenne la structure)</span>
+<span class="fn">print</span>(graph.schema)
+<span class="cm"># Node properties: {Company: {name, revenue, industry}, Person: {name, title}...}
+# Relationships: (Company)-[:COMPETES_WITH]->(Company), (Person)-[:WORKS_FOR]->(Company)</span>
+
+<span class="cm"># Chaîne Text2Cypher</span>
+chain = GraphCypherQAChain.from_llm(
+    llm=ChatOpenAI(model=<span class="str">"gpt-4o"</span>, temperature=<span class="num">0</span>),
+    graph=graph,
+    verbose=<span class="kw">True</span>,
+    return_intermediate_steps=<span class="kw">True</span>
+)
+
+result = chain.invoke({
+    <span class="str">"query"</span>: <span class="str">"Quels fournisseurs travaillent avec des concurrents de TechCorp ?"</span>
+})
+
+<span class="cm"># Le LLM génère automatiquement :
+# MATCH (tc:Company {name: "TechCorp"})
+#       &lt;-[:COMPETES_WITH]-(concurrent)
+#       &lt;-[:SUPPLIES]-(fournisseur)
+# RETURN fournisseur.name, concurrent.name</span>
+<span class="fn">print</span>(result[<span class="str">"result"</span>])</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S8 -->
+    <div class="section" id="s8">
+      <div class="section-header"><span class="section-num">08</span><h2 class="section-title">Raisonnement Multi-hop</h2></div>
+
+      <p>Le raisonnement multi-hop consiste à enchaîner plusieurs étapes de recherche dans le graphe pour répondre à une question. C'est l'une des capacités les plus puissantes de GraphRAG.</p>
+
+      <div class="ascii-box">RAISONNEMENT MULTI-HOP — EXEMPLE MÉDICAL
+══════════════════════════════════════════
+
+GRAPHE DE CONNAISSANCES MÉDICAL :
+  (Patient_X) -[prend]-> (Warfarine)
+  (Patient_X) -[prend]-> (Ibuprofène)
+  (Warfarine) -[interagit_avec]-> (Ibuprofène)  [type: SÉVÈRE, mécanisme: anticoagulation]
+  (Warfarine) -[traite]-> (Thrombose_veineuse)
+  (Ibuprofène) -[inhibe]-> (COX1_COX2)
+
+QUESTION : "Le patient X présente-t-il des risques d'interaction médicamenteuse ?"
+
+TRAVERSÉE DU GRAPHE (multi-hop) :
+  Hop 1 : Patient_X → [prend] → {Warfarine, Ibuprofène}
+  Hop 2 : Warfarine → [interagit_avec] → Ibuprofène ← [prend] ← Patient_X
+  → Interaction détectée : Warfarine ↔ Ibuprofène (SÉVÈRE)
+  
+  Hop 3 (contexte) : Warfarine → [traite] → Thrombose_veineuse
+  Hop 4 (mécanisme) : Ibuprofène → [inhibe] → COX1_COX2
+                      Warfarine ← [potentiel_augmenté_par] ← Inhibition_COX
+
+CYPHER QUERY GÉNÉRÉE :
+  MATCH (p:Patient {id: "X"})-[:TAKES]->(m1:Drug)
+  MATCH (p)-[:TAKES]->(m2:Drug)
+  MATCH (m1)-[i:INTERACTS_WITH]->(m2)
+  RETURN m1.name, m2.name, i.severity, i.mechanism
+
+RÉSULTAT → CONTEXTE POUR LE LLM :
+  "Warfarine et Ibuprofène : interaction SÉVÈRE. 
+   L'ibuprofène potentialise l'effet anticoagulant de la warfarine
+   par inhibition COX, risque hémorragique élevé."</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S9 -->
+    <div class="section" id="s9">
+      <div class="section-header"><span class="section-num">09</span><h2 class="section-title">Hybrid Graph + Vector RAG</h2></div>
+
+      <p>La combinaison la plus puissante : <strong>recherche vectorielle</strong> pour la similarité sémantique + <strong>traversée de graphe</strong> pour les relations. Les deux sources d'information sont fusionnées dans le prompt.</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">Python — Hybrid GraphRAG</span><button class="copy-btn">Copier</button></div>
+        <pre><span class="kw">from</span> langchain_community.graphs <span class="kw">import</span> Neo4jGraph
+<span class="kw">from</span> langchain_community.vectorstores <span class="kw">import</span> Neo4jVector
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> OpenAIEmbeddings, ChatOpenAI
+<span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> ChatPromptTemplate
+<span class="kw">from</span> langchain_core.output_parsers <span class="kw">import</span> StrOutputParser
+
+<span class="cm"># Neo4j Vector Store (stocke embeddings sur les nœuds)</span>
+neo4j_vector = Neo4jVector.from_existing_index(
+    embedding=OpenAIEmbeddings(),
+    index_name=<span class="str">"document_embeddings"</span>
+)
+
+graph = Neo4jGraph()
+llm = ChatOpenAI(model=<span class="str">"gpt-4o"</span>)
+
+<span class="kw">def</span> <span class="fn">hybrid_graph_rag</span>(question: str) -> str:
+    <span class="cm"># 1. Recherche vectorielle sur les nœuds</span>
+    vector_docs = neo4j_vector.similarity_search(question, k=<span class="num">3</span>)
+    
+    <span class="cm"># 2. Extraire les entités de la question</span>
+    entities = <span class="fn">extract_entities_from_question</span>(question, llm)
+    
+    <span class="cm"># 3. Traversée du graphe depuis ces entités</span>
+    graph_facts = []
+    <span class="kw">for</span> entity <span class="kw">in</span> entities:
+        cypher = <span class="str">f"""
+        MATCH (n {{name: '{entity}'}})-[r]-(m)
+        RETURN n.name, type(r), m.name, m.type
+        LIMIT 20
+        """</span>
+        results = graph.query(cypher)
+        graph_facts.extend(results)
+    
+    <span class="cm"># 4. Combiner les deux sources</span>
+    prompt = ChatPromptTemplate.from_messages([(<span class="str">"human"</span>, <span class="str">"""
+Réponds à la question en utilisant les deux sources d'information :
+
+FAITS DU GRAPHE DE CONNAISSANCES :
+{graph_facts}
+
+PASSAGES TEXTUELS PERTINENTS :
+{vector_context}
+
+Question : {question}
+"""</span>)])
+    
+    chain = prompt | llm | StrOutputParser()
+    <span class="kw">return</span> chain.invoke({
+        <span class="str">"graph_facts"</span>: str(graph_facts),
+        <span class="str">"vector_context"</span>: <span class="str">"\n"</span>.join(d.page_content <span class="kw">for</span> d <span class="kw">in</span> vector_docs),
+        <span class="str">"question"</span>: question
+    })</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S10 -->
+    <div class="section" id="s10">
+      <div class="section-header"><span class="section-num">10</span><h2 class="section-title">Comparatif RAG vectoriel vs GraphRAG</h2></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Critère</th><th>RAG Vectoriel</th><th>GraphRAG</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Questions factuelles locales</strong></td><td class="td-good">✅ Excellent</td><td class="td-mid">Bon</td></tr>
+            <tr><td><strong>Questions relationnelles multi-hop</strong></td><td class="td-bad">❌ Faible</td><td class="td-good">✅ Excellent</td></tr>
+            <tr><td><strong>Questions analytiques globales</strong></td><td class="td-bad">❌ Impossible</td><td class="td-good">✅ (community summaries)</td></tr>
+            <tr><td><strong>Coût d'indexation</strong></td><td class="td-good">Faible</td><td class="td-bad">Élevé (NER+RE par LLM)</td></tr>
+            <tr><td><strong>Complexité de maintenance</strong></td><td class="td-good">Faible</td><td class="td-bad">Élevée (graphe à maintenir)</td></tr>
+            <tr><td><strong>Données non structurées</strong></td><td class="td-good">✅ Natif</td><td class="td-mid">Nécessite extraction</td></tr>
+            <tr><td><strong>Données structurées</strong></td><td class="td-mid">Moyen</td><td class="td-good">✅ Natif</td></tr>
+            <tr><td><strong>Traçabilité des réponses</strong></td><td class="td-mid">Sources textuelles</td><td class="td-good">Triplets + sources</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout fuchsia">
+        <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuchsia)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="callout-body">
+          <div class="callout-title">La recommandation pragmatique</div>
+          <p class="callout-text">Pour 80% des cas d'usage RAG, le RAG vectoriel classique suffit. Adoptez GraphRAG uniquement si (1) vous avez des questions multi-hop fréquentes, (2) vous avez des relations complexes entre entités à modéliser, ou (3) vous avez besoin d'analyses globales du corpus. Le coût de construction et maintenance du graphe est significatif.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S11 -->
+    <div class="section" id="s11">
+      <div class="section-header"><span class="section-num">11</span><h2 class="section-title">Cas industriels</h2></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Entreprise / Domaine</th><th>Use Case</th><th>Approche GraphRAG</th><th>Valeur ajoutée</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Pharma (AstraZeneca)</strong></td><td>Drug-drug interactions</td><td>Graphe d'interactions médicamenteuses + LLM</td><td>Détection automatique de risques patient multi-hop</td></tr>
+            <tr><td><strong>Finance (JPMorgan)</strong></td><td>Analyse de risque de contrepartie</td><td>Graphe d'entités légales + Text2Cypher</td><td>Détection de chaînes de propriété et expositions cachées</td></tr>
+            <tr><td><strong>Cybersécurité (Microsoft)</strong></td><td>Threat Intelligence</td><td>Graphe d'attaques (ATT&CK) + GraphRAG</td><td>Attribution d'attaques par traversée de TTPs</td></tr>
+            <tr><td><strong>Legal Tech</strong></td><td>Due diligence M&A</td><td>Graphe d'entités légales + Hybrid RAG</td><td>Relations entre parties, historique des procès, brevets</td></tr>
+            <tr><td><strong>Supply Chain</strong></td><td>Analyse de dépendances</td><td>Graphe fournisseurs + Vector</td><td>Impact d'une pénurie sur N niveaux de la chaîne</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S12 -->
+    <div class="section" id="s12">
+      <div class="section-header"><span class="section-num">12</span><h2 class="section-title">Erreurs fréquentes</h2></div>
+
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)"><span>❌ Erreur 1 — Construire un graphe sans schéma préalable</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body"><p>Laisser le LLM inventer librement les types de nœuds et relations produit un graphe incohérent. Définir d'abord un <strong>ontologie</strong> : quels types d'entités (PERSON, COMPANY, DRUG…), quels types de relations (WORKS_FOR, INTERACTS_WITH…). Le schéma guide l'extraction et garantit la cohérence.</p></div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)"><span>❌ Erreur 2 — Utiliser GraphRAG pour tout</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body"><p>GraphRAG est excellent pour les questions relationnelles mais plus lourd que le RAG vectoriel pour les questions factuelles simples. Ne pas remplacer le RAG vectoriel par GraphRAG — les combiner intelligemment selon le type de question détecté.</p></div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)"><span>❌ Erreur 3 — Ne pas valider les triplets extraits</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body"><p>L'extraction automatique de relations par LLM produit des erreurs : relations incorrectes, entités mal typées, doublets. Toujours valider un échantillon des triplets extraits avant ingestion massive. Considérer une étape de "graph cleaning" pour supprimer les relations à faible confiance.</p></div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc(this)"><span>❌ Erreur 4 — Requêtes Cypher trop complexes pour le LLM</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body"><p>Le Text2Cypher fonctionne bien pour des requêtes simples à modérées. Pour des traversées très complexes (5+ hops, conditions multiples), le LLM peut générer du Cypher syntaxiquement invalide ou logiquement incorrect. Ajouter une étape de validation Cypher et de fallback vers une recherche vectorielle si la requête graphe échoue.</p></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S13 -->
+    <div class="section" id="s13">
+      <div class="section-header"><span class="section-num">13</span><h2 class="section-title">Exercices</h2></div>
+
+      <div class="ex-card">
+        <div class="ex-header easy"><span class="ex-badge">Facile</span><span class="ex-title">Exercice 1 — Modéliser un graphe</span></div>
+        <div class="ex-body">
+          Vous construisez un GraphRAG pour une entreprise pharmaceutique. Modélisez le graphe de connaissances pour le texte suivant :<br><br>
+          <em>"Le médicament Metformine traite le diabète de type 2. Il interagit avec l'Alcool de manière sévère. La Metformine est fabriquée par Sanofi. Le diabète de type 2 est une maladie métabolique caractérisée par une résistance à l'insuline."</em><br><br>
+          Listez les nœuds (avec leurs types) et les relations (avec leurs types) à créer.
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>Nœuds :</strong><br>
+          • Metformine (DRUG)<br>
+          • Diabète_Type_2 (DISEASE)<br>
+          • Alcool (SUBSTANCE)<br>
+          • Sanofi (ORGANIZATION)<br>
+          • Insuline (MOLECULE)<br><br>
+          <strong>Relations :</strong><br>
+          • (Metformine) -[TREATS]-> (Diabète_Type_2)<br>
+          • (Metformine) -[INTERACTS_WITH {severity: "SEVERE"}]-> (Alcool)<br>
+          • (Sanofi) -[MANUFACTURES]-> (Metformine)<br>
+          • (Diabète_Type_2) -[CHARACTERIZED_BY]-> (Résistance_Insuline)<br>
+          • (Diabète_Type_2) -[IS_A]-> (Maladie_Métabolique)
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header medium"><span class="ex-badge">Moyen</span><span class="ex-title">Exercice 2 — Écrire une requête Cypher multi-hop</span></div>
+        <div class="ex-body">
+          Dans un graphe de connaissances RH, vous avez les relations :<br>
+          (Person)-[:MANAGES]->(Person), (Person)-[:WORKS_IN]->(Department), (Department)-[:PART_OF]->(Division)<br><br>
+          Écrivez une requête Cypher qui répond à : <em>"Quels sont tous les employés qui travaillent dans la division 'R&D', directement ou dans un département qui en fait partie ?"</em>
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <pre style="background:var(--bg-3);padding:16px;border-radius:8px;font-family:var(--font-mono);font-size:13px;color:var(--text-2)">MATCH (d:Division {name: "R&D"})
+MATCH (dept:Department)-[:PART_OF]->(d)
+MATCH (person:Person)-[:WORKS_IN]->(dept)
+RETURN person.name, dept.name, d.name
+ORDER BY dept.name, person.name</pre>
+          Variante plus concise avec path variable :<br>
+          <pre style="background:var(--bg-3);padding:16px;border-radius:8px;font-family:var(--font-mono);font-size:13px;color:var(--text-2);margin-top:8px">MATCH (person:Person)-[:WORKS_IN]->(dept:Department)-[:PART_OF]->(d:Division {name: "R&D"})
+RETURN person.name, dept.name</pre>
+        </div>
+      </div>
+
+      <div class="ex-card">
+        <div class="ex-header hard"><span class="ex-badge">Difficile</span><span class="ex-title">Exercice 3 — Concevoir un Hybrid GraphRAG</span></div>
+        <div class="ex-body">
+          Vous construisez un assistant RAG pour une équipe de cybersécurité. La base de connaissances contient :<br>
+          • Des rapports d'incidents (texte libre, 500 documents)<br>
+          • Un graphe de connaissances MITRE ATT&CK (techniques, tactiques, acteurs de menace)<br><br>
+          Question type : <em>"Est-ce que l'attaque détectée (exfiltration via DNS) ressemble aux TTPs du groupe APT41 ?"</em><br><br>
+          <strong>a)</strong> Décrivez l'architecture Hybrid GraphRAG pour ce cas d'usage.<br>
+          <strong>b)</strong> Quelles entités et relations modéliseriez-vous dans le graphe ?<br>
+          <strong>c)</strong> Comment routez-vous entre recherche vectorielle et graphe selon la question ?
+        </div>
+        <button class="btn-solution" onclick="toggleSolution(this)">📖 Voir la correction</button>
+        <div class="ex-solution">
+          <strong>a) Architecture :</strong><br>
+          Phase 1 (question analysis) : LLM identifie les entités cybersécurité dans la question (APT41, DNS exfiltration, TTPs). Classifie le type de requête : "attribution" → graphe, "description d'incident" → vectoriel, "les deux" → hybride.<br>
+          Phase 2 (parallèle) : Vector search sur les rapports d'incidents ("exfiltration DNS") + Cypher sur le graphe ATT&CK (APT41 → [uses] → Techniques).<br>
+          Phase 3 (fusion) : Combiner les techniques ATT&CK de APT41 (graphe) avec les incidents similaires (vectoriel) dans le prompt.<br><br>
+          <strong>b) Entités &amp; relations :</strong><br>
+          Nœuds : ThreatActor (APT41), Tactic (Exfiltration), Technique (T1048 - Exfil via DNS), Tool (DNScat2), Target (secteur, pays)<br>
+          Relations : (APT41)-[:USES]->(T1048), (T1048)-[:PART_OF]->(Exfiltration), (T1048)-[:IMPLEMENTED_BY]->(DNScat2)<br><br>
+          <strong>c) Routing :</strong><br>
+          Détection de patterns : présence d'un acteur nommé (APT41) → graphe. Présence d'une technique spécifique (T1048) → graphe + vectoriel. Question descriptive sans entité connue → vectoriel pur. Question d'attribution → graphe prioritaire + enrichissement vectoriel.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S14 -->
+    <div class="section" id="s14">
+      <div class="section-header"><span class="section-num">14</span><h2 class="section-title">Quiz d'auto-évaluation</h2></div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q1. Pour quelle type de question GraphRAG surpasse-t-il le RAG vectoriel ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Questions factuelles dans un passage de texte</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Questions nécessitant de suivre une chaîne de relations entre entités</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Questions sur des documents PDF scannés</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Questions en langue étrangère</div>
+        </div>
+        <div class="quiz-reveal">GraphRAG brille sur les questions multi-hop relationnelles ("Quels fournisseurs de X travaillent avec des concurrents de Y ?") car il peut traverser des relations dans le graphe. Le RAG vectoriel ne peut pas naviguer des relations structurées entre entités.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q2. Qu'est-ce qu'un triplet dans un graphe de connaissances ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Trois documents associés à une même requête</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Un fait élémentaire de la forme (Sujet, Prédicat, Objet)</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Une requête Cypher avec trois conditions</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Un nœud connecté à exactement trois autres nœuds</div>
+        </div>
+        <div class="quiz-reveal">Un triplet est la forme atomique d'un fait dans un graphe de connaissances : (Marie_Curie, a_reçu, Prix_Nobel_Physique). Sujet = entité source, Prédicat = type de relation, Objet = entité cible.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q3. Quelle est la caractéristique unique du "Global Search" de Microsoft GraphRAG ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">A) Il peut répondre à des questions analytiques sur l'ensemble du corpus via des community summaries</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">B) Il recherche uniquement dans des graphes SQL</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Il utilise uniquement des embeddings vectoriels</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Il ne nécessite pas de LLM pour fonctionner</div>
+        </div>
+        <div class="quiz-reveal">Le Global Search de Microsoft GraphRAG génère des "community summaries" qui condensent les insights de clusters d'entités. Cela permet de répondre à des questions analytiques globales ("Quels sont les grands thèmes de ce corpus ?") — quelque chose d'impossible avec le RAG vectoriel classique.</div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">Q4. Qu'est-ce que l'approche Text2Cypher ?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">A) Convertir des fichiers texte en base Neo4j</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,true)">B) Générer automatiquement des requêtes Cypher depuis du langage naturel via LLM</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">C) Extraire du texte depuis les nœuds d'un graphe</div>
+          <div class="quiz-opt" onclick="answerQuiz(this,false)">D) Convertir des requêtes SQL en Cypher</div>
+        </div>
+        <div class="quiz-reveal">Text2Cypher (analogue à Text2SQL) utilise un LLM pour traduire une question en langage naturel en requête Cypher pour Neo4j. Le LLM reçoit le schéma du graphe et génère la requête appropriée automatiquement.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- S15 -->
+    <div class="section" id="s15">
+      <div class="section-header"><span class="section-num">15</span><h2 class="section-title">Résumé</h2></div>
+
+      <div class="summary-box">
+        <h3>🎯 Ce qu'il faut absolument retenir</h3>
+        <div class="summary-item"><div class="summary-num">1</div><div>Le RAG vectoriel échoue sur les questions relationnelles multi-hop. GraphRAG comble cette lacune en traversant des relations structurées.</div></div>
+        <div class="summary-item"><div class="summary-num">2</div><div>Un graphe de connaissances représente les entités (nœuds) et leurs relations (arêtes) sous forme de triplets (Sujet, Prédicat, Objet).</div></div>
+        <div class="summary-item"><div class="summary-num">3</div><div><strong>Microsoft GraphRAG</strong> crée des community summaries qui permettent des requêtes analytiques globales sur tout le corpus — unique capacité.</div></div>
+        <div class="summary-item"><div class="summary-num">4</div><div><strong>Text2Cypher</strong> permet au LLM de générer des requêtes Neo4j depuis du langage naturel en connaissant le schéma du graphe.</div></div>
+        <div class="summary-item"><div class="summary-num">5</div><div>L'<strong>Hybrid GraphRAG</strong> combine recherche vectorielle (similarité sémantique) ET traversée de graphe (relations) — pattern optimal en production.</div></div>
+        <div class="summary-item"><div class="summary-num">6</div><div>Adopter GraphRAG uniquement si vous avez des relations complexes à modéliser. Le coût de construction et maintenance du graphe est significatif.</div></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <span class="tag">GraphRAG</span><span class="tag">Knowledge Graph</span><span class="tag">Neo4j</span><span class="tag">Cypher</span><span class="tag">Text2Cypher</span><span class="tag">Community Detection</span><span class="tag">Multi-hop</span><span class="tag">NER+RE</span><span class="tag">Triplets</span><span class="tag">Hybrid RAG</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-header"><span class="section-num">16</span><h2 class="section-title">Ressources</h2></div>
+      <div class="res-grid">
+        <a class="res-item" href="https://arxiv.org/abs/2404.16130" target="_blank">
+          <span class="res-type paper">Paper</span>
+          <div><div class="res-title">From Local to Global — GraphRAG</div><div class="res-sub">Edge et al., Microsoft 2024</div></div>
+        </a>
+        <a class="res-item" href="https://github.com/microsoft/graphrag" target="_blank">
+          <span class="res-type code">GitHub</span>
+          <div><div class="res-title">microsoft/graphrag</div><div class="res-sub">Code officiel Microsoft GraphRAG</div></div>
+        </a>
+        <a class="res-item" href="https://neo4j.com/developer/langchain/" target="_blank">
+          <span class="res-type doc">Doc</span>
+          <div><div class="res-title">Neo4j + LangChain</div><div class="res-sub">Guide d'intégration officiel</div></div>
+        </a>
+      </div>
+    </div>
+
+    <div class="chapter-footer">
+      <div class="footer-cards">
+        <div class="footer-card">
+          <div class="label">✅ Ce que nous avons appris</div>
+          <div class="value">GraphRAG &amp; Knowledge Graphs</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Limites du RAG vectoriel, graphes de connaissances, architecture GraphRAG, extraction d'entités, Microsoft GraphRAG, Neo4j Text2Cypher, raisonnement multi-hop et Hybrid Graph+Vector RAG.</div>
+        </div>
+        <div class="footer-card">
+          <div class="label">👉 Chapitre suivant</div>
+          <div class="value">RAG en Production</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7">Architecture de production, latence, scalabilité, sécurité, gestion des permissions, monitoring, et patterns de déploiement avec LangChain, LlamaIndex et AWS Bedrock.</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:32px 0">
+        <div style="display:inline-flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 28px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--fuchsia)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-size:14px;color:var(--text-2)">Écrivez <strong style="color:var(--fuchsia)">"Suivant"</strong> pour le Chapitre 9 — RAG en Production</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding-bottom:16px;font-size:12px;color:var(--text-3)">RAG Masterclass · Chapitre 8 sur 12</div>
+    </div>
+  </main>
+</div>
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+<script>
+mermaid.initialize({theme:'dark',themeVariables:{primaryColor:'#1a1e2a',primaryTextColor:'#e8eaf2',primaryBorderColor:'#d946ef',lineColor:'#5c6480',fontFamily:'Inter,sans-serif',fontSize:'13px'},flowchart:{curve:'basis'}});
+window.addEventListener('scroll',()=>{
+  const st=window.scrollY,dh=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progress-bar').style.width=(dh>0?(st/dh)*100:0)+'%';
+  document.getElementById('back-top').classList.toggle('show',st>400);
+  const sections=document.querySelectorAll('.section');let current='';
+  sections.forEach(s=>{if(s.offsetTop-100<=st)current=s.id});
+  document.querySelectorAll('.sidebar-item').forEach(item=>{item.classList.remove('active');if(item.getAttribute('onclick')?.includes(current))item.classList.add('active');});
+});
+function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='light'?'dark':'light')}
+function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleAcc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open')}
+function answerQuiz(opt,correct){opt.closest('.quiz-opts').querySelectorAll('.quiz-opt').forEach(o=>{o.style.pointerEvents='none';if(o===opt)o.classList.add(correct?'correct':'wrong')});const r=opt.closest('.quiz-card').querySelector('.quiz-reveal');if(r)r.classList.add('show');}
+function toggleSolution(btn){const s=btn.nextElementSibling;s.classList.toggle('show');btn.textContent=s.classList.contains('show')?'🙈 Masquer':'📖 Voir la correction';}
+document.querySelectorAll('.copy-btn').forEach(btn=>{btn.addEventListener('click',()=>{navigator.clipboard.writeText(btn.closest('.code-block').querySelector('pre').textContent).then(()=>{btn.textContent='✓ Copié';setTimeout(()=>btn.textContent='Copier',2000)});});});
+const searchInput=document.getElementById('search-input');let st2;
+searchInput.addEventListener('input',()=>{clearTimeout(st2);st2=setTimeout(()=>{const q=searchInput.value.trim();document.querySelectorAll('.search-highlight').forEach(el=>{el.outerHTML=el.textContent});if(q.length<2)return;const rx=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');const walker=document.createTreeWalker(document.querySelector('.main'),NodeFilter.SHOW_TEXT,null);const nodes=[];let node;while((node=walker.nextNode())){if(node.parentElement.closest('script,style')===null&&rx.test(node.textContent))nodes.push(node);}nodes.forEach(n=>{const sp=document.createElement('span');sp.innerHTML=n.textContent.replace(rx,'<mark class="search-highlight">$1</mark>');n.parentNode.replaceChild(sp,n);});const first=document.querySelector('.search-highlight');if(first)first.scrollIntoView({behavior:'smooth',block:'center'});},300);});
+
+/* GRAPH CANVAS */
+const gc=document.getElementById('graphCanvas');
+if(gc){
+  const ctx=gc.getContext('2d'),W=gc.width,H=gc.height;
+  const nodes=[
+    {x:360,y:180,label:'Marie Curie',type:'PERSON',color:'#d946ef',r:28},
+    {x:180,y:100,label:'Prix Nobel Physique',type:'AWARD',color:'#f59e0b',r:22},
+    {x:540,y:100,label:'Institut du Radium',type:'ORG',color:'#3b82f6',r:22},
+    {x:180,y:270,label:'Polonium',type:'ELEMENT',color:'#22c55e',r:20},
+    {x:540,y:270,label:'Radium',type:'ELEMENT',color:'#22c55e',r:20},
+    {x:360,y:330,label:'Pierre Curie',type:'PERSON',color:'#d946ef',r:22},
+    {x:90,y:180,label:'Université Paris',type:'ORG',color:'#3b82f6',r:18},
+  ];
+  const edges=[
+    {s:0,t:1,label:'a_reçu (1903)'},
+    {s:0,t:2,label:'a_fondé (1914)'},
+    {s:0,t:3,label:'a_découvert'},
+    {s:0,t:4,label:'a_découvert'},
+    {s:0,t:5,label:'mariée_à'},
+    {s:5,t:1,label:'a_reçu (1903)'},
+    {s:0,t:6,label:'a_étudié_à'},
+  ];
+  let hovered=null;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#0a0c12';ctx.fillRect(0,0,W,H);
+    edges.forEach(e=>{
+      const s=nodes[e.s],t=nodes[e.t];
+      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(t.x,t.y);
+      ctx.strokeStyle='rgba(92,100,128,0.5)';ctx.lineWidth=1.5;ctx.stroke();
+      const mx=(s.x+t.x)/2,my=(s.y+t.y)/2;
+      ctx.fillStyle='#5c6480';ctx.font='10px Inter';ctx.textAlign='center';
+      ctx.fillText(e.label,mx,my-4);
+    });
+    nodes.forEach((n,i)=>{
+      const isH=hovered===i;
+      ctx.beginPath();ctx.arc(n.x,n.y,isH?n.r+4:n.r,0,Math.PI*2);
+      ctx.fillStyle=n.color+(isH?'':'99');ctx.fill();
+      if(isH){ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();}
+      ctx.fillStyle='white';ctx.font=isH?'bold 12px Inter':'11px Inter';ctx.textAlign='center';
+      ctx.fillText(n.label.length>14?n.label.slice(0,13)+'…':n.label,n.x,n.y+4);
+      if(isH){
+        ctx.fillStyle='rgba(0,0,0,0.8)';ctx.fillRect(n.x+n.r+4,n.y-20,150,40);
+        ctx.fillStyle='white';ctx.font='12px Inter';ctx.textAlign='left';
+        ctx.fillText(n.type,n.x+n.r+10,n.y-4);
+        ctx.fillText(n.label,n.x+n.r+10,n.y+12);
+      }
+    });
+  }
+  gc.addEventListener('mousemove',e=>{
+    const rect=gc.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(W/rect.width),my=(e.clientY-rect.top)*(H/rect.height);
+    hovered=null;
+    nodes.forEach((n,i)=>{if(Math.hypot(n.x-mx,n.y-my)<n.r+6)hovered=i;});
+    gc.style.cursor=hovered!==null?'pointer':'default';draw();
+  });
+  gc.addEventListener('mouseleave',()=>{hovered=null;draw();});
+  draw();
+}
+</script>
+</body>
+</html>
