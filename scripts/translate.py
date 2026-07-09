@@ -1,16 +1,19 @@
-import os
-from openai import OpenAI
+from file_utils import read_file, write_file
+from translator import translate_html
 
-print(" OpenAI SDK imported successfully")
+SOURCE = "docs/Fr/chapitre-01-llm.html"
+DESTINATION = "docs/En/chapitre-01-llm.html"
 
-api_key = os.getenv("OPENAI_API_KEY")
+print(f"Reading {SOURCE}")
 
-if api_key:
-    print(" OPENAI_API_KEY found")
-else:
-    print(" OPENAI_API_KEY not found")
-    raise RuntimeError("OPENAI_API_KEY is missing")
+html = read_file(SOURCE)
 
-client = OpenAI(api_key=api_key)
+print("Sending to GPT-5.5...")
 
-print("OpenAI client created successfully")
+translated = translate_html(html)
+
+print("Saving translated file...")
+
+write_file(DESTINATION, translated)
+
+print("Translation completed successfully.")
